@@ -1,43 +1,10 @@
-/**
- ** This file is part of the sila_cpp project.
- ** Copyright 2020 SiLA2
- **
- ** Permission is hereby granted, free of charge, to any person obtaining a copy
- ** of this software and associated documentation files (the "Software"), to deal
- ** in the Software without restriction, including without limitation the rights
- ** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- ** copies of the Software, and to permit persons to whom the Software is
- ** furnished to do so, subject to the following conditions:
- **
- ** The above copyright notice and this permission notice shall be included in all
- ** copies or substantial portions of the Software.
- **
- ** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- ** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- ** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- ** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- ** LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- ** OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- ** SOFTWARE.
- **/
-
-//============================================================================
-/// \file   SelfSignedCertificateHelper.cpp
-/// \author Florian Meinicke (florian.meinicke@cetoni.de)
-/// \date   23.09.2020
-/// \brief  Implementation of helper functions for creation of a self-signed
-/// certificate and key
-/// Most of this was adapted from https://gist.github.com/nathan-osman/5041136 and
-/// https://stackoverflow.com/a/57478849/12780516
-//============================================================================
-
-//============================================================================
-//                                  INCLUDES
-//============================================================================
-#include "SelfSignedCertificateHelper.h"
-
-#include <sila_cpp/common/constants.h>
-#include <sila_cpp/common/logging.h>
+// TlsConfig.cc
+//
+// 출처: sila_cpp v0.3.11 src/lib/common/SelfSignedCertificateHelper.cpp를
+// 이식했다 (MIT License, Copyright 2020 SiLA2). 대부분
+// https://gist.github.com/nathan-osman/5041136 및
+// https://stackoverflow.com/a/57478849/12780516 을 참고해 작성된 코드다.
+#include "TlsConfig.h"
 
 #include <QHostInfo>
 #include <QNetworkInterface>
@@ -47,29 +14,14 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-#include <iostream>
 #include <iterator>
 
 using namespace std;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-BN_GENCB* BN_GENCB_new()
-{
-    return new BN_GENCB;
-}
-
-void BN_GENCB_free(BN_GENCB* cb)
-{
-    delete cb;
-}
-#endif
-
-namespace SiLA2
+namespace sila2
 {
 using asn1_octet_string_unique_ptr =
     unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
-using bignum_unique_ptr = unique_ptr<BIGNUM, void (*)(BIGNUM*)>;
-using bn_gencb_unique_ptr = unique_ptr<BN_GENCB, void (*)(BN_GENCB*)>;
 using bio_unique_ptr = unique_ptr<BIO, int (*)(BIO*)>;
 using x509_extension_unique_ptr =
     unique_ptr<X509_EXTENSION, void (*)(X509_EXTENSION*)>;
@@ -147,78 +99,34 @@ QStringList generateSubjectAlternativeNames(const QString& Address)
     return SubjectAltNames;
 }
 
-/**
- * @brief Callback function for the RSA key generation that displays the
- * progress of the calculation
- */
-[[maybe_unused]] static int callback(int p, int /*n*/, BN_GENCB* /*cb*/)
-{
-    if (sila_cpp_server().isInfoEnabled())
-    {
-        if (p == 0)
-        {
-            cout << '.';
-        }
-        else if (p == 1)
-        {
-            cout << '+';
-        }
-        else if (p == 2)
-        {
-            cout << '*';
-        }
-        else if (p == 3)
-        {
-            cout << '\n';
-        }
-        else
-        {
-            cout << 'B';
-        }
-    }
-    return 1;
-}
-
-//============================================================================
-COpenSSLError::COpenSSLError(const std::string& Description)
-    : runtime_error{Description
+OpenSslError::OpenSslError(const std::string& description)
+    : runtime_error{description
                     + "\nOpenSSL: " + ERR_error_string(ERR_get_error(), nullptr)}
 {}
 
-//============================================================================
-evp_pkey_unique_ptr generateKey()
+// 원본은 RSA_new() + BN_new/BN_set_word(RSA_F4) + BN_GENCB 진행 콜백 +
+// RSA_generate_key_ex + EVP_PKEY_assign_RSA 네 단계를 거쳐 키를 만들었다.
+// 이 API들은 OpenSSL 3.0부터 전부 deprecated다. EVP_RSA_gen(bits) 한 번
+// 호출로 지수 65537(RSA_F4와 동일)짜리 RSA 키를 바로 만들 수 있으므로
+// 그것으로 대체한다. 원본은 키 길이를 4096으로 못박았지만, 이 프로젝트에서는
+// bits 인자(기본값 2048)로 받는다 — 2048이 현재 RSA 권장 최소치이고, 4096은
+// 신규 발급 기준으로도 과도해 핸드셰이크 비용만 늘어난다.
+EvpPkeyPtr generateKey(int bits)
 {
-    qCDebug(sila_cpp_common) << "Generating RSA private key";
-    // 1. Allocate the key structure
-    evp_pkey_unique_ptr Key{EVP_PKEY_new(), EVP_PKEY_free};
-    if (!Key)
+    auto* rawKey = EVP_RSA_gen(static_cast<unsigned int>(bits));
+    if (rawKey == nullptr)
     {
-        throw COpenSSLError{"Could not allocate EVP_PKEY structure"};
+        throw OpenSslError{"Could not generate RSA private key"};
     }
 
-    // 2. Create the RSA key
-    const auto BigNum = bignum_unique_ptr{BN_new(), BN_free};
-    BN_set_word(BigNum.get(), RSA_F4);
-    auto* RSA = RSA_new();
-
-    auto cb = bn_gencb_unique_ptr{BN_GENCB_new(), BN_GENCB_free};
-    BN_GENCB_set(cb.get(), callback, nullptr);
-    RSA_generate_key_ex(RSA, 4096, BigNum.get(), cb.get());
-    cout << endl;
-
-    // 3. Assign the RSA key to the Key
-    if (!EVP_PKEY_assign_RSA(Key.get(), RSA))
-    {
-        throw COpenSSLError{"Could not generate RSA private key"};
-    }
-
-    return Key;
+    return EvpPkeyPtr{rawKey, EVP_PKEY_free};
 }
 
-//============================================================================
-x509_unique_ptr generateCertificate(const evp_pkey_unique_ptr& Key,
-                                    const string& Hostname, const QString& IP,
-                                    const QUuid& ServerUUID)
+// 시그니처만 TlsConfig.h에 맞췄다(Qt 타입 → std::string). 본문은 아직
+// Qt(QString/QUuid) 코드를 그대로 쓰고 있어 이 상태로는 컴파일되지 않는다 —
+// SAN 수집·주체 이름 처리를 포함한 본문 이식은 다음 배치에서 한다.
+X509Ptr generateCertificate(const EvpPkeyPtr& key, const string& hostname,
+                             const string& ip, const string& serverUuid)
 {
     qCDebug(sila_cpp_common)
         << "Generating X509 certificate for host" << Hostname << "with IP" << IP;
@@ -295,41 +203,37 @@ x509_unique_ptr generateCertificate(const evp_pkey_unique_ptr& Key,
     return Cert;
 }
 
-//============================================================================
-string keyToString(const evp_pkey_unique_ptr& Key)
+// 원본(keyToString/certificateToString)은 BIO_get_mem_data가 함께 돌려주는
+// 길이를 버리고 string{Buffer}로 변환했다. PEM_write_bio_*가 채운 버퍼는
+// NUL로 끝난다는 보장이 없으므로 그 방식은 버퍼 밖을 읽을 수 있는 버그다.
+// 여기서는 길이를 pemLength라는 이름으로 따로 받아 std::string 생성자에
+// 그대로 넘긴다.
+string keyToPem(const EvpPkeyPtr& key)
 {
-    const auto BIOBuffer = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
-    if (PEM_write_bio_PrivateKey(BIOBuffer.get(), Key.get(), nullptr, nullptr, 0,
-                                 nullptr, nullptr)
-        == 0)
+    const auto pemBio = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
+    const auto wroteOk = PEM_write_bio_PrivateKey(pemBio.get(), key.get(), nullptr,
+                                                   nullptr, 0, nullptr, nullptr);
+    if (wroteOk == 0)
     {
-        throw COpenSSLError{"Could not convert private key"};
+        throw OpenSslError{"Could not convert private key"};
     }
 
-    const char* Buffer;
-    SILA_CPP_DISABLE_WARNING_PUSH
-    SILA_CPP_DISABLE_WARNING_OLD_STYLE_CAST
-    BIO_get_mem_data(BIOBuffer.get(), &Buffer);
-    SILA_CPP_DISABLE_WARNING_POP
-
-    return string{Buffer};
+    char* pemBuffer = nullptr;
+    const auto pemLength = BIO_get_mem_data(pemBio.get(), &pemBuffer);
+    return string{pemBuffer, static_cast<size_t>(pemLength)};
 }
 
-//============================================================================
-string certificateToString(const x509_unique_ptr& Certificate)
+string certificateToPem(const X509Ptr& certificate)
 {
-    const auto BIOBuffer = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
-    if (PEM_write_bio_X509(BIOBuffer.get(), Certificate.get()) == 0)
+    const auto pemBio = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
+    const auto wroteOk = PEM_write_bio_X509(pemBio.get(), certificate.get());
+    if (wroteOk == 0)
     {
-        throw COpenSSLError{"Could not convert certificate"};
+        throw OpenSslError{"Could not convert certificate"};
     }
 
-    const char* Buffer;
-    SILA_CPP_DISABLE_WARNING_PUSH
-    SILA_CPP_DISABLE_WARNING_OLD_STYLE_CAST
-    BIO_get_mem_data(BIOBuffer.get(), &Buffer);
-    SILA_CPP_DISABLE_WARNING_POP
-
-    return string{Buffer};
+    char* pemBuffer = nullptr;
+    const auto pemLength = BIO_get_mem_data(pemBio.get(), &pemBuffer);
+    return string{pemBuffer, static_cast<size_t>(pemLength)};
 }
-}  // namespace SiLA2
+}  // namespace sila2

@@ -1,117 +1,54 @@
-/**
- ** This file is part of the sila_cpp project.
- ** Copyright 2020 SiLA2
- **
- ** Permission is hereby granted, free of charge, to any person obtaining a copy
- ** of this software and associated documentation files (the "Software"), to deal
- ** in the Software without restriction, including without limitation the rights
- ** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- ** copies of the Software, and to permit persons to whom the Software is
- ** furnished to do so, subject to the following conditions:
- **
- ** The above copyright notice and this permission notice shall be included in all
- ** copies or substantial portions of the Software.
- **
- ** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- ** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- ** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- ** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- ** LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- ** OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- ** SOFTWARE.
- **/
-
-//============================================================================
-/// \file   SelfSignedCertificateHelper.h
-/// \author Florian Meinicke (florian.meinicke@cetoni.de)
-/// \date   23.09.2020
-/// \brief  Declaration of helper functions for creation of a self-signed
-/// certificate and key
-//============================================================================
-#ifndef SELFSIGNEDCERTIFICATEHELPER_H
-#define SELFSIGNEDCERTIFICATEHELPER_H
-
-//============================================================================
-//                                  INCLUDES
-//============================================================================
-#include <QUuid>
+// TlsConfig.h
+//
+// 출처: sila_cpp v0.3.11 src/lib/common/SelfSignedCertificateHelper.h를
+// 이식했다 (MIT License, Copyright 2020 SiLA2). 원본은 Qt(QUuid)에 의존하지만
+// 이 프로젝트는 Qt를 쓰지 않으므로 std::string 기반으로 옮긴다.
+#pragma once
 
 #include <memory>
 #include <stdexcept>
 #include <string>
 
-//============================================================================
-//                            FORWARD DECLARATIONS
-//============================================================================
 struct evp_pkey_st;
 using EVP_PKEY = evp_pkey_st;
 struct x509_st;
 using X509 = x509_st;
 
-namespace SiLA2
+namespace sila2
 {
-/**
- * @brief The COpenSSLError class is used for all OpenSSL related errors that can
- * happen during creation of a self-signed certificate.
- */
-class COpenSSLError : public std::runtime_error
+/// 자체서명 인증서 생성 중 발생하는 OpenSSL 오류.
+/// 전달한 설명 뒤에 OpenSSL의 마지막 오류 문자열(ERR_get_error())을
+/// 덧붙여 예외 메시지를 만든다.
+class OpenSslError : public std::runtime_error
 {
 public:
-    /**
-     * @brief Constructs a new @b COpenSSLError from  @a Description and the
-     * OpenSSL internal error
-     *
-     * @param Description A description of what exactly went wrong
-     */
-    explicit COpenSSLError(const std::string& Description);
+    /// @param description 무엇을 하려다 실패했는지에 대한 설명
+    explicit OpenSslError(const std::string& description);
 };
 
-using evp_pkey_unique_ptr = std::unique_ptr<EVP_PKEY, void (*)(EVP_PKEY*)>;
-using x509_unique_ptr = std::unique_ptr<X509, void (*)(X509*)>;
+using EvpPkeyPtr = std::unique_ptr<EVP_PKEY, void (*)(EVP_PKEY*)>;
+using X509Ptr = std::unique_ptr<X509, void (*)(X509*)>;
 
-/**
- * @brief Helper to generate an RSA key using OpenSSL
- *
- * @return The private key as a @c unique_ptr
- */
-evp_pkey_unique_ptr generateKey();
+/// RSA 개인키를 생성한다.
+/// @param bits 키 길이(비트). 기본값 2048 — 4096은 신규 발급 기준으로도
+/// 과도하고 핸드셰이크 비용만 늘어난다. 2048이 현재 RSA 권장 최소치다.
+/// @return 생성된 개인키
+EvpPkeyPtr generateKey(int bits = 2048);
 
-/**
- * @brief Helper to generate an X509 self-signed certificate using OpenSSL
- *
- * @param Key The private key to use for creation of the certificate
- * @param Hostname The name of the host for which the certificate is created. This
- * is set as the value of the 'CN' field in the certificate subject.
- * @param IP The IP address to use for generating the certificate's subject
- * alternative names (SANs)
- * @param ServerUUID The ServerUUID that should be put into the certificate if the
- * @a Hostname is "SiLA2"
- *
- * @return The certificate as a @c unique_ptr
- */
-x509_unique_ptr generateCertificate(const evp_pkey_unique_ptr& Key,
-                                    const std::string& Hostname,
-                                    const QString& IP,
-                                    const QUuid& ServerUUID = {});
+/// 자체서명 X.509 인증서를 생성한다.
+/// @param key 인증서 서명에 사용할 개인키
+/// @param hostname 인증서 주체(subject)의 CN 필드에 들어갈 호스트 이름
+/// @param ip SAN(subject alternative name) 생성에 사용할 IP 주소
+/// @param serverUuid hostname이 "SiLA2"일 때 인증서에 함께 넣을 서버 UUID
+/// @return 생성된 인증서
+X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
+                             const std::string& ip,
+                             const std::string& serverUuid = {});
 
-/**
- * @brief Helper to convert the given @a Key to a @c std::string
- *
- * @param Key The key to convert
- *
- * @return The key as a @c std::string
- */
-std::string keyToString(const evp_pkey_unique_ptr& Key);
+/// 개인키를 PEM 형식 문자열로 변환한다.
+std::string keyToPem(const EvpPkeyPtr& key);
 
-/**
- * @brief Helper to convert the given @a Certificate to a @c std::string
- *
- * @param Certificate The certificate to convert
- *
- * @return The certificate as a @c std::string
- */
-std::string certificateToString(const x509_unique_ptr& Certificate);
+/// 인증서를 PEM 형식 문자열로 변환한다.
+std::string certificateToPem(const X509Ptr& certificate);
 
-}  // namespace SiLA2
-
-#endif  // SELFSIGNEDCERTIFICATEHELPER_H
+}  // namespace sila2
