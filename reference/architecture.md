@@ -465,7 +465,7 @@ sequenceDiagram
 ```
 
 - `AuthTokenStore`: 토큰 → (만료 시각, 허용 FQI 집합, 사용자 식별자). FDL이 `TokenLifetime`을 "마지막 서버 요청 이후의 최대 유효 기간"으로 정의하므로 검증 성공 시마다 만료 시각을 미는 슬라이딩 만료, 만료 항목 제거는 `ObservableCommandManager`(§3.3)·`BinaryStore`(§3.5)와 같은 주기 GC.
-- 주입 인터페이스는 둘. `CredentialVerifier`가 (사용자 식별자, 패스워드) → 사용자 식별 결과를, `AccessPolicy`가 (사용자, FQI) → 허용 여부를 판정. 코어는 기본 구현을 두지 않음, `SilaServerBase::Builder`(§3.2)가 인증 축 등록 시 둘을 필수 인자로 요구. 뒤에 오는 것이 LDAP든 설정 파일이든 코어 밖.
+- 주입 인터페이스는 둘. `CredentialVerifier`가 (사용자 식별자, 패스워드) → 사용자 식별 결과를, `AccessPolicy`가 (사용자, FQI) → 허용 여부를 판정. `SilaServerBase::Builder`(§3.2)가 인증 축 등록 시 둘을 필수 인자로 요구, 코어는 기본 구현을 두지 않기에 코어 밖에서 LDAP 혹은 설정 파일로 구현.
 - 검증 지점은 `AuthorizationInterceptor`, `MetadataExtractingInterceptor` 뒤·`FeatureRegistry` dispatch 앞으로 `LockController`(§3.10) 검사와 같은 자리. `AccessToken` 메타데이터를 꺼내 대조 후 실패 시 `InvalidAccessToken` DefinedExecutionError(§3.4) 반환, 보호 대상 FQI를 메타데이터 없이 호출한 경우도 같은 에러.
 - 보호 대상 집합은 `AccessPolicy`가 선언, `Get_FCPAffectedByMetadata_AccessToken`(§2)이 그 집합을 그대로 반환.
 - `Login`의 `RequestedServer`는 자기 Server UUID(§3.7)와 대조하여 불일치 시 `ValidationError`(§3.4), `RequestedFeatures`는 발급 토큰의 허용 FQI 집합, 비어 있는 경우 `AccessPolicy`가 그 사용자에게 허용하는 전체.
@@ -506,7 +506,7 @@ sequenceDiagram
 ```
 
 - `RecoverableErrorGate`: `CommandExecutionUUID` → (게시된 `RecoverableError`, 대기 중 실행 스레드, 타이머 2종). Feature 구현체의 실행 스레드가 `CallContext`의 `RaiseRecoverableError(...)`로 블록, 코어가 목록에 항목을 추가한 뒤 선택 도착까지 대기.
-- 코어가 담당하는 것은 게시·대기·전달, 어떤 continuation option을 낼지와 선택된 옵션으로 무엇을 할지는 반환값을 받은 구현체 몫. 복구 절차 판정이 클라이언트와 구현체 양쪽에 남으므로 오케스트레이션 로직을 코어에 들이지 않는 경계(§1.1) 유지.
+- 코어가 담당하는 것은 게시·대기·전달. 어떤 continuation option을 낼지와 선택된 옵션으로 무엇을 할지는 반환값을 받은 구현체 몫으로, 복구 절차 판정이 클라이언트와 구현체 양쪽에 남으므로 오케스트레이션 로직을 코어에 들이지 않는 경계(§1.1) 유지.
 - `RecoverableErrors`는 Observable Property로써 ③ 축(§3.3)에 그대로 마운트. 목록 전체를 값으로 push하는 상태 프로퍼티라 오래된 값을 폐기하는 §3.3의 큐 정책과 정합.
 - `ExecuteContinuationOption`의 `InputData`는 `Any`. 코어 구현체는 §2.1의 원칙대로 `AnyValue`를 불투명하게 실어 나르기만 하므로 `sila2::dynamic` 링크 없이 동작, 타입 정의 XML 해석은 `RequiredInputData`를 선언한 Feature 구현체가 수행.
 - 타이머는 둘. `SetErrorHandlingTimeout`이 정하는 전역 대기 상한과 `RecoverableError.AutomaticExecutionTimeout`의 기본 옵션 자동 실행이 각각, 후자는 `DefaultOption`이 지정된 경우에만 유효. 두 값 모두 0이 무기한, 대기 상한 기본값은 `ServerConfig`(§3.7) 보유.
@@ -567,8 +567,8 @@ flowchart LR
 | 값 경계 | C++ 네이티브 타입 (§2.1) | JSON 문자열 ↔ 메시지 |
 | 주 소비자 | 검증 테스트, 알려진 장비 연동 | 오케스트레이터 |
 
-- 두 경로는 `SilaClientBase`의 채널·mTLS·메타데이터 주입(§3.6)·Binary 전송(§3.5) 위에 공존, 동적 경로가 추가로 요구하는 것은 런타임 디스크립터 조립(§4.2)뿐.
-- Binary Transfer 서비스는 `SiLABinaryTransfer.proto`로 고정되어 서버마다 달라지지 않으므로 동적 경로에서도 정적 stub 사용. 동적 경로가 하는 일은 파라미터 트리에서 `Binary` 필드를 찾아 업로더로 넘긴 후, 반환된 `BinaryTransferUUID`를 그 자리에 채우는 것.
+- 두 경로는 `SilaClientBase`의 채널·mTLS·메타데이터 주입(§3.6)·Binary 전송(§3.5) 위에 공존, 동적 경로는 런타임 디스크립터 조립(§4.2)을 필요.
+- Binary Transfer 서비스는 `SiLABinaryTransfer.proto`로 고정되어 서버마다 달라지지 않으므로 동적 경로에서도 정적 stub 사용. 동적 경로는 파라미터 트리에서 2 MiB 초과 `Binary` 필드를 찾아 업로더로 넘긴 후, 그 필드의 `union` oneof를 `value` 대신 `binaryTransferUUID` 케이스로 채움.
 - Observable Command·Property, Client Metadata도 동적 경로에서 같은 축(§3.3, §3.6)을 탐. 메타데이터 헤더 키가 FQI 파생이라 런타임에 구성 가능, 어떤 커맨드가 어떤 메타데이터를 요구하는지는 `Get_FCPAffectedByMetadata_<Metadata>`(§2) 호출로 확인.
 
 ### 4.2 런타임 디스크립터 파이프라인
@@ -595,12 +595,12 @@ flowchart LR
 - `SiLAFramework.proto`의 descriptor는 컴파일 타임 생성물(§2)의 pool에서 가져와 dependency로 지정하므로써 동적 pool이 `SiLAFramework.String`·`SiLAFramework.Binary` 등을 참조 가능.
 - 서로 다른 서버가 같은 FQI에 다른 정의를 반환할 수 있어 전역 pool 공유 금지, Pool은 서버 UUID별로 분리. `FeatureCatalog`가 UUID → (FQI 집합, Feature별 FDL 원문·pool·메서드 테이블)을 보유.
 - 캐시 수명은 채널 수명, 연결이 끊긴 경우 폐기하고 영속 백엔드를 두지 않음. SiLA에 FDL 변경 알림 채널이 없고 FQI에 담기는 버전이 major뿐이라 펌웨어 갱신 감지 수단이 없으므로, 무효화 판정은 재연결 시 확보하는 FQI 집합에 위임 — 목록에서 빠졌거나 major 버전이 오른 FQI가 이 비교로 드러남. FQI가 같은 채 본문만 바뀐 FDL은 어느 정책으로도 판정 불가, 채널 수명을 캐시 수명으로 정의하여 덮음. 지연 수집이므로 재연결이 요구하는 RPC는 `ListImplementedFeatures` 1회.
-- 호출은 `grpc::GenericStub`에 메서드 이름 문자열(`/sila2.org.silastandard.core.silaservice.v1.SiLAService/GetFeatureDefinition`)을 직접 지정, 필요한 형태는 unary와 server-streaming 둘. sila_cpp `CDynamicCall`이 gRPC의 `cli_call.h`를 옮겨온 것과 같은 층위.
+- 호출은 `grpc::GenericStub`에 메서드 이름 문자열(`/sila2.org.silastandard.core.silaservice.v1.SiLAService/GetFeatureDefinition`)을 직접 지정, 필요한 형태는 unary와 server-streaming 둘. 생성된 타입 stub 아래에서 `GenericStub`·`CompletionQueue`로 `ByteBuffer`를 직접 주고받는 층으로써, gRPC 저장소의 `test/cpp/util/cli_call.h`를 옮겨온 sila_cpp `CDynamicCall`과 같은 자리.
 - 파라미터·응답 값은 protobuf `json_util`의 `JsonStringToBinaryString`/`BinaryToJsonString`에 동적 pool 기반 `TypeResolver`를 물려 JSON 문자열로 주고받음, sila_cpp `CDynamicValue` 같은 자체 동적 값 트리는 만들지 않음 (sila_java `SiLACall`도 파라미터를 JSON 문자열로 표현).
 - FDL Constraint는 proto에 없으므로(§2.1) 동적 경로의 파라미터 검증은 IR에 남은 Constraint로 클라이언트가 선검사, 최종 판정은 서버의 `ValidationError`(§3.4).
 - 선검사 대상은 값 하나만으로 판정되고 외부 의존이 붙지 않는 Constraint로 한정 — `Length`·`MinimalLength`·`MaximalLength`, `Set`, `Pattern`, `Minimal/MaximalInclusive`·`Exclusive`, `ElementCount` 계열, `FullyQualifiedIdentifier` 형식 검사. 구현이 `std::regex`와 수치 비교로 충족되어 `sila2::dynamic`에 새 의존이 붙지 않음.
-- 제외하는 것은 셋. `Schema`·`ContentType`은 스키마 검증기·MIME 파싱이라는 외부 의존을 요구하여 서버 판정에 위임(§4.2의 런타임 XSD 검증 배제와 같은 근거), `AllowedTypes`는 `Any`의 런타임 타입 판정(§2.1)에 걸려 마찬가지. `Unit`은 값의 물리 단위를 서술하는 정보성 메타데이터로써 위반 판정 대상 자체가 없음.
-- 판정 함수는 서버 축의 공용 검사 헬퍼 `src/sila/types/constraints.h`(§3.4)를 그대로 호출, 입력만 `<Feature>Meta`의 Constraint 대신 런타임 IR에서 옴. 정적·동적 두 경로가 같은 함수를 공유하여 §4.3이 감시하는 이중 구현이 늘지 않음.
+- 선검사 대상에서 `Schema`·`ContentType`·`AllowedTypes`은 제외. `Schema`·`ContentType`은 스키마 검증기·MIME 파싱이라는 외부 의존을 요구하여 서버 판정에 위임(§4.2의 런타임 XSD 검증 배제와 같은 근거), `AllowedTypes`는 `Any`의 런타임 타입 판정(§2.1)에 걸려 마찬가지. `Unit`은 값의 물리 단위를 서술하는 정보성 메타데이터로써 위반 판정 대상 자체가 없음.
+- 판정 도구로써 서버 축의 공용 검사 헬퍼 `src/sila/types/constraints.h`(§3.4)를 호출, 입력만 `<Feature>Meta`의 Constraint 대신 런타임 IR에서 옴. 정적·동적 두 경로가 같은 함수를 공유하여 §4.3이 감시하는 이중 구현이 늘지 않음.
 - XSD 검증은 빌드 타임 `xsdata` 바인딩(§2)의 몫이므로, 런타임 파싱은 전수 검증 없이 필수 요소 존재 확인까지만 수행. 원격 FDL이 스키마를 위반한 경우 파싱·조립 단계에서 드러남.
 - 런타임 파서는 pugixml(MIT, 헤더 + `.cpp` 한 쌍)을 `sila2::dynamic` 내부 의존으로 사용, XPath 1.0으로 중첩 `DataTypeDefinition`·`Constraint`를 수동 하강 없이 탐색. XSD 검증·네임스페이스 해석을 갖춘 libxml2는 위 항목이 런타임 검증을 배제하여 강점이 사장되고 C API 래퍼 비용만 남으므로 채택하지 않음.
 - `DescriptorBuilder`는 FDL 전체뿐 아니라 `Any`의 타입 정의 XML 하나(§2.1)도 입력으로 받아, 익명 Structure를 합성한 뒤 같은 조립 경로로 descriptor를 산출. sila_java `ProtoMapper.dataTypeToDescriptor`와 같은 진입점.
@@ -738,10 +738,9 @@ flowchart TB
 | 참조 구현 | `examples/` | C++ | 새 장비 저장소가 복사해 출발하는 Feature 구현체 1종 |
 | 검증 | `tests/validation`, `tests/interop`, `tests/dynamic` | Python(pytest) + C++ | 외부 레퍼런스 대비 스펙 준수 확인, 두 매핑 구현 등가성 |
 
-빌드 도구이므로, `src/codegen`(Python)이 C++ 소스와 같은 `src/` 아래 섞여 있던 것을 `tools/codegen`으로 옮김. 스케줄러·장비 상태 관리가 이 표에 없는 것은 오케스트레이터로 이관했기 때문, 본 저장소가 노출하는 것은 `sila2::core`·`sila2::dynamic` 두 타깃 (§1.1).
+빌드 도구이므로, `src/codegen`(Python)이 C++ 소스와 같은 `src/` 아래 섞여 있던 것을 `tools/codegen`으로 옮김. 본 레포는 `sila2::core`·`sila2::dynamic` (§1.1) 제공.
 
-장치별 Feature 구현체를 담던 `src/features/`는 폐지. 실제 하드웨어를 만지는 구현체는 벤더 SDK·장치 권한 의존을 끌고 오므로 장비 저장소 소관(§1.1), 본 저장소에는 하드웨어와 무관한 core feature 구현체와 `examples/`의 참조 구현 1종만 존재. `examples/`는 기본 빌드에서 제외하고 `-DSILA2_BUILD_EXAMPLES=ON`에서만 컴파일, `tests/interop`의 데모 서버와 달리 새 장비 저장소의 출발점 제공이 목적이므로 역할이 겹치지 않음.
-
+장치별 Feature 구현체를 담던 `src/features/`는 폐지. 실제 하드웨어와 통신하는 구현체는 벤더 SDK·장치 권한 의존과 연관되므로 장비 저장소 소관(§1.1), 본 레포는 예시 core feature 구현체와 `examples/`의 참조 구현 1종만 포함. `examples/`는 기본 빌드에서 제외하고 `-DSILA2_BUILD_EXAMPLES=ON`에서만 컴파일, `tests/interop`의 데모 서버와 달리 새 장비 레포의 출발점 제공이 목적.
 ## 9. 범위 결정
 
 ### 9.1 명시적 비목표 (현 구현에서 제외)
@@ -749,10 +748,10 @@ flowchart TB
 - 동적 Feature 서버: 서버 측은 컴파일 타임에 아는 Feature만 등록, 런타임에 FDL을 받아 서비스를 여는 경로는 만들지 않음. 동적 해석은 클라이언트 축에만 존재 (§4.1).
 - 오케스트레이션 로직: 스케줄링·워크플로·장비 상태 머신은 상위 저장소 소관 (§1.1).
 - 정적 stub 대체: 동적 경로 추가 후에도 검증 테스트와 알려진 장비 연동은 정적 stub 유지, 두 경로를 함께 관리 (§4.1).
-- 바이너리 영속: `BinaryStore`(§3.5)는 수명 안에서의 연결 단절 재개를 지원(§4.6), 프로세스 재시작을 건너는 복구는 제외, 재시작 시 그 바이너리를 참조할 커맨드가 남지 않음(§3.5).
-- 자격증명 저장소·권한 정책: `CredentialVerifier`·`AccessPolicy`(§3.11) 뒤의 사용자 관리·패스워드 정책·감사 로그는 사이트 정책에 딸리므로 오케스트레이터 소관, 코어는 인터페이스 정의와 호출 지점까지.
-- `AuthorizationProviderService` 서버 구현: 여러 서버의 토큰을 대신 검증하는 중앙 provider 역할은 랩 인프라 소관, 코어는 provider를 호출하는 쪽과 자기 발급 토큰의 로컬 검증까지 (§3.11).
-- 토큰 영속: 재시작을 건너는 access token 유효성은 제공하지 않음, 클라이언트가 `Login`을 다시 호출 (§3.7).
+- 바이너리 영속: `BinaryStore`(§3.5)는 수명 안에서의 연결 단절 재개를 지원(§4.6), 프로세스 재시작 이후 복구는 제외, 재시작 시 그 바이너리를 참조할 커맨드가 남지 않음(§3.5).
+- 자격증명 저장소·권한 정책: 인터페이스 정의와 호출 지점은 코어 책임.`CredentialVerifier`·`AccessPolicy`(§3.11) 뒤의 사용자 관리·패스워드 정책·감사 로그는 사이트 정책에 딸리므로 오케스트레이터 소관.
+- `AuthorizationProviderService` 서버 구현: provider 호출과 자기 발급 토큰의 로컬 검증은 (§3.11) 코어 책임. 여러 서버의 토큰을 대신 검증하는 중앙 provider 역할은 랩 인프라 소관.
+- 토큰 영속: 재시작 후 access token 유효성은 제공하지 않음, 클라이언트가 `Login`을 다시 호출 (§3.7).
 - 복구 절차 판정: `ErrorRecoveryService`(§3.12)에서 코어가 맡는 것은 에러 게시·대기·선택 전달, 어떤 continuation option을 제시하고 고를지는 Feature 구현체와 오케스트레이터 양쪽 (§1.1).
 
 ### 9.2 미결정/후속 트랙
