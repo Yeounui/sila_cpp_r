@@ -280,7 +280,7 @@ stateDiagram-v2
 | `Running → FinishedWithError` | 예외/에러 | `_Info` 스트림으로 에러 전달 |
 | `Finished* → [*]` | lifetime 만료 | GC가 제거 (§아래) |
 
-- `ObservableCommandManager`가 `UUID → ObservableCommand` 맵을 소유, 클라이언트가 결과를 영영 안 가져가는 경우도 정상 시나리오이므로 수명 만료는 매니저의 주기적 GC가 수행. lifetime이 `null`이면 수동 제거 전까지 유지(sila_java `ObservableCommandManager`와 동일 정책).
+- `ObservableCommandManager`가 `UUID → ObservableCommand` 맵을 소유, 클라이언트가 결과를 영원히 가져가지 않는 경우 또한 정상 시나리오이므로 수명 만료는 매니저의 주기적 GC가 수행. lifetime이 `null`이면 수동 제거 전까지 유지(sila_java `ObservableCommandManager`와 동일 정책).
 - 알 수 없는 UUID로 `_Info`/`_Result` 호출 시 `FrameworkError{INVALID_COMMAND_EXECUTION_UUID}` (§3.4 "④ 에러 축 = 코어 자료구조" 참조)
 - `_Info` 스트림이 취소된 경우, `ObservableCommand`가 취소 요청 플래그와 취소 콜백을 노출하여 Feature 구현체의 실행 스레드 정리 근거로 사용 — SiLA 2에 커맨드 취소 RPC가 없어 스트림 절단이 유일한 취소 신호. 취소 이후의 재시도·재스케줄 판단은 오케스트레이터 몫(§4.4).
 
@@ -352,11 +352,11 @@ sequenceDiagram
 - 두 구현 모두 프로세스 재시작을 건너는 내구성은 제공하지 않음. 재시작 시 `ObservableCommandManager`의 UUID 맵(§3.3)이 사라져 그 바이너리를 참조할 커맨드가 남지 않으므로 바이너리만 보존할 실익이 없음, sila_java `BinaryDatabase` + H2가 택한 영속 백엔드는 비목표(§9.1).
 - 업로드 시 클라이언트는 어느 커맨드와 파라미터에 쓸 바이너리인지 FQI로 선언, 서버는 이를 화이트리스트로 검증(허용되지 않은 파라미터로의 업로드 거부).
 - 다운로드는 역방향: Feature가 큰 결과를 `BinaryStore`에 넣고 `BinaryTransferUUID`만 반환 시, 클라이언트가 `BinaryDownloadService`로 청크를 받아감.
-- codegen은 `Binary` 파라미터에 대해 두 경로를 모두 표현하는 메시지 emit 필요(값 직접 vs UUID 참조 — `SiLAFramework.Binary`의 oneof).
+- codegen은 `Binary` 파라미터에 대해 두 경로를 모두 표현하는 메시지를 emit (값 직접 vs UUID 참조 — `SiLAFramework.Binary`의 oneof).
 
 ### 3.6 횡단 관심사 — Client Metadata
 
-- 클라이언트는 SiLA Client Metadata를 gRPC 헤더에 바이너리로 실어 보내며, 헤더 키는 메타데이터 FQI에서 파생.
+- 클라이언트는 SiLA Client Metadata를 gRPC 헤더에 바이너리로 실어 보냄. 헤더 키는 메타데이터 FQI에서 파생.
 - 어떤 메타데이터 타입인지는 해당 Feature만 알므로, `MetadataExtractingInterceptor`는 체인 최상단에서 헤더를 걷어 `CallContext`에 부착, 파싱은 Feature 구현체 몫.
 - Feature 구현체는 `CallContext`에서 자기 관심 메타데이터를 꺼내 해석.
 - 각 Feature는 codegen이 자동 생성하는 `Get_FCPAffectedByMetadata_<Metadata>` RPC로 "이 메타데이터가 어떤 커맨드/프로퍼티에 영향을 주는지" 답해야 함(§2).
@@ -387,7 +387,7 @@ Feature 구현체는 클래식 연결과 서버 개시 연결(§3.9) 양쪽에�
 - 인터셉터 체인(§3.1)은 `grpc::ServerContext` 대신 `CallContext` 위에서 동작, 트랜스포트별 어댑터를 체인 앞단에 배치.
 - `SiLAErrorException` → `SiLAError` 변환(§3.4)은 두 모드가 공유, `Status` details 직렬화와 봉투 `commandError` 필드 적재만 각 어댑터가 분담.
 - `ObservablePropertyManager`(§3.3)의 구독자를 `ResponseSink` 집합으로 표현하여 브로드캐스트 경로를 트랜스포트와 분리, `grpc::ServerWriter` 직접 보유 금지.
-- codegen은 `<Feature>Meta`에 FQI → 핸들러·파서·시리얼라이저 테이블을 emit. 서버 측 디스패치는 컴파일 타임에 Feature 집합이 확정되어 정적 함수 테이블로 충분, 클라이언트의 런타임 디스크립터 축(§4.2)과는 별개.
+- codegen은 `<Feature>Meta`에 FQI → 핸들러·파서·시리얼라이저 테이블을 emit. 서버 측 디스패치는 컴파일 타임에 Feature 집합이 확정되어, 클라이언트의 런타임 디스크립터 축(§4.2)과는 별개로 정적 함수 테이블로 충분.
 
 gRPC-Java는 이 이음매(seam)를 기본 제공하기에 sila_java `library/cloudier`가 코어를 건드리지 않는 리프 모듈로 존재 — 생성 시그니처 `void spin(SpinRequest, StreamObserver<SpinResponse>)`가 트랜스포트 객체를 받지 않아 `CloudCallForwarder`가 구현체를 gRPC 스택 경유 없이 직접 호출하고, 메타데이터는 `io.grpc.Context`로 전달. gRPC-C++에는 둘 다 없어 위 타입들을 직접 만들어야 함.
 
@@ -464,9 +464,9 @@ sequenceDiagram
     Note over I,T: AuthorizationProvider가 타 서버인 경우<br/>Verify로 위임 후 응답 TokenLifetime만큼 캐시
 ```
 
-- `AuthTokenStore`: 토큰 → (만료 시각, 허용 FQI 집합, 사용자 식별자). FDL이 `TokenLifetime`을 "마지막 서버 요청 이후의 최대 유효 기간"으로 정의하므로 검증 성공 시마다 만료 시각을 미는 슬라이딩 만료, 만료 항목 제거는 `ObservableCommandManager`(§3.3)·`BinaryStore`(§3.5)와 같은 주기 GC.
+- `AuthTokenStore`: 토큰 → (만료 시각, 허용 FQI 집합, 사용자 식별자). FDL이 `TokenLifetime`을 "마지막 서버 요청 이후의 최대 유효 기간"으로 정의하므로 검증 성공 시마다 만료 시각을 늦추는 슬라이딩 만료, 만료 항목 제거는 `ObservableCommandManager`(§3.3)·`BinaryStore`(§3.5)와 같은 주기 GC.
 - 주입 인터페이스는 둘. `CredentialVerifier`가 (사용자 식별자, 패스워드) → 사용자 식별 결과를, `AccessPolicy`가 (사용자, FQI) → 허용 여부를 판정. `SilaServerBase::Builder`(§3.2)가 인증 축 등록 시 둘을 필수 인자로 요구, 코어는 기본 구현을 두지 않기에 코어 밖에서 LDAP 혹은 설정 파일로 구현.
-- 검증 지점은 `AuthorizationInterceptor`, `MetadataExtractingInterceptor` 뒤·`FeatureRegistry` dispatch 앞으로 `LockController`(§3.10) 검사와 같은 자리. `AccessToken` 메타데이터를 꺼내 대조 후 실패 시 `InvalidAccessToken` DefinedExecutionError(§3.4) 반환, 보호 대상 FQI를 메타데이터 없이 호출한 경우도 같은 에러.
+- 검증 지점은 `FeatureRegistry` dispatch와`AuthorizationInterceptor`, `MetadataExtractingInterceptor` 사이로 `LockController`(§3.10) 검사와 같은 자리. `AccessToken` 메타데이터를 꺼내 대조 후 실패 시 `InvalidAccessToken` DefinedExecutionError(§3.4) 반환, 보호 대상 FQI를 메타데이터 없이 호출한 경우도 같은 에러.
 - 보호 대상 집합은 `AccessPolicy`가 선언, `Get_FCPAffectedByMetadata_AccessToken`(§2)이 그 집합을 그대로 반환.
 - `Login`의 `RequestedServer`는 자기 Server UUID(§3.7)와 대조하여 불일치 시 `ValidationError`(§3.4), `RequestedFeatures`는 발급 토큰의 허용 FQI 집합, 비어 있는 경우 `AccessPolicy`가 그 사용자에게 허용하는 전체.
 - 검증 위임: `AuthorizationConfigurationService`의 `AuthorizationProvider`가 자기 UUID인 경우 로컬 `AuthTokenStore`, 다른 UUID인 경우 그 서버의 `AuthorizationProviderService.Verify`를 클라이언트 축(§4)으로 호출. 서버 코어가 클라이언트 코어를 소비하는 유일한 지점으로써, `sila2::core`가 정적 stub 클라이언트를 이미 포함하므로(§1.1) 새 의존은 붙지 않음.
