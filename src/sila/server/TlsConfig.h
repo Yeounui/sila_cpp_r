@@ -31,12 +31,9 @@ using EvpPkeyPtr = std::unique_ptr<EVP_PKEY, void (*)(EVP_PKEY*)>;
 using X509Ptr = std::unique_ptr<X509, void (*)(X509*)>;
 
 /// Generates an RSA private key.
-/// @param bits Key length in bits. Default 2048 — the reference
-/// implementation sila_java also defaults to 2048
-/// (SelfSignedCertificate.KeySize.SIZE_2048). Generating a 4096-bit key adds
-/// a few seconds to the very first boot before a certificate exists — a
-/// one-time cost, not one paid on every boot — but nothing about this
-/// self-signed device certificate's threat model justifies paying it.
+/// @param bits Key length in bits. Default 2048, matching the reference
+/// implementation sila_java's default
+/// (SelfSignedCertificate.KeySize.SIZE_2048).
 /// @return The generated key
 EvpPkeyPtr generateKey(int bits = 2048);
 

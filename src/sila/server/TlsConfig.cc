@@ -7,97 +7,147 @@
 // https://stackoverflow.com/a/57478849/12780516.
 #include "TlsConfig.h"
 
-#include <QHostInfo>
-#include <QNetworkInterface>
-
+#include <openssl/asn1.h>
+#include <openssl/bn.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-#include <iterator>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <cstddef>
 
 namespace sila2
 {
 using asn1_octet_string_unique_ptr =
     std::unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
+using bignum_unique_ptr = std::unique_ptr<BIGNUM, void (*)(BIGNUM*)>;
 using bio_unique_ptr = std::unique_ptr<BIO, int (*)(BIO*)>;
 using x509_extension_unique_ptr =
     std::unique_ptr<X509_EXTENSION, void (*)(X509_EXTENSION*)>;
 
-/**
- * @brief Helper function to add a subject entry to an X509 certificate
- *
- * @param Name The subject name of the certificate for which the entry should
- * be added
- * @param FieldID The name of the object that should be added to the subject
- * @param Value The value to set for the object identified by @a Field
- */
-void addX509SubjectEntry(X509_NAME* Name, const char* FieldID, const char* Value)
+/// Adds a subject entry to an X509 certificate.
+/// @param name The subject name of the certificate the entry is added to
+/// @param fieldId The name of the object being added to the subject
+/// @param value The value to set for the object identified by fieldId
+void addX509SubjectEntry(X509_NAME* name, const char* fieldId, const char* value)
 {
-    X509_NAME_add_entry_by_txt(Name, FieldID, MBSTRING_ASC,
-                               reinterpret_cast<const uchar*>(Value), -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name, fieldId, MBSTRING_ASC,
+                               reinterpret_cast<const unsigned char*>(value), -1,
+                               -1, 0);
 }
 
-/**
- * @brief Helper function to add an X509v3 extension to a certificate
- *
- * @param Cert The certificate to which the extension should be added
- * @param NID The extension NID
- * @param Value The extension content
- */
-void addX509v3Extension(X509& Cert, int NID, const char* Value)
+/// Adds an X509v3 extension to a certificate.
+/// @param cert The certificate the extension is added to
+/// @param nid The extension NID
+/// @param value The extension content
+void addX509v3Extension(X509& cert, int nid, const char* value)
 {
-    X509V3_CTX Ctx;
-    X509V3_set_ctx_nodb(&Ctx);
-    X509V3_set_ctx(&Ctx, &Cert, &Cert, nullptr, nullptr, 0);
+    X509V3_CTX ctx;
+    X509V3_set_ctx_nodb(&ctx);
+    X509V3_set_ctx(&ctx, &cert, &cert, nullptr, nullptr, 0);
 
-    auto* Ext = X509V3_EXT_conf_nid(nullptr, &Ctx, NID, Value);
-    if (!Ext)
+    auto* ext = X509V3_EXT_conf_nid(nullptr, &ctx, nid, value);
+    if (!ext)
     {
-        throw COpenSSLError{"Could not add X509v3 extension to the certificate"};
+        throw OpenSslError{"Could not add X509v3 extension to the certificate"};
     }
 
-    X509_add_ext(&Cert, Ext, -1);
-    X509_EXTENSION_free(Ext);
+    X509_add_ext(&cert, ext, -1);
+    X509_EXTENSION_free(ext);
 }
 
-/**
- * @brief Helper function to generate a list of subject alternative names for a
- * given address.
- *
- * @param Address Either a host name or an IP.
- *
- * @return A list of SANs with all names and addresses associated with the given
- * address.
- */
-QStringList generateSubjectAlternativeNames(const QString& Address)
+/// Builds the comma-joined subject alternative name (SAN) list for a
+/// certificate: "DNS:localhost", this host's own DNS name (if any), and one
+/// "IP.<n>:<addr>" entry per address — the numbered format
+/// X509V3_EXT_conf_nid expects for subjectAltName.
+///
+/// The original resolved the ip argument via DNS (QHostInfo::fromName) and
+/// only enumerated every network interface when the first resolved address
+/// was a wildcard (0.0.0.0 / ::). This port skips that DNS lookup entirely:
+/// ip is the address the server binds to, and resolving a bind address
+/// through DNS makes no sense. An empty ip or an explicit wildcard
+/// ("0.0.0.0" / "::") still means "all interfaces"; any other value is used
+/// as-is, unresolved.
+/// @param ip The bind address, or empty/a wildcard for "all interfaces"
+/// @return The SAN list, already comma-joined
+std::string generateSubjectAlternativeNames(const std::string& ip)
 {
-    QStringList SubjectAltNames{"DNS:localhost"};
+    std::string sans = "DNS:localhost";
 
-    if (!QHostInfo::localHostName().isEmpty())
+    // POSIX caps a host name at 255 bytes (_POSIX_HOST_NAME_MAX); using a
+    // fixed 256-byte buffer avoids depending on HOST_NAME_MAX, which needs
+    // feature-test macros to be visible from <limits.h>.
+    char hostname[256] = {};
+    if (gethostname(hostname, sizeof(hostname)) == 0 && hostname[0] != '\0')
     {
-        SubjectAltNames.append(QString{"DNS:"} + QHostInfo::localHostName());
+        sans += ",DNS:";
+        sans += hostname;
     }
 
-    auto Addresses = QHostInfo::fromName(Address).addresses();
-    if (!Addresses.empty()
-        && (Addresses.constFirst() == QHostAddress::Any
-            || Addresses.constFirst() == QHostAddress::AnyIPv4
-            || Addresses.constFirst() == QHostAddress::AnyIPv6))
+    int sanIpIndex = 0;
+    const auto addSanIp = [&sans, &sanIpIndex](const std::string& addr) {
+        sans += ",IP." + std::to_string(sanIpIndex++) + ":" + addr;
+    };
+
+    if (ip.empty() || ip == "0.0.0.0" || ip == "::")
     {
-        Addresses = QNetworkInterface::allAddresses();
+        // getifaddrs hands back a linked list that must be released with
+        // freeifaddrs on every path, including exceptions thrown further
+        // down — wrap it immediately so the unique_ptr's destructor does
+        // that instead of a manual free at each exit point.
+        ifaddrs* rawInterfaces = nullptr;
+        if (getifaddrs(&rawInterfaces) != 0)
+        {
+            throw OpenSslError{"Could not enumerate network interfaces"};
+        }
+        const auto interfaces = std::unique_ptr<ifaddrs, void (*)(ifaddrs*)>{
+            rawInterfaces, freeifaddrs};
+
+        for (auto* iface = interfaces.get(); iface != nullptr;
+             iface = iface->ifa_next)
+        {
+            if (iface->ifa_addr == nullptr)
+            {
+                continue;
+            }
+            const auto family = iface->ifa_addr->sa_family;
+            if (family != AF_INET && family != AF_INET6)
+            {
+                continue;
+            }
+
+            // The original did not filter out loopback interfaces, so
+            // neither does this port.
+            const void* addr = nullptr;
+            if (family == AF_INET)
+            {
+                addr = &reinterpret_cast<sockaddr_in*>(iface->ifa_addr)->sin_addr;
+            }
+            else
+            {
+                addr = &reinterpret_cast<sockaddr_in6*>(iface->ifa_addr)->sin6_addr;
+            }
+
+            char addrBuffer[INET6_ADDRSTRLEN] = {};
+            if (inet_ntop(family, addr, addrBuffer, sizeof(addrBuffer)) != nullptr)
+            {
+                addSanIp(addrBuffer);
+            }
+        }
+    }
+    else
+    {
+        addSanIp(ip);
     }
 
-    std::transform(
-        std::cbegin(Addresses), std::cend(Addresses),
-        std::back_inserter(SubjectAltNames), [i = 0](const auto& Addr) mutable {
-            return QString{"IP.%1:%2"}.arg(i++).arg(
-                Addr.toString().remove("%" + Addr.scopeId()));
-        });
-
-    return SubjectAltNames;
+    return sans;
 }
 
 OpenSslError::OpenSslError(const std::string& description)
@@ -111,14 +161,22 @@ OpenSslError::OpenSslError(const std::string& description)
 // EVP_RSA_gen(bits) generates an RSA key with exponent 65537 (same as
 // RSA_F4) in a single call, so it replaces the whole chain. The original
 // hard-coded the key length at 4096; here it is a bits argument (default
-// 2048) — 2048 matches the reference implementation sila_java's default
-// (SelfSignedCertificate.KeySize.SIZE_2048). Generating a 4096-bit key adds
-// a few seconds to the very first boot before a certificate exists — a
-// one-time cost, not one paid on every boot — but nothing about this
-// self-signed device certificate's threat model justifies paying it.
+// 2048) — generating a 4096-bit key adds a few seconds to the very first
+// boot before a certificate exists. That cost is paid once, not on every
+// boot, but nothing about this self-signed device certificate's threat
+// model justifies paying it.
 EvpPkeyPtr generateKey(int bits)
 {
-    auto* rawKey = EVP_RSA_gen(static_cast<unsigned int>(bits));
+    // EVP_RSA_gen is the macro EVP_PKEY_Q_keygen(..., (size_t)(0 + (bits))),
+    // which already casts bits for us. A negative bits value would wrap to
+    // a huge size_t in that cast, so it is rejected here instead of being
+    // handed to a macro that would silently wrap it twice.
+    if (bits <= 0)
+    {
+        throw OpenSslError{"Key size must be positive"};
+    }
+
+    auto* rawKey = EVP_RSA_gen(bits);
     if (rawKey == nullptr)
     {
         throw OpenSslError{"Could not generate RSA private key"};
@@ -127,86 +185,127 @@ EvpPkeyPtr generateKey(int bits)
     return EvpPkeyPtr{rawKey, EVP_PKEY_free};
 }
 
-// Only the signature was matched to TlsConfig.h (Qt types -> std::string).
-// The body still uses Qt (QString/QUuid) code as-is, so this will not
-// compile yet — porting the body, including SAN collection and the subject
-// name, is deferred to the next batch.
 X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
                             const std::string& ip, const std::string& serverUuid)
 {
-    qCDebug(sila_cpp_common)
-        << "Generating X509 certificate for host" << Hostname << "with IP" << IP;
-
     // 1. Allocate the x509 structure
-    x509_unique_ptr Cert{X509_new(), X509_free};
-    if (!Cert)
+    X509Ptr cert{X509_new(), X509_free};
+    if (!cert)
     {
-        throw COpenSSLError{"Could not allocate X509 structure"};
+        throw OpenSslError{"Could not allocate X509 structure"};
     }
 
     // 2. Set necessary attributes
     // 2.1 Serial number
-    ASN1_INTEGER_set(X509_get_serialNumber(Cert.get()), 1);
+    //
+    // The original hard-coded serial number 1. Every SiLA server on the
+    // same network then gets the same serial *and* the same issuer DN (all
+    // "CN=SiLA2", same organization), so the (issuer, serial) pair — the
+    // thing X.509 uses to uniquely identify a certificate — collides
+    // across every server. sila_java avoids this with `new BigInteger(64,
+    // secureRandom)`; BN_rand + BN_to_ASN1_INTEGER is the OpenSSL
+    // equivalent. BN_rand never sets the BIGNUM's sign bit, and
+    // BN_to_ASN1_INTEGER DER-encodes a non-negative BIGNUM with the
+    // required zero-padding, so the serial comes out positive with no
+    // extra step.
+    const auto serial = bignum_unique_ptr{BN_new(), BN_free};
+    if (serial == nullptr)
+    {
+        throw OpenSslError{"Could not allocate certificate serial number"};
+    }
+    if (BN_rand(serial.get(), 64, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY) == 0)
+    {
+        throw OpenSslError{"Could not generate a random certificate serial number"};
+    }
+    if (BN_to_ASN1_INTEGER(serial.get(), X509_get_serialNumber(cert.get()))
+        == nullptr)
+    {
+        throw OpenSslError{"Could not set certificate serial number"};
+    }
+
     // 2.2 Valid days
     // beginning now
-    X509_time_adj_ex(X509_get_notBefore(Cert.get()), 0, 0, nullptr);
+    X509_time_adj_ex(X509_get_notBefore(cert.get()), 0, 0, nullptr);
     // ending a year from now
-    X509_time_adj_ex(X509_get_notAfter(Cert.get()), 365, 0, nullptr);
+    X509_time_adj_ex(X509_get_notAfter(cert.get()), 365, 0, nullptr);
     // 2.3 the public key
-    X509_set_pubkey(Cert.get(), Key.get());
+    X509_set_pubkey(cert.get(), key.get());
     // 2.4 the certificate version
-    X509_set_version(Cert.get(), 2);
-    // 2.5 construct the issuer name from the subject name adding country
-    // code, location, common name, and organization
-    auto* IssuerName = X509_get_subject_name(Cert.get());
-    addX509SubjectEntry(IssuerName, "C", "CH");   ///< Switzerland
-    addX509SubjectEntry(IssuerName, "ST", "SG");  ///< Canton of St. Gallen
-    addX509SubjectEntry(IssuerName, "L", "Rapperswil-Jona");
+    X509_set_version(cert.get(), 2);
+    // 2.5 fill in the subject name, then reuse it as the issuer name too
+    // (this is a self-signed certificate, so subject and issuer are the
+    // same). No normative SiLA2 spec text was found pinning these DN
+    // fields (country/state/locality/org) to these exact values —
+    // sila_cpp and sila_java both use the same ones, so they are kept
+    // here for interoperability with other SiLA2 implementations.
+    auto* subjectName = X509_get_subject_name(cert.get());
+    addX509SubjectEntry(subjectName, "C", "CH");   ///< Switzerland
+    addX509SubjectEntry(subjectName, "ST", "SG");  ///< Canton of St. Gallen
+    addX509SubjectEntry(subjectName, "L", "Rapperswil-Jona");
     addX509SubjectEntry(
-        IssuerName, "O",
+        subjectName, "O",
         "Association Consortium Standardization in Lab Automation (SiLA)");
-    addX509SubjectEntry(IssuerName, "CN", Hostname.c_str());
-    X509_set_issuer_name(Cert.get(), IssuerName);
+    addX509SubjectEntry(subjectName, "CN", hostname.c_str());
+    X509_set_issuer_name(cert.get(), subjectName);
 
-    if (Hostname == "SiLA2")
+    // The UUID OID below is only added when hostname is "SiLA2" — sila_java's
+    // comment on this same check cites it as "as specified in SiLA2
+    // Standard Part B".
+    if (hostname == "SiLA2")
     {
-        // 2.5 OID 1.3.536 with the UUID
-        const auto UUIDString =
-            ServerUUID.toString(QUuid::WithoutBraces).toStdString();
-        asn1_octet_string_unique_ptr Value{ASN1_OCTET_STRING_new(),
-                                           ASN1_OCTET_STRING_free};
-        ASN1_OCTET_STRING_set(
-            Value.get(),
-            reinterpret_cast<const unsigned char*>(UUIDString.c_str()),
-            static_cast<int>(UUIDString.length()));
+        // 2.5 OID 1.3.536 with the UUID.
+        //
+        // sila_cpp defines this OID as SILA2_IANA_PEN in
+        // sila_cpp/common/constants.h; sila_java's SelfSignedCertificate.java
+        // uses the same value, so it is inlined here instead of pulling in
+        // that header for one constant.
+        constexpr auto kSila2IanaPen = "1.3.6.1.4.1.58583";
 
-        const auto NID = OBJ_create(constants::SILA2_IANA_PEN, "sila2ServerUUID",
-                                    "ASN.1 - Server UUID of the SiLA 2 Server");
-        const auto Extension = x509_extension_unique_ptr{
-            X509_EXTENSION_create_by_NID(nullptr, NID, 0, Value.get()),
+        asn1_octet_string_unique_ptr uuidValue{ASN1_OCTET_STRING_new(),
+                                               ASN1_OCTET_STRING_free};
+        ASN1_OCTET_STRING_set(
+            uuidValue.get(),
+            reinterpret_cast<const unsigned char*>(serverUuid.c_str()),
+            static_cast<int>(serverUuid.length()));
+
+        const auto serverUuidNid = OBJ_create(
+            kSila2IanaPen, "sila2ServerUUID",
+            "ASN.1 - Server UUID of the SiLA 2 Server");
+        const auto uuidExtension = x509_extension_unique_ptr{
+            X509_EXTENSION_create_by_NID(nullptr, serverUuidNid, 0,
+                                         uuidValue.get()),
             X509_EXTENSION_free};
-        X509_add_ext(Cert.get(), Extension.get(), -1);
+        X509_add_ext(cert.get(), uuidExtension.get(), -1);
     }
 
     // 2.6 subject alternative names
-    addX509v3Extension(*Cert, NID_subject_alt_name,
-                       generateSubjectAlternativeNames(IP).join(',').toLatin1());
+    addX509v3Extension(*cert, NID_subject_alt_name,
+                       generateSubjectAlternativeNames(ip).c_str());
 
     // 2.7 subject key identifier
-    addX509v3Extension(*Cert, NID_subject_key_identifier, "hash");
+    addX509v3Extension(*cert, NID_subject_key_identifier, "hash");
 
     // 2.8 key usage flags
-    addX509v3Extension(*Cert, NID_key_usage,
+    addX509v3Extension(*cert, NID_key_usage,
                        "critical,digitalSignature,keyEncipherment,keyCertSign");
-    addX509v3Extension(*Cert, NID_ext_key_usage, "serverAuth,clientAuth");
+    addX509v3Extension(*cert, NID_ext_key_usage, "serverAuth,clientAuth");
+
+    // 2.9 basic constraints
+    //
+    // sila_cpp does not set this extension; sila_java's
+    // SelfSignedCertificate sets it as a critical BasicConstraints(false).
+    // keyUsage above already turns on keyCertSign, so without
+    // basicConstraints marking this certificate as "not a CA", nothing
+    // stops it from being used to sign further certificates.
+    addX509v3Extension(*cert, NID_basic_constraints, "critical,CA:FALSE");
 
     // 3. sign the certificate with our key
-    if (X509_sign(Cert.get(), Key.get(), EVP_sha256()) == 0)
+    if (X509_sign(cert.get(), key.get(), EVP_sha256()) == 0)
     {
-        throw COpenSSLError{"Could not sign the certificate"};
+        throw OpenSslError{"Could not sign the certificate"};
     }
 
-    return Cert;
+    return cert;
 }
 
 // The original (keyToString/certificateToString) discarded the length that
