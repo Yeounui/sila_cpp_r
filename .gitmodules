@@ -1,0 +1,3 @@
+[submodule "third_party/sila_base"]
+	path = third_party/sila_base
+	url = https://gitlab.com/SiLA2/sila_base.git

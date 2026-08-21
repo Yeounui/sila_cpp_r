@@ -1,0 +1,68 @@
+# ── Build artifacts ──────────────────────────────────────
+build/
+cmake-build-*/
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.ninja
+.ninja_log
+compile_commands.json
+install_manifest.txt
+
+# Codegen output
+generated/
+
+# ── C/C++ ────────────────────────────────────────────────
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.pb.h
+*.pb.cc
+*.grpc.pb.h
+*.grpc.pb.cc
+
+# ── Python (codegen) ─────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ── Local-only reference material ──
+reference/sila_java/
+reference/sila_cpp/
+
+
+# ── TLS/auth certs (e.g. SilaServerBase self-signed certs) ─
+*.pem
+*.key
+*.crt
+*.p12
+!third_party/**/*.pem
+
+# ── OS ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Claude Code / MCP ────────────────────────────────────
+# Shared project settings (.claude/settings.json, agents/, skills/) are tracked.
+# Only local-only / sensitive files are excluded.
+.claude/**
+.mcp.json
+CLAUDE.md
+repo_skeleton.md
+
+# Local env files that commonly hold API keys/tokens
+.env
