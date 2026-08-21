@@ -5,6 +5,7 @@
     "protobuf",
     "grpc",
     "pugixml",
+    "mdns",
     "openssl",
     {
       "name": "gtest",

@@ -26,7 +26,7 @@ flowchart TB
         subgraph runtime["런타임 프로세스"]
             SilaServer["SilaServerBase<br/>(gRPC Server)"]
             SilaClient["SilaClientBase<br/>(gRPC Client, optional)"]
-            Mdns["MdnsPublisher<br/>(Avahi)"]
+            Mdns["MdnsPublisher<br/>(mdns · 헤더 전용)"]
         end
     end
 
@@ -47,7 +47,7 @@ flowchart TB
 본 프로젝트는 실행 파일을 산출하지 않는 라이브러리로써, 랩 장비 제어 프로그램과 오케스트레이터 양쪽이 하위 모듈로 링크. 오케스트레이터는 빌드 시 FDL을 모르는 장비를 발견하여 제어하므로 동적 호출 경로(§4)를 요구, 장비 측은 서버 코어만 사용.
 | 노출 타깃 | 내용 | 의존 |
 |---|---|---|
-| `sila2::core` | 서버 5축·트랜스포트 어댑터·타입 매핑·정적 stub 클라이언트·mDNS | gRPC, protobuf, Avahi |
+| `sila2::core` | 서버 5축·트랜스포트 어댑터·타입 매핑·정적 stub 클라이언트·mDNS | gRPC, protobuf, mdns |
 | `sila2::dynamic` | 런타임 FDL 파싱 → Descriptor 조립 → `GenericStub` 호출, `ServerRegistry`, `Any` 코덱 (§2.1, §4.2, §4.4) | `sila2::core` + pugixml |
 
 - 소비 방식은 상위 저장소가 `add_subdirectory`로 직접 포함하거나 `install`/`export`한 패키지를 `find_package(sila2_cpp_foundation)`로 참조하는 두 가지. codegen 산출물(§2)은 FDL 집합이 소비자마다 다르므로 소비자 빌드 트리에 생성.
@@ -130,7 +130,7 @@ flowchart TB
         subgraph Boot["부팅/구성 (요청 경로 밖)"]
             CFG["ServerConfig<br/>UUID·Name 영속화<br/>(재시작 후에도 동일 UUID)"]
             TLS["TlsConfig<br/>인증서 로드 / 자체서명 생성"]
-            MDNS["MdnsPublisher<br/>Avahi _sila._tcp 광고"]
+            MDNS["MdnsPublisher<br/>_sila._tcp 광고 + 질의 응답 스레드"]
         end
 
         subgraph TP["트랜스포트 어댑터 (§3.8)"]
@@ -366,8 +366,8 @@ sequenceDiagram
 
 - **`ServerConfig`**: 클라이언트가 UUID로 서버를 식별해 바인딩하므로 Server UUID와 Name은 재시작 후에도 동일해야함, 영속(파일) 구현과 비영속(테스트용) 구현은 인터페이스로 분리. UUID는 최초 부팅 시 1회 생성 후 저장.
 - **`TlsConfig`**: SiLA2는 TLS를 요구, 자체서명 인증서를 허용 — 인증서가 없으면 생성, 있으면 로드. 생성한 인증서는 `ServerConfig`와 같은 위치에 영속.
-- **`MdnsPublisher`**: TXT 레코드에 `ServerConfig`의 UUID와 SiLA 버전을 실음.
-- 런타임 조정값도 `ServerConfig`가 보유: 구독별 큐 깊이(기본 16, §3.3), `BinaryStore` 파일 스풀 임계 크기와 슬롯 수명(§3.5), 서버 개시 연결의 write 임계 시간(§3.9), `AuthorizationProvider` UUID(§3.11), 기본 에러 핸들링 타임아웃(§3.12).
+- **`MdnsPublisher`**: 데몬을 경유하지 않고 프로세스가 5353 멀티캐스트 소켓을 직접 보유(§6). mDNS 인스턴스 이름은 `ServerName`, TXT 레코드에 `ServerConfig`의 UUID와 SiLA 버전을 실음. `SiLAService.SetServerName`이 이름을 런타임에 바꾸므로 인스턴스 이름은 재시작 후 동일할 필요가 없고, 클라이언트 재바인딩 근거는 TXT의 UUID.
+- 런타임 조정값도 `ServerConfig`가 보유: 구독별 큐 깊이(기본 16, §3.3), `BinaryStore` 파일 스풀 임계 크기와 슬롯 수명(§3.5), 서버 개시 연결의 write 임계 시간(§3.9), `AuthorizationProvider` UUID(§3.11), 기본 에러 핸들링 타임아웃(§3.12), mDNS 재광고 주기·레코드 TTL·프로브 응답 대기 시간(§6).
 - access token(§3.11)은 자격증명 파생물을 평문으로 디스크에 남기지 않기 위해 영속 대상에서 제외, 재시작 후 복구 비용은 `Login` 1회.
 
 ### 3.8 트랜스포트 추상화 — `CallContext` / `ResponseSink`
@@ -520,7 +520,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph ClientProc["클라이언트 프로세스 (오케스트레이터 · 검증 테스트)"]
-        Discovery["mDNS Browser<br/>(Avahi)<br/>_sila._tcp 탐색"]
+        Discovery["MdnsBrowser (§6)<br/>_sila._tcp 탐색"]
         Reg["ServerRegistry (§4.4)<br/>UUID → 주소·채널·카탈로그"]
         SCB["SilaClientBase<br/>grpc::Channel 관리<br/>mTLS handshake"]
         Stubs["Feature Stub들<br/>(생성된 *.grpc.pb.h)"]
@@ -673,22 +673,49 @@ sequenceDiagram
 
 ## 6. 디스커버리 흐름 (mDNS)
 
+mDNS 응답기를 시스템 데몬에 위임하지 않고 `mdns`(mjansson, Unlicense) 헤더 전용 라이브러리 위에 코어가 직접 구현. 라이브러리는 소켓 개설(`mdns_socket_open_ipv4`·`_ipv6`)과 레코드 단위 송수신(`mdns_announce_multicast`·`mdns_goodbye_multicast`·`mdns_socket_listen`·`mdns_query_answer_multicast`·`mdns_query_send`·`mdns_discovery_send`·`mdns_query_recv`) 제공. 내부 할당이 없어 수신 버퍼·스레드·레코드 수명은 코어 몫.
+
 ```mermaid
 sequenceDiagram
     participant S as SilaServer
-    participant AvahiS as Avahi (서버 호스트)
-    participant Net as mDNS Multicast (224.0.0.251:5353)
-    participant AvahiC as Avahi (클라이언트 호스트)
+    participant P as MdnsPublisher<br/>(IPv4·IPv6 소켓 + 응답 스레드)
+    participant Net as mDNS Multicast<br/>(224.0.0.251 · ff02::fb : 5353)
+    participant B as MdnsBrowser<br/>(자체 소켓 + 수신 스레드)
     participant C as SiLA Client
 
-    S->>AvahiS: MdnsPublisher.Publish()<br/>service=_sila._tcp<br/>TXT: server_uuid, version
-    AvahiS->>Net: mDNS Announce
-    C->>AvahiC: Browse(_sila._tcp)
-    AvahiC->>Net: mDNS Query
-    Net-->>AvahiC: Response (host, port, TXT)
-    AvahiC-->>C: ResolveEvent{host, port, uuid}
+    S->>P: Publish(ServerName)<br/>instance = ServerName 63바이트 절단
+    P->>Net: mdns_query_send (SRV, 후보 이름) — 축약 프로브
+    alt 대기 시간 내 응답 없음
+        P->>Net: mdns_announce_multicast<br/>PTR·SRV·TXT·A/AAAA (비요청 응답)
+    else 응답 도달 — 이름 사용 중
+        P->>P: 접미사 " (2)" 부여 후 재질의
+    end
+    loop 재광고 주기 (ServerConfig, §3.7)
+        P->>Net: 재광고 — 레코드 TTL 갱신
+    end
+
+    C->>B: Browse(_sila._tcp)
+    B->>Net: mdns_query_send (PTR)
+    Net-->>P: 질의 도달
+    P->>Net: mdns_query_answer_multicast<br/>(mdns_socket_listen 루프가 처리)
+    Net-->>B: PTR·SRV·TXT·A/AAAA
+    B-->>C: ResolveEvent{host, port, uuid}
     C->>S: gRPC 채널 수립 (mTLS handshake)
+
+    S->>P: Shutdown()
+    P->>Net: mdns_goodbye_multicast (TTL 0)
+    Net-->>B: goodbye
+    B-->>C: 연결 상태 변경 (§4.4)
 ```
+- `MdnsPublisher`는 광고 외에 `mdns_socket_listen` 루프 스레드를 함께 보유. 비요청 응답 1회로는 광고 이후 켜진 클라이언트의 질의에 답하지 못하므로, 응답 경로가 데몬 없이 성립하려면 이 루프가 필수.
+- 인스턴스 이름은 `ServerName`(§3.7). `avahi-browse`와 타 SiLA 클라이언트 목록에서 장비를 사람이 식별하는 값이므로 UUID 파생 이름을 쓰지 않고, 대신 중복 가능성이 생겨 충돌 해소가 필요.
+- 충돌 해소는 축약 프로브 — 광고 전 후보 이름으로 SRV 질의 1회, `ServerConfig`(§3.7)의 대기 시간 내 응답이 오면 RFC 6762 §9 관례대로 접미사 `" (2)"`를 붙여 재질의. RFC 6762 §8의 250ms 간격 3회 프로브와 rate limit은 도입하지 않음(§9.2), 부팅 지연을 질의 1회분으로 묶는 쪽을 택함.
+- `ServerName`의 FDL 제약은 `MaximalLength` 255인 반면 mDNS 인스턴스 레이블은 63바이트(RFC 6763 §4.1.1)이므로, 후보 이름은 UTF-8 경계에서 63바이트로 절단. 접미사 부여 시 접미사를 포함해 63바이트가 유지되도록 재절단.
+- `SiLAService.SetServerName` 수신 시 goodbye 후 새 이름으로 프로브·재광고. 이름이 바뀌어도 TXT의 UUID가 같으므로 `ServerRegistry`(§4.4)는 같은 항목으로 판정.
+- 재광고 주기와 레코드 TTL은 `ServerConfig`(§3.7) 조정값. 데몬이 맡던 갱신 책임이 이 타이머로 옮겨옴.
+- `MdnsBrowser`는 자체 소켓·스레드로 `_sila._tcp` PTR 질의 후 SRV·TXT·A/AAAA를 조립하여 `ResolveEvent` 산출, goodbye 수신은 `ServerRegistry`(§4.4)의 연결 상태 소스 둘 중 하나.
+- 같은 호스트에 `avahi-daemon`이 상주하는 경우 `SO_REUSEADDR`·`SO_REUSEPORT`로 5353 공존. 데몬은 코어가 조립한 레코드를 모르므로 `_sila._tcp` 응답을 분담하지 않음.
+- IPv4·IPv6 소켓을 함께 열고 A·AAAA를 모두 광고, Publisher와 Browser가 각자 소켓 쌍과 스레드를 소유하여 장비 측 빌드에 질의 경로가, 오케스트레이터 빌드에 응답 경로가 들어가지 않음.
 
 ## 7. 테스트 레이어와 신뢰 경계
 
@@ -696,7 +723,7 @@ sequenceDiagram
 flowchart TB
     subgraph unit["단위 테스트"]
         T1["tests/codegen/<br/>test_fdl_parser.py<br/>test_proto_emitter.py<br/>test_meta_emitter.py<br/>(fixtures: sila_base 실제 FDL)"]
-        T2["tests/sila/<br/>test_feature_registry.cc<br/>test_observable_command.cc<br/>test_observable_property.cc<br/>test_errors.cc<br/>test_binary_store.cc<br/>test_metadata_interceptor.cc<br/>test_auth_token_store.cc<br/>test_authorization_interceptor.cc<br/>test_error_recovery.cc"]
+        T2["tests/sila/<br/>test_feature_registry.cc<br/>test_observable_command.cc<br/>test_observable_property.cc<br/>test_errors.cc<br/>test_binary_store.cc<br/>test_metadata_interceptor.cc<br/>test_auth_token_store.cc<br/>test_authorization_interceptor.cc<br/>test_error_recovery.cc<br/>test_mdns_records.cc"]
         T5["tests/dynamic/<br/>test_descriptor_builder.cc<br/>(.desc ↔ 런타임 빌더 등가성)<br/>test_dynamic_call.cc<br/>test_feature_catalog.cc"]
     end
 
@@ -757,3 +784,4 @@ flowchart TB
 ### 9.2 미결정/후속 트랙
 
 - 서버 개시 연결(§3.9)의 외부 검증 레퍼런스 부재 — sila_python이 이 모드를 지원하지 않아 자체 `CloudClientEndpoint`(§4.5)로 자기 검증. 상호운용성은 sila_java 서버·클라이언트와 맞대볼 시점에 확인.
+- 자체 mDNS 응답기(§6)의 상호운용 — 데몬 대신 코어가 레코드를 내보내므로, sila_java의 JmDNS·sila_python의 zeroconf가 `MdnsPublisher` 광고를 해석하는지와 `avahi-daemon` 상주 호스트에서의 5353 공존이 실측 대상. 축약 프로브(§6)가 놓치는 충돌 사례가 드러나는 경우 RFC 6762 §8 전량 프로브 도입이 후속 트랙.
