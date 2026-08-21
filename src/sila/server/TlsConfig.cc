@@ -1,9 +1,10 @@
 // TlsConfig.cc
 //
-// 출처: sila_cpp v0.3.11 src/lib/common/SelfSignedCertificateHelper.cpp를
-// 이식했다 (MIT License, Copyright 2020 SiLA2). 대부분
-// https://gist.github.com/nathan-osman/5041136 및
-// https://stackoverflow.com/a/57478849/12780516 을 참고해 작성된 코드다.
+// Ported from sila_cpp v0.3.11
+// src/lib/common/SelfSignedCertificateHelper.cpp (MIT License, Copyright
+// 2020 SiLA2). Most of this was adapted from
+// https://gist.github.com/nathan-osman/5041136 and
+// https://stackoverflow.com/a/57478849/12780516.
 #include "TlsConfig.h"
 
 #include <QHostInfo>
@@ -11,20 +12,19 @@
 
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <openssl/rsa.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
 #include <iterator>
 
-using namespace std;
-
 namespace sila2
 {
 using asn1_octet_string_unique_ptr =
-    unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
-using bio_unique_ptr = unique_ptr<BIO, int (*)(BIO*)>;
+    std::unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
+using bio_unique_ptr = std::unique_ptr<BIO, int (*)(BIO*)>;
 using x509_extension_unique_ptr =
-    unique_ptr<X509_EXTENSION, void (*)(X509_EXTENSION*)>;
+    std::unique_ptr<X509_EXTENSION, void (*)(X509_EXTENSION*)>;
 
 /**
  * @brief Helper function to add a subject entry to an X509 certificate
@@ -90,27 +90,32 @@ QStringList generateSubjectAlternativeNames(const QString& Address)
         Addresses = QNetworkInterface::allAddresses();
     }
 
-    transform(cbegin(Addresses), cend(Addresses), back_inserter(SubjectAltNames),
-              [i = 0](const auto& Addr) mutable {
-                  return QString{"IP.%1:%2"}.arg(i++).arg(
-                      Addr.toString().remove("%" + Addr.scopeId()));
-              });
+    std::transform(
+        std::cbegin(Addresses), std::cend(Addresses),
+        std::back_inserter(SubjectAltNames), [i = 0](const auto& Addr) mutable {
+            return QString{"IP.%1:%2"}.arg(i++).arg(
+                Addr.toString().remove("%" + Addr.scopeId()));
+        });
 
     return SubjectAltNames;
 }
 
 OpenSslError::OpenSslError(const std::string& description)
-    : runtime_error{description
-                    + "\nOpenSSL: " + ERR_error_string(ERR_get_error(), nullptr)}
+    : std::runtime_error{
+          description + "\nOpenSSL: " + ERR_error_string(ERR_get_error(), nullptr)}
 {}
 
-// 원본은 RSA_new() + BN_new/BN_set_word(RSA_F4) + BN_GENCB 진행 콜백 +
-// RSA_generate_key_ex + EVP_PKEY_assign_RSA 네 단계를 거쳐 키를 만들었다.
-// 이 API들은 OpenSSL 3.0부터 전부 deprecated다. EVP_RSA_gen(bits) 한 번
-// 호출로 지수 65537(RSA_F4와 동일)짜리 RSA 키를 바로 만들 수 있으므로
-// 그것으로 대체한다. 원본은 키 길이를 4096으로 못박았지만, 이 프로젝트에서는
-// bits 인자(기본값 2048)로 받는다 — 2048이 현재 RSA 권장 최소치이고, 4096은
-// 신규 발급 기준으로도 과도해 핸드셰이크 비용만 늘어난다.
+// The original built the key via RSA_new() + BN_new()/BN_set_word(RSA_F4) +
+// a BN_GENCB progress callback + RSA_generate_key_ex() +
+// EVP_PKEY_assign_RSA() — four steps, all deprecated since OpenSSL 3.0.
+// EVP_RSA_gen(bits) generates an RSA key with exponent 65537 (same as
+// RSA_F4) in a single call, so it replaces the whole chain. The original
+// hard-coded the key length at 4096; here it is a bits argument (default
+// 2048) — 2048 matches the reference implementation sila_java's default
+// (SelfSignedCertificate.KeySize.SIZE_2048). Generating a 4096-bit key adds
+// a few seconds to the very first boot before a certificate exists — a
+// one-time cost, not one paid on every boot — but nothing about this
+// self-signed device certificate's threat model justifies paying it.
 EvpPkeyPtr generateKey(int bits)
 {
     auto* rawKey = EVP_RSA_gen(static_cast<unsigned int>(bits));
@@ -122,11 +127,12 @@ EvpPkeyPtr generateKey(int bits)
     return EvpPkeyPtr{rawKey, EVP_PKEY_free};
 }
 
-// 시그니처만 TlsConfig.h에 맞췄다(Qt 타입 → std::string). 본문은 아직
-// Qt(QString/QUuid) 코드를 그대로 쓰고 있어 이 상태로는 컴파일되지 않는다 —
-// SAN 수집·주체 이름 처리를 포함한 본문 이식은 다음 배치에서 한다.
-X509Ptr generateCertificate(const EvpPkeyPtr& key, const string& hostname,
-                             const string& ip, const string& serverUuid)
+// Only the signature was matched to TlsConfig.h (Qt types -> std::string).
+// The body still uses Qt (QString/QUuid) code as-is, so this will not
+// compile yet — porting the body, including SAN collection and the subject
+// name, is deferred to the next batch.
+X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
+                            const std::string& ip, const std::string& serverUuid)
 {
     qCDebug(sila_cpp_common)
         << "Generating X509 certificate for host" << Hostname << "with IP" << IP;
@@ -203,12 +209,16 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const string& hostname,
     return Cert;
 }
 
-// 원본(keyToString/certificateToString)은 BIO_get_mem_data가 함께 돌려주는
-// 길이를 버리고 string{Buffer}로 변환했다. PEM_write_bio_*가 채운 버퍼는
-// NUL로 끝난다는 보장이 없으므로 그 방식은 버퍼 밖을 읽을 수 있는 버그다.
-// 여기서는 길이를 pemLength라는 이름으로 따로 받아 std::string 생성자에
-// 그대로 넘긴다.
-string keyToPem(const EvpPkeyPtr& key)
+// The original (keyToString/certificateToString) discarded the length that
+// BIO_get_mem_data also returns and converted with string{Buffer}. Buffers
+// filled by PEM_write_bio_* are not guaranteed to be NUL-terminated, so
+// that approach can read past the end of the buffer. Here the length is
+// captured as pemLength and passed straight to the std::string constructor.
+// BIO_get_mem_data is the BIO_ctrl macro and returns a long, which comes
+// back negative on failure — casting a negative value to std::size_t would
+// produce a huge size and crash the std::string construction, so pemLength
+// is checked before the cast.
+std::string keyToPem(const EvpPkeyPtr& key)
 {
     const auto pemBio = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
     const auto wroteOk = PEM_write_bio_PrivateKey(pemBio.get(), key.get(), nullptr,
@@ -220,10 +230,14 @@ string keyToPem(const EvpPkeyPtr& key)
 
     char* pemBuffer = nullptr;
     const auto pemLength = BIO_get_mem_data(pemBio.get(), &pemBuffer);
-    return string{pemBuffer, static_cast<size_t>(pemLength)};
+    if (pemLength < 0)
+    {
+        throw OpenSslError{"Could not read PEM buffer length"};
+    }
+    return std::string{pemBuffer, static_cast<std::size_t>(pemLength)};
 }
 
-string certificateToPem(const X509Ptr& certificate)
+std::string certificateToPem(const X509Ptr& certificate)
 {
     const auto pemBio = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
     const auto wroteOk = PEM_write_bio_X509(pemBio.get(), certificate.get());
@@ -234,6 +248,10 @@ string certificateToPem(const X509Ptr& certificate)
 
     char* pemBuffer = nullptr;
     const auto pemLength = BIO_get_mem_data(pemBio.get(), &pemBuffer);
-    return string{pemBuffer, static_cast<size_t>(pemLength)};
+    if (pemLength < 0)
+    {
+        throw OpenSslError{"Could not read PEM buffer length"};
+    }
+    return std::string{pemBuffer, static_cast<std::size_t>(pemLength)};
 }
 }  // namespace sila2
