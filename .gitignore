@@ -66,9 +66,7 @@ examples/**/*_config/
 Thumbs.db
 
 # ── Claude Code / MCP ────────────────────────────────────
-# Shared project settings (.claude/settings.json, agents/, skills/) are tracked.
-# Only local-only / sensitive files are excluded.
-.claude/**
+.claude/
 .mcp.json
 CLAUDE.md
 repo_skeleton.md
