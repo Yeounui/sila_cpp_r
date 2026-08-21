@@ -7,9 +7,6 @@
     "pugixml",
     "mdns",
     "openssl",
-    {
-      "name": "gtest",
-      "host": true
-    }
+    "gtest"
   ]
 }
