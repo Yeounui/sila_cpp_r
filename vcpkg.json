@@ -1,0 +1,14 @@
+{
+  "name": "sila2-cpp-foundation",
+  "version": "0.1.0",
+  "dependencies": [
+    "protobuf",
+    "grpc",
+    "pugixml",
+    "openssl",
+    {
+      "name": "gtest",
+      "host": true
+    }
+  ]
+}
