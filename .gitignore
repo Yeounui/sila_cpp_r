@@ -52,6 +52,15 @@ reference/sila_cpp/
 *.p12
 !third_party/**/*.pem
 
+# ── Runtime state (ServerConfig persistence, BinaryStore file spool) ──
+*.silaserver.json
+sila_server_config/
+binary_spool/
+
+# ── examples/ output ──
+examples/**/build/
+examples/**/*_config/
+
 # ── OS ────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
