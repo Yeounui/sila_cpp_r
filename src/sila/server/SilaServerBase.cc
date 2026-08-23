@@ -1,7 +1,7 @@
 // SilaServerBase.cc
 #include "SilaServerBase.h"
 
-#include <sila/server/TlsConfig.h>
+#include <sila/config/TlsConfig.h>
 
 #include <stdexcept>
 #include <utility>

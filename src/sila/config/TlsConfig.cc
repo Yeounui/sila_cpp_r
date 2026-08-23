@@ -1,8 +1,8 @@
 // TlsConfig.cc
 //
 // Ported from sila_cpp v0.3.11
-// src/lib/common/SelfSignedCertificateHelper.cpp (MIT License, Copyright
-// 2020 SiLA2). Most of this was adapted from
+// src/lib/common/SelfSignedCertificateHelper.cpp (MIT License, Copyright 2020 SiLA2).
+// Most of this was adapted from
 // https://gist.github.com/nathan-osman/5041136 and
 // https://stackoverflow.com/a/57478849/12780516.
 #include "TlsConfig.h"
@@ -25,12 +25,11 @@
 
 namespace sila2
 {
-using asn1_octet_string_unique_ptr =
-    std::unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
+// ** Use left variable_name as an alias of right side.
+using asn1_octet_string_unique_ptr = std::unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
 using bignum_unique_ptr = std::unique_ptr<BIGNUM, void (*)(BIGNUM*)>;
 using bio_unique_ptr = std::unique_ptr<BIO, int (*)(BIO*)>;
-using x509_extension_unique_ptr =
-    std::unique_ptr<X509_EXTENSION, void (*)(X509_EXTENSION*)>;
+using x509_extension_unique_ptr = std::unique_ptr<X509_EXTENSION, void (*)(X509_EXTENSION*)>;
 
 /// Adds a subject entry to an X509 certificate.
 /// @param name The subject name of the certificate the entry is added to
@@ -39,8 +38,7 @@ using x509_extension_unique_ptr =
 void addX509SubjectEntry(X509_NAME* name, const char* fieldId, const char* value)
 {
     X509_NAME_add_entry_by_txt(name, fieldId, MBSTRING_ASC,
-                               reinterpret_cast<const unsigned char*>(value), -1,
-                               -1, 0);
+                               reinterpret_cast<const unsigned char*>(value), -1, -1, 0);
 }
 
 /// Adds an X509v3 extension to a certificate.

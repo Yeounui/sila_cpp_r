@@ -738,7 +738,7 @@ flowchart TB
         R2["sila_cpp — ObservableCommand<br/>로직 참조"]
     end
 
-    T1 -.검증 대상.-> Codegen2["tools/codegen"]
+    T1 -.검증 대상.-> Codegen2["src/codegen"]
     T2 -.검증 대상.-> Core["src/sila"]
     T5 -.검증 대상.-> Dyn2["src/sila/client/dynamic"]
     T3 --> SilaPython
@@ -756,7 +756,7 @@ flowchart TB
 | 계층 | 위치 | 언어 | 책임 |
 |---|---|---|---|
 | 스펙/스키마 | `third_party/sila_base` (submodule) | XML/XSD/proto | FDL 정의, 공통 SiLAFramework 타입 — 태그 고정 |
-| 코드 생성 | `tools/codegen` | Python | XSD→바인딩, FDL → IR → `.proto` + `<Feature>Meta` |
+| 코드 생성 | `src/codegen` | Python | XSD→바인딩, FDL → IR → `.proto` + `<Feature>Meta` |
 | 생성 산출물 | `generated/` (gitignore) | proto/C++ | `protoc`/`grpc_cpp_plugin` 산출물 + FDL XML 임베드 |
 | 타입 매핑 | `src/sila/types/` | C++ | SiLA Basic 타입 ↔ C++ 왕복, Any, Constraint 검사 헬퍼 |
 | 런타임 코어 | `src/sila/{server,client,transport,discovery,errors,metadata,binary,auth,recovery}` | C++ | 인터셉터 체인, 5개 축, 트랜스포트 어댑터 2종, mDNS, 설정 영속화, `AuthTokenStore`·`RecoverableErrorGate` |
@@ -765,7 +765,7 @@ flowchart TB
 | 참조 구현 | `examples/` | C++ | 새 장비 저장소가 복사해 출발하는 Feature 구현체 1종 |
 | 검증 | `tests/validation`, `tests/interop`, `tests/dynamic` | Python(pytest) + C++ | 외부 레퍼런스 대비 스펙 준수 확인, 두 매핑 구현 등가성 |
 
-빌드 도구이므로, `src/codegen`(Python)이 C++ 소스와 같은 `src/` 아래 섞여 있던 것을 `tools/codegen`으로 옮김. 본 레포는 `sila2::core`·`sila2::dynamic` (§1.1) 제공.
+`src/codegen`(Python)을 `tools/codegen`으로 옮겼던 §8 결정을 재검토하여 `src/codegen`으로 되돌림(2026-08-24). 본 레포는 `sila2::core`·`sila2::dynamic` (§1.1) 제공.
 
 장치별 Feature 구현체를 담던 `src/features/`는 폐지. 실제 하드웨어와 통신하는 구현체는 벤더 SDK·장치 권한 의존과 연관되므로 장비 저장소 소관(§1.1), 본 레포는 예시 core feature 구현체와 `examples/`의 참조 구현 1종만 포함. `examples/`는 기본 빌드에서 제외하고 `-DSILA2_BUILD_EXAMPLES=ON`에서만 컴파일, `tests/interop`의 데모 서버와 달리 새 장비 레포의 출발점 제공이 목적.
 ## 9. 범위 결정
