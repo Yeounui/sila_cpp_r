@@ -1,5 +1,6 @@
 add_library(sila2_core
     server/FeatureRegistry.cc
+    server/SilaServerBase.cc
     server/TlsConfig.cc
 )
 add_library(sila2::core ALIAS sila2_core)
