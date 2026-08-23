@@ -20,14 +20,12 @@ namespace sila2
 class FeatureRegistry
 {
 public:
-    /// Registers fdlXml under fqi (e.g.
-    /// "org.silastandard/core/LockController/v1"). The FQI already encodes
-    /// the Feature version, so registering multiple versions of the same
-    /// Feature needs no separate version axis.
-    /// @throws std::invalid_argument if fqi is already registered. A
-    /// standard exception is enough here since the message has no extra
-    /// context to append (contrast OpenSslError in TlsConfig.h, which
-    /// appends OpenSSL's own error string).
+    /// Registers fdlXml under fqi (e.g. "org.silastandard/core/LockController/v1").
+    /// The FQI already encodes the Feature version,
+    /// so registering multiple versions of the same Feature needs no separate version axis.
+    /// @throws std::invalid_argument if fqi is already registered.
+    /// A standard exception is enough here since the message has no extra context to append 
+    /// (contrast OpenSslError in TlsConfig.h, which appends OpenSSL's own error string).
     void registerFeature(std::string fqi, std::string fdlXml);
 
     /// @throws std::out_of_range if fqi is not registered, matching
@@ -38,9 +36,8 @@ public:
     std::vector<std::string> registeredFeatureIdentifiers() const;
 
 private:
-    // std::map over unordered_map: gives ListImplementedFeatures a
-    // reproducible FQI-sorted order for free. A server registers at most a
-    // few dozen Features, so the lookup speed difference is irrelevant.
+    // std::map over unordered_map: gives ListImplementedFeatures a reproducible FQI-sorted order for free.
+    // A server registers at most a few dozen Features, so the lookup speed difference is irrelevant.
     std::map<std::string, std::string> definitions_;
 };
 }  // namespace sila2
