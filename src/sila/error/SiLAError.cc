@@ -15,6 +15,8 @@ namespace sila2
 {
 namespace error
 {
+namespace
+{
 // Falls back to a generic message when msg is empty, matching the
 // reference's PrivateImpl::PrivateImpl behavior. Computed ahead of the base
 // std::runtime_error construction below, since the base has to be
@@ -30,6 +32,7 @@ std::string resolveMessage(SiLAError::ErrorType type, std::string msg)
            + " occurred while executing a SiLA 2 Command or reading a "
              "Property!";
 }
+}  // namespace
 
 SiLAError::SiLAError(ErrorType type, std::string msg)
     : std::runtime_error{resolveMessage(type, std::move(msg))}, type_{type}

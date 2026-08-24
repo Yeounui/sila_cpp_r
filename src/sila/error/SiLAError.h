@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace grpc
@@ -72,8 +73,11 @@ public:
     /// @return The gRPC status that corresponds to this particular SiLA
     /// error.
     /// TODO(owner): implement once SiLAFramework.pb.h codegen is wired into
-    /// the build, then remove the "= delete".
-    [[nodiscard]] virtual grpc::Status toStatus() const = delete;
+    /// the build, then remove the "= delete". Must return
+    /// grpc::StatusCode::ABORTED with the error message's
+    /// SerializeAsString() base64-encoded as its detail string
+    /// (internal::base64Encode, from Base64.h, is not ported yet either).
+    [[nodiscard]] grpc::Status toStatus() const = delete;
 
 protected:
     /// C'tor for derived classes. Falls back to a generic message when msg
