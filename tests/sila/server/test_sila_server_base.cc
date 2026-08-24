@@ -1,17 +1,17 @@
-// Checks for SilaServerBase::Builder: Feature registration delegates to
+// Checks for SiLAServerBase::Builder: Feature registration delegates to
 // FeatureRegistry (including its duplicate-FQI throw), WithSelfSignedCertificate
 // produces PEM material while WithCertificate stores caller-supplied PEM
 // verbatim without parsing it, and Build() refuses to run without either.
-#include <sila/server/SilaServerBase.h>
+#include <sila/server/SiLAServerBase.h>
 
 #include <gtest/gtest.h>
 
 #include <stdexcept>
 #include <string>
 
-TEST(SilaServerBaseBuilder, RegistersFeaturesIntoTheAssembledRegistry)
+TEST(SiLAServerBaseBuilder, RegistersFeaturesIntoTheAssembledRegistry)
 {
-    const auto server = sila2::SilaServerBase::Builder()
+    const auto server = sila2::SiLAServerBase::Builder()
                              .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
                              .AddFeature("org.silastandard/core/SiLAService/v1", "<Feature/>")
                              .Build();
@@ -20,18 +20,18 @@ TEST(SilaServerBaseBuilder, RegistersFeaturesIntoTheAssembledRegistry)
               "<Feature/>");
 }
 
-TEST(SilaServerBaseBuilder, RejectsDuplicateFeatureRegistration)
+TEST(SiLAServerBaseBuilder, RejectsDuplicateFeatureRegistration)
 {
-    sila2::SilaServerBase::Builder builder;
+    sila2::SiLAServerBase::Builder builder;
     builder.AddFeature("org.silastandard/core/SiLAService/v1", "<Feature/>");
 
     EXPECT_THROW(builder.AddFeature("org.silastandard/core/SiLAService/v1", "<Feature/>"),
                  std::invalid_argument);
 }
 
-TEST(SilaServerBaseBuilder, GeneratesASelfSignedCertificate)
+TEST(SiLAServerBaseBuilder, GeneratesASelfSignedCertificate)
 {
-    const auto server = sila2::SilaServerBase::Builder()
+    const auto server = sila2::SiLAServerBase::Builder()
                              .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
                              .Build();
 
@@ -42,9 +42,9 @@ TEST(SilaServerBaseBuilder, GeneratesASelfSignedCertificate)
     EXPECT_EQ(server.privateKeyPem().rfind("-----BEGIN PRIVATE KEY-----", 0), 0u);
 }
 
-TEST(SilaServerBaseBuilder, UsesSuppliedCertificateVerbatim)
+TEST(SiLAServerBaseBuilder, UsesSuppliedCertificateVerbatim)
 {
-    const auto server = sila2::SilaServerBase::Builder()
+    const auto server = sila2::SiLAServerBase::Builder()
                              .WithCertificate("fake-cert-pem", "fake-key-pem")
                              .Build();
 
@@ -52,9 +52,9 @@ TEST(SilaServerBaseBuilder, UsesSuppliedCertificateVerbatim)
     EXPECT_EQ(server.privateKeyPem(), "fake-key-pem");
 }
 
-TEST(SilaServerBaseBuilder, RequiresTlsBeforeBuild)
+TEST(SiLAServerBaseBuilder, RequiresTlsBeforeBuild)
 {
-    sila2::SilaServerBase::Builder builder;
+    sila2::SiLAServerBase::Builder builder;
 
     EXPECT_THROW(builder.Build(), std::logic_error);
 }

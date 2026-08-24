@@ -92,7 +92,7 @@ public:
 
     /// Converts the SiLA error to a grpc::Status that can be sent along with an RPC.
     /// @return The gRPC status that corresponds to this particular SiLA error.
-    /// TODO(owner): implement once SiLAFramework.pb.h codegen is wired into the build, 
+    /// TODO(owner): implement once SiLAFramework.pb.h codegen is wired into the build,
     /// then remove the "= delete".
     /// Must return grpc::StatusCode::ABORTED with the error message's
     /// SerializeAsString() base64-encoded as its detail string
@@ -112,7 +112,7 @@ protected:
     /// @param msg This error's message, or empty for a generic fallback.
     /// TODO(owner): once SiLAFramework.pb.h codegen is wired into the build,
     /// add `const char* what() const noexcept override` returning
-    /// DebugString() of makeErrorMessage() — for now this class inherits std::runtime_error::what(), 
+    /// DebugString() of makeErrorMessage() — for now this class inherits std::runtime_error::what(),
     /// which already returns the message set below.
     SiLAError(ErrorType type, std::string msg);
 

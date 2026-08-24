@@ -230,7 +230,7 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
         // sila_cpp/common/constants.h; sila_java's SelfSignedCertificate.java
         // uses the same value, so it is inlined here instead of pulling in
         // that header for one constant.
-        constexpr auto kSila2IanaPen = "1.3.6.1.4.1.58583";
+        constexpr auto kSiLA2IanaPen = "1.3.6.1.4.1.58583";
 
         asn1_octet_string_unique_ptr uuidValue{ASN1_OCTET_STRING_new(),
                                                ASN1_OCTET_STRING_free};
@@ -240,7 +240,7 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
             static_cast<int>(serverUuid.length()));
 
         const auto serverUuidNid = OBJ_create(
-            kSila2IanaPen, "sila2ServerUUID",
+            kSiLA2IanaPen, "sila2ServerUUID",
             "ASN.1 - Server UUID of the SiLA 2 Server");
         const auto uuidExtension = x509_extension_unique_ptr{
             X509_EXTENSION_create_by_NID(nullptr, serverUuidNid, 0,

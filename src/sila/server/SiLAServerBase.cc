@@ -1,5 +1,5 @@
-// SilaServerBase.cc
-#include "SilaServerBase.h"
+// SiLAServerBase.cc
+#include "SiLAServerBase.h"
 
 #include <sila/config/TlsConfig.h>
 
@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace sila2 {
-SilaServerBase::SilaServerBase(FeatureRegistry featureRegistry,
+SiLAServerBase::SiLAServerBase(FeatureRegistry featureRegistry,
                                 std::string certificatePem, std::string privateKeyPem)
     /* std::move: 힙 메모리를 가진 객체에서, 이동은 내부 포인터만 넘기고 원본을 빈 상태로 만듦. 깊은 복사(할당+memcpy) 생략.
        std::move로 멤버에 이동하면 추가 복사 없이 포인터만 옮김.
@@ -30,16 +30,16 @@ SilaServerBase::SilaServerBase(FeatureRegistry featureRegistry,
 /*  const FeatureRegistry: 반환값 수정 못하게.
     const {...}: 메서드 내 멤버 수정 못하게.
 */
-const FeatureRegistry& SilaServerBase::featureRegistry() const { return featureRegistry_; }
-const std::string& SilaServerBase::certificatePem() const { return certificatePem_; }
-const std::string& SilaServerBase::privateKeyPem() const { return privateKeyPem_; }
+const FeatureRegistry& SiLAServerBase::featureRegistry() const { return featureRegistry_; }
+const std::string& SiLAServerBase::certificatePem() const { return certificatePem_; }
+const std::string& SiLAServerBase::privateKeyPem() const { return privateKeyPem_; }
 
-SilaServerBase::Builder& SilaServerBase::Builder::AddFeature(std::string fqi, std::string fdlXml) {
+SiLAServerBase::Builder& SiLAServerBase::Builder::AddFeature(std::string fqi, std::string fdlXml) {
     featureRegistry_.registerFeature(std::move(fqi), std::move(fdlXml));
     return *this;
 }
 
-SilaServerBase::Builder& SilaServerBase::Builder::WithSelfSignedCertificate(
+SiLAServerBase::Builder& SiLAServerBase::Builder::WithSelfSignedCertificate(
     std::string hostname, std::string ip) {
     // serverUuid is left at its default (empty): ServerConfig (§3.7), the
     // only source for a persisted server UUID, does not exist yet.
@@ -50,20 +50,20 @@ SilaServerBase::Builder& SilaServerBase::Builder::WithSelfSignedCertificate(
     return *this;
 }
 
-SilaServerBase::Builder& SilaServerBase::Builder::WithCertificate(std::string certificatePem,
+SiLAServerBase::Builder& SiLAServerBase::Builder::WithCertificate(std::string certificatePem,
                                                                     std::string privateKeyPem) {
     certificatePem_ = std::move(certificatePem);
     privateKeyPem_ = std::move(privateKeyPem);
     return *this;
 }
 
-SilaServerBase SilaServerBase::Builder::Build() {
+SiLAServerBase SiLAServerBase::Builder::Build() {
     if (certificatePem_.empty() || privateKeyPem_.empty()) {
         throw std::logic_error{
-            "SilaServerBase::Builder::Build: TLS material required — call "
+            "SiLAServerBase::Builder::Build: TLS material required — call "
             "WithSelfSignedCertificate or WithCertificate first"};
     }
-    return SilaServerBase{std::move(featureRegistry_), std::move(certificatePem_),
+    return SiLAServerBase{std::move(featureRegistry_), std::move(certificatePem_),
                           std::move(privateKeyPem_)};
 }
 }  // namespace sila2

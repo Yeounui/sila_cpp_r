@@ -4,7 +4,7 @@
 #include <utility>
 
 namespace sila2 {
-// No mutex: registration only happens during the SilaServerBase::Builder
+// No mutex: registration only happens during the SiLAServerBase::Builder
 // chain at boot time, never concurrently with request handling.
 void FeatureRegistry::registerFeature(std::string fqi, std::string fdlXml) {
     /*  definitions_.find(fqi) != definitions_.end()

@@ -17,7 +17,7 @@
 
 namespace
 {
-constexpr auto kSila2IanaPen = "1.3.6.1.4.1.58583";
+constexpr auto kSiLA2IanaPen = "1.3.6.1.4.1.58583";
 
 using Asn1ObjectPtr = std::unique_ptr<ASN1_OBJECT, void (*)(ASN1_OBJECT*)>;
 
@@ -121,12 +121,12 @@ TEST(TlsConfig, PutsLocalhostAndTheBindAddressInTheSans)
     EXPECT_NE(text.find("IP Address:192.0.2.1"), std::string::npos);
 }
 
-TEST(TlsConfig, EmbedsTheServerUuidOnlyForTheSila2Hostname)
+TEST(TlsConfig, EmbedsTheServerUuidOnlyForTheSiLA2Hostname)
 {
     const auto key = sila2::generateKey();
     // no_name=1: look the OID up as dotted digits, not as a registered short
     // name — this OID is only registered once generateCertificate runs.
-    const auto uuidOid = Asn1ObjectPtr{OBJ_txt2obj(kSila2IanaPen, 1),
+    const auto uuidOid = Asn1ObjectPtr{OBJ_txt2obj(kSiLA2IanaPen, 1),
                                        ASN1_OBJECT_free};
 
     const auto sila2Cert = parsePem(sila2::certificateToPem(

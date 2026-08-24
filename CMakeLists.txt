@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # certificate path never touches an SSL_CTX. Found here rather than in
 # src/sila so the tests, which reach for X509 directly, share the one lookup.
 find_package(OpenSSL REQUIRED)
+find_package(gRPC CONFIG REQUIRED)
 
 add_subdirectory(src/sila)
 

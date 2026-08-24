@@ -1,4 +1,4 @@
-// SilaServerBase.h
+// SiLAServerBase.h
 //
 // New component, not a port. sila_cpp's CSiLAServer
 // (reference/sila_cpp/src/include/sila_cpp/server/SiLAServer.h) is a QObject
@@ -9,7 +9,7 @@
 // (reference/sila_java/library/server_base/src/main/java/sila_java/library/server_base/SiLAServer.java)
 // keeps a plain fluent chain instead — withX()...addFeature()...build() —
 // which matches architecture.md §3.1's own example line
-// (SilaServerBase::Builder().WithConfig(...).AddFeature(...).WithBinaryTransfer().Build()),
+// (SiLAServerBase::Builder().WithConfig(...).AddFeature(...).WithBinaryTransfer().Build()),
 // so that shape is adopted here.
 //
 // Scope: only Feature registration (§3.2, via FeatureRegistry) and TLS
@@ -30,7 +30,7 @@
 namespace sila2 {
 /// Assembles a SiLA2 server from registered Features and TLS material via its
 /// nested Builder, then holds the assembled, read-only result.
-class SilaServerBase {
+class SiLAServerBase {
 public:
     class Builder {
     public:
@@ -76,7 +76,7 @@ public:
 
         /// @throws std::logic_error if neither WithSelfSignedCertificate nor
         /// WithCertificate was called — SiLA2 requires TLS (architecture.md §3.7).
-        SilaServerBase Build();
+        SiLAServerBase Build();
 
     private:
         FeatureRegistry featureRegistry_;
@@ -95,10 +95,10 @@ public:
 
 private:
     /* No friend declaration needed: since C++11, a nested class (Builder) is
-       treated as a member of its enclosing class (SilaServerBase), so it has
+       treated as a member of its enclosing class (SiLAServerBase), so it has
        the same access to that class's private members as any other member
        function does — Builder::Build() can already reach this constructor. */
-    SilaServerBase(FeatureRegistry featureRegistry, std::string certificatePem, std::string privateKeyPem);
+    SiLAServerBase(FeatureRegistry featureRegistry, std::string certificatePem, std::string privateKeyPem);
 
     FeatureRegistry featureRegistry_;
     std::string certificatePem_;

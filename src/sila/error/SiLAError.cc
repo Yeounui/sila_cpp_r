@@ -2,7 +2,7 @@
 //
 // Ported from sila_cpp v0.3.11
 // src/lib/framework/error_handling/SiLAError.cpp (MIT License, Copyright 2020
-// SiLA2). toStatus() and what() are "= delete"d in SiLAError.h, not defined here — 
+// SiLA2). toStatus() and what() are "= delete"d / not overridden in SiLAError.h —
 // both depend on SerializeAsString()/DebugString() of the generated
 // sila2::org::silastandard::SiLAError protobuf message, and that codegen
 // (third_party/sila_base/protobuf/SiLAFramework.proto) is not wired into the build yet.
@@ -40,14 +40,14 @@ std::string SiLAError::message() const {
 SiLAError::ErrorType SiLAError::errorType() const { return type_; }
 
 /*  errorTypeName()과 errorTypeToString()을 나눈 이유:
-    
+
     errorTypeName()은 에러 인스턴스 내에서 errorTypeToString(type_)을 내부 호출.
         catch (const SiLAError& e) {
             log(e.errorTypeName());  // errorTypeToString(e.errorType())와 동일
         }
 */
 std::string SiLAError::errorTypeName() const { return errorTypeToString(type_); }
-/*  
+/*
     errorTypeToString()은 static — 에러 객체 없이 타입 이름만 필요할 때 (로깅, UI 표시 등)
     ErrorType 값만으로 문자열 변환 가능.
         log("expected: " + SiLAError::errorTypeToString(ErrorType::ValidationError));
