@@ -4,6 +4,8 @@ add_library(sila2_core
     config/TlsConfig.cc
     error/SiLAError.cc
     error/SiLAErrorSubtypes.cc
+    server/command/ObservableCommandExecution.cc
+    server/command/ObservableCommandManager.cc
 )
 add_library(sila2::core ALIAS sila2_core)
 
