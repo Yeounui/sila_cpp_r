@@ -23,8 +23,7 @@
 
 #include <cstddef>
 
-namespace sila2
-{
+namespace sila2 {
 // ** Use left variable_name as an alias of right side.
 using asn1_octet_string_unique_ptr = std::unique_ptr<ASN1_OCTET_STRING, void (*)(ASN1_OCTET_STRING*)>;
 using bignum_unique_ptr = std::unique_ptr<BIGNUM, void (*)(BIGNUM*)>;
@@ -35,8 +34,7 @@ using x509_extension_unique_ptr = std::unique_ptr<X509_EXTENSION, void (*)(X509_
 /// @param name The subject name of the certificate the entry is added to
 /// @param fieldId The name of the object being added to the subject
 /// @param value The value to set for the object identified by fieldId
-void addX509SubjectEntry(X509_NAME* name, const char* fieldId, const char* value)
-{
+void addX509SubjectEntry(X509_NAME* name, const char* fieldId, const char* value) {
     X509_NAME_add_entry_by_txt(name, fieldId, MBSTRING_ASC,
                                reinterpret_cast<const unsigned char*>(value), -1, -1, 0);
 }
@@ -45,15 +43,13 @@ void addX509SubjectEntry(X509_NAME* name, const char* fieldId, const char* value
 /// @param cert The certificate the extension is added to
 /// @param nid The extension NID
 /// @param value The extension content
-void addX509v3Extension(X509& cert, int nid, const char* value)
-{
+void addX509v3Extension(X509& cert, int nid, const char* value) {
     X509V3_CTX ctx;
     X509V3_set_ctx_nodb(&ctx);
     X509V3_set_ctx(&ctx, &cert, &cert, nullptr, nullptr, 0);
 
     auto* ext = X509V3_EXT_conf_nid(nullptr, &ctx, nid, value);
-    if (!ext)
-    {
+    if (!ext) {
         throw OpenSslError{"Could not add X509v3 extension to the certificate"};
     }
 
@@ -75,16 +71,14 @@ void addX509v3Extension(X509& cert, int nid, const char* value)
 /// as-is, unresolved.
 /// @param ip The bind address, or empty/a wildcard for "all interfaces"
 /// @return The SAN list, already comma-joined
-std::string generateSubjectAlternativeNames(const std::string& ip)
-{
+std::string generateSubjectAlternativeNames(const std::string& ip) {
     std::string sans = "DNS:localhost";
 
     // POSIX caps a host name at 255 bytes (_POSIX_HOST_NAME_MAX); using a
     // fixed 256-byte buffer avoids depending on HOST_NAME_MAX, which needs
     // feature-test macros to be visible from <limits.h>.
     char hostname[256] = {};
-    if (gethostname(hostname, sizeof(hostname)) == 0 && hostname[0] != '\0')
-    {
+    if (gethostname(hostname, sizeof(hostname)) == 0 && hostname[0] != '\0') {
         sans += ",DNS:";
         sans += hostname;
     }
@@ -94,54 +88,43 @@ std::string generateSubjectAlternativeNames(const std::string& ip)
         sans += ",IP." + std::to_string(sanIpIndex++) + ":" + addr;
     };
 
-    if (ip.empty() || ip == "0.0.0.0" || ip == "::")
-    {
+    if (ip.empty() || ip == "0.0.0.0" || ip == "::") {
         // getifaddrs hands back a linked list that must be released with
         // freeifaddrs on every path, including exceptions thrown further
         // down — wrap it immediately so the unique_ptr's destructor does
         // that instead of a manual free at each exit point.
         ifaddrs* rawInterfaces = nullptr;
-        if (getifaddrs(&rawInterfaces) != 0)
-        {
+        if (getifaddrs(&rawInterfaces) != 0) {
             throw OpenSslError{"Could not enumerate network interfaces"};
         }
         const auto interfaces = std::unique_ptr<ifaddrs, void (*)(ifaddrs*)>{
             rawInterfaces, freeifaddrs};
 
         for (auto* iface = interfaces.get(); iface != nullptr;
-             iface = iface->ifa_next)
-        {
-            if (iface->ifa_addr == nullptr)
-            {
+             iface = iface->ifa_next) {
+            if (iface->ifa_addr == nullptr) {
                 continue;
             }
             const auto family = iface->ifa_addr->sa_family;
-            if (family != AF_INET && family != AF_INET6)
-            {
+            if (family != AF_INET && family != AF_INET6) {
                 continue;
             }
 
             // The original did not filter out loopback interfaces, so
             // neither does this port.
             const void* addr = nullptr;
-            if (family == AF_INET)
-            {
+            if (family == AF_INET) {
                 addr = &reinterpret_cast<sockaddr_in*>(iface->ifa_addr)->sin_addr;
-            }
-            else
-            {
+            } else {
                 addr = &reinterpret_cast<sockaddr_in6*>(iface->ifa_addr)->sin6_addr;
             }
 
             char addrBuffer[INET6_ADDRSTRLEN] = {};
-            if (inet_ntop(family, addr, addrBuffer, sizeof(addrBuffer)) != nullptr)
-            {
+            if (inet_ntop(family, addr, addrBuffer, sizeof(addrBuffer)) != nullptr) {
                 addSanIp(addrBuffer);
             }
         }
-    }
-    else
-    {
+    } else {
         addSanIp(ip);
     }
 
@@ -150,8 +133,7 @@ std::string generateSubjectAlternativeNames(const std::string& ip)
 
 OpenSslError::OpenSslError(const std::string& description)
     : std::runtime_error{
-          description + "\nOpenSSL: " + ERR_error_string(ERR_get_error(), nullptr)}
-{}
+          description + "\nOpenSSL: " + ERR_error_string(ERR_get_error(), nullptr)} {}
 
 // The original built the key via RSA_new() + BN_new()/BN_set_word(RSA_F4) +
 // a BN_GENCB progress callback + RSA_generate_key_ex() +
@@ -163,20 +145,17 @@ OpenSslError::OpenSslError(const std::string& description)
 // boot before a certificate exists. That cost is paid once, not on every
 // boot, but nothing about this self-signed device certificate's threat
 // model justifies paying it.
-EvpPkeyPtr generateKey(int bits)
-{
+EvpPkeyPtr generateKey(int bits) {
     // EVP_RSA_gen is the macro EVP_PKEY_Q_keygen(..., (size_t)(0 + (bits))),
     // which already casts bits for us. A negative bits value would wrap to
     // a huge size_t in that cast, so it is rejected here instead of being
     // handed to a macro that would silently wrap it twice.
-    if (bits <= 0)
-    {
+    if (bits <= 0) {
         throw OpenSslError{"Key size must be positive"};
     }
 
     auto* rawKey = EVP_RSA_gen(bits);
-    if (rawKey == nullptr)
-    {
+    if (rawKey == nullptr) {
         throw OpenSslError{"Could not generate RSA private key"};
     }
 
@@ -184,12 +163,10 @@ EvpPkeyPtr generateKey(int bits)
 }
 
 X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
-                            const std::string& ip, const std::string& serverUuid)
-{
+                            const std::string& ip, const std::string& serverUuid) {
     // 1. Allocate the x509 structure
     X509Ptr cert{X509_new(), X509_free};
-    if (!cert)
-    {
+    if (!cert) {
         throw OpenSslError{"Could not allocate X509 structure"};
     }
 
@@ -207,17 +184,14 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
     // required zero-padding, so the serial comes out positive with no
     // extra step.
     const auto serial = bignum_unique_ptr{BN_new(), BN_free};
-    if (serial == nullptr)
-    {
+    if (serial == nullptr) {
         throw OpenSslError{"Could not allocate certificate serial number"};
     }
-    if (BN_rand(serial.get(), 64, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY) == 0)
-    {
+    if (BN_rand(serial.get(), 64, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY) == 0) {
         throw OpenSslError{"Could not generate a random certificate serial number"};
     }
     if (BN_to_ASN1_INTEGER(serial.get(), X509_get_serialNumber(cert.get()))
-        == nullptr)
-    {
+        == nullptr) {
         throw OpenSslError{"Could not set certificate serial number"};
     }
 
@@ -249,8 +223,7 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
     // The UUID OID below is only added when hostname is "SiLA2" — sila_java's
     // comment on this same check cites it as "as specified in SiLA2
     // Standard Part B".
-    if (hostname == "SiLA2")
-    {
+    if (hostname == "SiLA2") {
         // 2.5 OID 1.3.536 with the UUID.
         //
         // sila_cpp defines this OID as SILA2_IANA_PEN in
@@ -298,8 +271,7 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
     addX509v3Extension(*cert, NID_basic_constraints, "critical,CA:FALSE");
 
     // 3. sign the certificate with our key
-    if (X509_sign(cert.get(), key.get(), EVP_sha256()) == 0)
-    {
+    if (X509_sign(cert.get(), key.get(), EVP_sha256()) == 0) {
         throw OpenSslError{"Could not sign the certificate"};
     }
 
@@ -315,38 +287,32 @@ X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
 // back negative on failure — casting a negative value to std::size_t would
 // produce a huge size and crash the std::string construction, so pemLength
 // is checked before the cast.
-std::string keyToPem(const EvpPkeyPtr& key)
-{
+std::string keyToPem(const EvpPkeyPtr& key) {
     const auto pemBio = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
     const auto wroteOk = PEM_write_bio_PrivateKey(pemBio.get(), key.get(), nullptr,
                                                    nullptr, 0, nullptr, nullptr);
-    if (wroteOk == 0)
-    {
+    if (wroteOk == 0) {
         throw OpenSslError{"Could not convert private key"};
     }
 
     char* pemBuffer = nullptr;
     const auto pemLength = BIO_get_mem_data(pemBio.get(), &pemBuffer);
-    if (pemLength < 0)
-    {
+    if (pemLength < 0) {
         throw OpenSslError{"Could not read PEM buffer length"};
     }
     return std::string{pemBuffer, static_cast<std::size_t>(pemLength)};
 }
 
-std::string certificateToPem(const X509Ptr& certificate)
-{
+std::string certificateToPem(const X509Ptr& certificate) {
     const auto pemBio = bio_unique_ptr{BIO_new(BIO_s_mem()), BIO_free};
     const auto wroteOk = PEM_write_bio_X509(pemBio.get(), certificate.get());
-    if (wroteOk == 0)
-    {
+    if (wroteOk == 0) {
         throw OpenSslError{"Could not convert certificate"};
     }
 
     char* pemBuffer = nullptr;
     const auto pemLength = BIO_get_mem_data(pemBio.get(), &pemBuffer);
-    if (pemLength < 0)
-    {
+    if (pemLength < 0) {
         throw OpenSslError{"Could not read PEM buffer length"};
     }
     return std::string{pemBuffer, static_cast<std::size_t>(pemLength)};

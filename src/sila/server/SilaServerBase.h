@@ -27,33 +27,29 @@
 
 #include <string>
 
-namespace sila2
-{
+namespace sila2 {
 /// Assembles a SiLA2 server from registered Features and TLS material via its
 /// nested Builder, then holds the assembled, read-only result.
-class SilaServerBase
-{
+class SilaServerBase {
 public:
-    class Builder
-    {
+    class Builder {
     public:
-        /// Registers fqi/fdlXml with the FeatureRegistry this Builder is
-        /// assembling.
-        /// @throws std::invalid_argument, propagated from
-        /// FeatureRegistry::registerFeature, if fqi is already registered.
+        /// Registers fqi/fdlXml with the FeatureRegistry this Builder is assembling.
+        /// @throws std::invalid_argument, propagated from FeatureRegistry::registerFeature,
+        /// if fqi is already registered.
+        /*  Return type of the member function is a reference (&) to the class type itself;
+            returning a reference to the object enables method chaining.
+        */
         Builder& AddFeature(std::string fqi, std::string fdlXml);
 
         /// Generates a self-signed certificate for hostname/ip
-        /// (TlsConfig::generateKey/generateCertificate) and stores its PEM
-        /// form for Build().
-        /// @throws sila2::OpenSslError, propagated from TlsConfig, on
-        /// generation failure.
+        /// (TlsConfig::generateKey/generateCertificate) and stores its PEM form for Build().
+        /// @throws sila2::OpenSslError, propagated from TlsConfig, on generation failure.
         Builder& WithSelfSignedCertificate(std::string hostname, std::string ip);
 
-        /// Uses caller-supplied certificate/key PEM material instead of
-        /// generating one. Neither string is parsed here — TlsConfig only
-        /// offers construction, not loading, so a caller providing its own
-        /// PEM is trusted to have obtained it validly.
+        /// Uses caller-supplied certificate/key PEM material instead of generating one.
+        /// Neither string is parsed here — TlsConfig only offers construction,
+        /// not loading, so a caller providing its own PEM is trusted to have obtained it validly.
         Builder& WithCertificate(std::string certificatePem, std::string privateKeyPem);
 
         /* The six methods below are declared, not implemented: no backing

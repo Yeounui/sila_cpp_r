@@ -15,13 +15,11 @@ using EVP_PKEY = evp_pkey_st;
 struct x509_st;
 using X509 = x509_st;
 
-namespace sila2
-{
+namespace sila2 {
 /// OpenSSL error raised while creating a self-signed certificate.
 /// Appends OpenSSL's last error string (ERR_get_error()) after the
 /// description passed in, to build the exception message.
-class OpenSslError : public std::runtime_error
-{
+class OpenSslError : public std::runtime_error {
 public:
     /// @param description What was being attempted when it failed
     explicit OpenSslError(const std::string& description);

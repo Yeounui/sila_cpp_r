@@ -33,19 +33,37 @@ class SiLAError;
 }  // namespace org
 }  // namespace sila2
 
-namespace sila2
-{
-namespace error
-{
+namespace sila2 {
+namespace error {
 /// Abstract base class for all SiLA 2 error types (architecture.md §3.4).
 /// Never constructed directly — always through a derived
 /// ValidationError/ExecutionError/FrameworkError.
-class SiLAError : public std::runtime_error
-{
+
+/*  std::runtime_error을 상속해 SiLA 2 에러 계층의 기반 클래스를 구성.
+    std::runtime_error가 메시지 저장과 what()을 제공하므로, ErrorType 등 SiLA 고유 상태만 추가하면 됨.
+
+    std::runtime_error 상속 패턴 예시:
+    1. 생성자에서 사용자 정의 에러 추가
+        class MyError : public std::runtime_error {
+        public:
+            MyError(int code, const std::string& msg): std::runtime_error(msg), code_(code) {}
+            int code() const { return code_; }
+        private:
+            int code_;
+        };
+    2. 사용자 정의 에러 사용.
+        throw MyError(42, "something broke");
+
+        try { ... }
+        catch (const MyError& e) {
+            e.what();  // "something broke"
+            e.code();  // 42
+        }
+*/
+class SiLAError : public std::runtime_error {
 public:
     /// Defines all the different SiLA 2 error types.
-    enum class ErrorType : uint8_t
-    {
+    enum class ErrorType : uint8_t {
         DefinedExecutionError,
         UndefinedExecutionError,
         FrameworkError,
@@ -54,47 +72,55 @@ public:
     };
 
     /// @return This error's message with details about the occurred error.
-    [[nodiscard]] std::string message() const;
+    [[nodiscard("use message() or what() — silently dropping the error text hides diagnostics")]] \
+    std::string message() const;
 
     /// @return This error's type.
-    [[nodiscard]] ErrorType errorType() const;
+    [[nodiscard("the error type drives dispatch — ignoring it misroutes error handling")]] \
+    ErrorType errorType() const;
 
     /// Convenience method, equivalent to
     /// SiLAError::errorTypeToString(someError.errorType()).
     /// @return This error's type's human-readable string representation.
-    [[nodiscard]] std::string errorTypeName() const;
+    [[nodiscard("caller expects the type name string")]] \
+    std::string errorTypeName() const;
 
     /// @param type The ErrorType to convert.
     /// @return type's human-readable string representation.
-    [[nodiscard]] static std::string errorTypeToString(ErrorType type);
+    [[nodiscard("caller expects the type name string")]] \
+    static std::string errorTypeToString(ErrorType type);
 
-    /// Converts the SiLA error to a grpc::Status that can be sent along with
-    /// an RPC.
-    /// @return The gRPC status that corresponds to this particular SiLA
-    /// error.
-    /// TODO(owner): implement once SiLAFramework.pb.h codegen is wired into
-    /// the build, then remove the "= delete". Must return
-    /// grpc::StatusCode::ABORTED with the error message's
+    /// Converts the SiLA error to a grpc::Status that can be sent along with an RPC.
+    /// @return The gRPC status that corresponds to this particular SiLA error.
+    /// TODO(owner): implement once SiLAFramework.pb.h codegen is wired into the build, 
+    /// then remove the "= delete".
+    /// Must return grpc::StatusCode::ABORTED with the error message's
     /// SerializeAsString() base64-encoded as its detail string
     /// (internal::base64Encode, from Base64.h, is not ported yet either).
-    [[nodiscard]] grpc::Status toStatus() const = delete;
+    /*  grpc::Status toStatus() const = delete;
+            다른 곳에서 error.toStatus() 호출 시 컴파일 에러.
+            "이 함수는 존재하지만 쓰면 안 된다"를 명시적으로 표현.
+        가장 흔한 용도는 복사 금지:
+        MyClass(const MyClass&) = delete;            // 복사 생성 금지
+        MyClass& operator=(const MyClass&) = delete; // 복사 대입 금지*/
+    [[nodiscard("the gRPC Status carries the error — dropping it silently loses the failure")]] \
+    grpc::Status toStatus() const = delete;
 
 protected:
-    /// C'tor for derived classes. Falls back to a generic message when msg
-    /// is empty.
+    /// C'tor for derived classes. Falls back to a generic message when msg is empty.
     /// @param type This error's type.
     /// @param msg This error's message, or empty for a generic fallback.
     /// TODO(owner): once SiLAFramework.pb.h codegen is wired into the build,
     /// add `const char* what() const noexcept override` returning
-    /// DebugString() of makeErrorMessage() — for now this class inherits
-    /// std::runtime_error::what(), which already returns the message set
-    /// below.
+    /// DebugString() of makeErrorMessage() — for now this class inherits std::runtime_error::what(), 
+    /// which already returns the message set below.
     SiLAError(ErrorType type, std::string msg);
 
-    /// Builds this error's SiLA Error protobuf message. The caller takes
-    /// ownership of the returned message.
+    /// Builds this error's SiLA Error protobuf message.
+    /// The caller takes ownership of the returned message.
     /// @return A pointer to the SiLA Error protobuf message.
-    [[nodiscard]] virtual std::unique_ptr<sila2::org::silastandard::SiLAError>
+    [[nodiscard("the protobuf message owns the serialized error — dropping it leaks the allocation")]] \
+    virtual std::unique_ptr<sila2::org::silastandard::SiLAError>
     makeErrorMessage() const = 0;
 
     ErrorType type_;

@@ -11,14 +11,12 @@
 #include <string>
 #include <vector>
 
-namespace sila2
-{
+namespace sila2 {
 /// Holds the FDL XML of every Feature registered on a server, keyed by its
 /// fully qualified identifier (FQI). Populated only during boot through the
 /// Builder chain, then read-only for the lifetime of the server, so no
 /// locking is needed here.
-class FeatureRegistry
-{
+class FeatureRegistry {
 public:
     /// Registers fdlXml under fqi (e.g. "org.silastandard/core/LockController/v1").
     /// The FQI already encodes the Feature version,
