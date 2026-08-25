@@ -2,10 +2,14 @@ add_library(sila2_core
     server/FeatureRegistry.cc
     server/SiLAServerBase.cc
     config/TlsConfig.cc
+    config/ServerConfig.cc
     error/SiLAError.cc
     error/SiLAErrorSubtypes.cc
     server/command/ObservableCommandExecution.cc
     server/command/ObservableCommandManager.cc
+    util/uuid.cc
+    transport/CallContext.cc
+    server/property/ObservablePropertyManager.cc
 )
 add_library(sila2::core ALIAS sila2_core)
 
