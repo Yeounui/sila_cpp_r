@@ -280,9 +280,11 @@ stateDiagram-v2
 | `Running → FinishedWithError` | 예외/에러 | `_Info` 스트림으로 에러 전달 |
 | `Finished* → [*]` | lifetime 만료 | GC가 제거 (§아래) |
 
-- `ObservableCommandManager`가 `UUID → ObservableCommand` 맵을 소유, 클라이언트가 결과를 영원히 가져가지 않는 경우 또한 정상 시나리오이므로 수명 만료는 매니저의 주기적 GC가 수행. lifetime이 `null`이면 수동 제거 전까지 유지(sila_java `ObservableCommandManager`와 동일 정책).
+- `ObservableCommandManager`가 `UUID → ObservableCommand` 맵을 소유, 클라이언트가 결과를 영원히 가져가지 않는 경우 또한 정상 시나리오이므로 수명 만료는 매니저의 주기적 GC가 수행. `removeExpired()`는 GC 스레드가 호출하는 동일 메서드를 공개 API로도 노출하여, GC 주기를 기다리지 않고 호출자가 즉시 만료 항목을 정리할 수 있게 함. lifetime이 `null`이면 수동 제거 전까지 유지(sila_java `ObservableCommandManager`와 동일 정책).
 - 알 수 없는 UUID로 `_Info`/`_Result` 호출 시 `FrameworkError{INVALID_COMMAND_EXECUTION_UUID}` (§3.4 "④ 에러 축 = 코어 자료구조" 참조)
+- 상태 다이어그램에 없는 전이(예: `FinishedSuccessfully`에서 `start()` 재호출)는 프로그래밍 오류이므로 `std::logic_error`로 즉시 실패 — 복구 불가능한 호출자 버그를 런타임 에러로 묻지 않고 드러냄.
 - `_Info` 스트림이 취소된 경우, `ObservableCommand`가 취소 요청 플래그와 취소 콜백을 노출하여 Feature 구현체의 실행 스레드 정리 근거로 사용 — SiLA 2에 커맨드 취소 RPC가 없어 스트림 절단이 유일한 취소 신호. 취소 이후의 재시도·재스케줄 판단은 오케스트레이터 몫(§4.4).
+- 서버 종료 시 `ObservableCommandManager::interruptAll()`이 활성 실행 전체에 중단을 요청하여, 개별 스트림 취소에 의존하지 않고 매니저 수준에서 일괄 정리.
 
 **③ Observable Property** — 구독자 집합.
 

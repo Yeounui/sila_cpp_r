@@ -39,13 +39,13 @@ public:
 
     // --- Identity ---
 
-    [[nodiscard("caller expects the command execution UUID")]] \
+    [[nodiscard("caller expects the command execution UUID")]]
     const std::string& uuid() const;
 
-    [[nodiscard("the state drives dispatch — ignoring it misroutes command handling")]] \
+    [[nodiscard("the state drives dispatch — ignoring it misroutes command handling")]]
     State state() const;
 
-    [[nodiscard("caller expects the state name string")]] \
+    [[nodiscard("caller expects the state name string")]]
     static std::string stateToString(State state);
 
     // --- State transitions (called by executor thread) ---
@@ -69,10 +69,10 @@ public:
     /// @param remaining Estimated time remaining.
     void setProgress(double fraction, std::chrono::seconds remaining);
 
-    [[nodiscard("caller expects the progress fraction")]] \
+    [[nodiscard("caller expects the progress fraction")]]
     double progress() const;
 
-    [[nodiscard("caller expects the estimated remaining time")]] \
+    [[nodiscard("caller expects the estimated remaining time")]]
     std::chrono::seconds estimatedRemaining() const;
 
     // --- Cancellation ---
@@ -82,19 +82,19 @@ public:
     void requestInterruption();
 
     /// @return true if interruption has been requested. Lock-free (atomic).
-    [[nodiscard("caller expects the interruption status")]] \
+    [[nodiscard("caller expects the interruption status")]]
     bool isInterruptionRequested() const;
 
     // --- Lifetime / expiration ---
 
     /// @return true if this execution has finished AND the lifetime has elapsed.
     ///         Always false if lifetime is zero (never expires).
-    [[nodiscard("caller needs to know if this execution is eligible for GC")]] \
+    [[nodiscard("caller needs to know if this execution is eligible for GC")]]
     bool isExpired() const;
 
     // --- Error info (valid only in FinishedWithError state) ---
 
-    [[nodiscard("caller expects the error message")]] \
+    [[nodiscard("caller expects the error message")]]
     std::string errorMessage() const;
 
 private:

@@ -85,12 +85,9 @@ bool ObservableCommandExecution::isInterruptionRequested() const {
 
 bool ObservableCommandExecution::isExpired() const {
     std::lock_guard<std::mutex> lock{mu_};
-    if (lifetime_.count() == 0) {
-        return false;
-    }
-    if (state_ != State::FinishedSuccessfully && state_ != State::FinishedWithError) {
-        return false;
-    }
+    if (lifetime_.count() == 0) { return false; }
+    if (state_ != State::FinishedSuccessfully && \
+        state_ != State::FinishedWithError) { return false; }
     return std::chrono::steady_clock::now() - finishedAt_ >= lifetime_;
 }
 
