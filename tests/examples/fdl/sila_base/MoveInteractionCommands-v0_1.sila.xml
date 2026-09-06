@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd" SiLA2Version="1.0" FeatureVersion="0.1" Originator="com.tecan" Category="infrastructure" xmlns="http://www.sila-standard.org">
+  <Identifier>MoveInteractionCommands</Identifier>
+  <DisplayName>Move Interaction</DisplayName>
+  <Description>Interface to define interactions with robot moves</Description>
+  <Command>
+    <Identifier>PrepareSource</Identifier>
+    <DisplayName>Prepare Source</DisplayName>
+    <Description>Prepare for an unload action so that the robot can approach the source without danger.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LabwareName</Identifier>
+      <DisplayName>Labware Name</DisplayName>
+      <Description>Name for the object the robot wants to fetch</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>SiteIndex</Identifier>
+      <DisplayName>Site Index</DisplayName>
+      <Description>Location that should be unloaded</Description>
+      <DataType>
+        <Basic>Integer</Basic>
+      </DataType>
+    </Parameter>
+  </Command>
+  <Command>
+    <Identifier>PrepareDestination</Identifier>
+    <DisplayName>Prepare Destination</DisplayName>
+    <Description>Prepare for the arrival of an object so that 
+            the robot can approach the destination location without danger.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LabwareName</Identifier>
+      <DisplayName>Labware Name</DisplayName>
+      <Description>Name for the object the robot wants to bring</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>SiteIndex</Identifier>
+      <DisplayName>Site Index</DisplayName>
+      <Description>Location that should be unloaded</Description>
+      <DataType>
+        <Basic>Integer</Basic>
+      </DataType>
+    </Parameter>
+  </Command>
+  <Command>
+    <Identifier>FinishSource</Identifier>
+    <DisplayName>Finish Source</DisplayName>
+    <Description>Finish source after unload action</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LabwareName</Identifier>
+      <DisplayName>Labware Name</DisplayName>
+      <Description>Name for the object the robot wants to fetch</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>SiteIndex</Identifier>
+      <DisplayName>Site Index</DisplayName>
+      <Description>Location that should be unloaded</Description>
+      <DataType>
+        <Basic>Integer</Basic>
+      </DataType>
+    </Parameter>
+  </Command>
+  <Command>
+    <Identifier>FinishDest</Identifier>
+    <DisplayName>Finish Dest</DisplayName>
+    <Description>Finish Destination after Robot approach</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LabwareName</Identifier>
+      <DisplayName>Labware Name</DisplayName>
+      <Description>Name for the object the robot wants to fetch</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>SiteIndex</Identifier>
+      <DisplayName>Site Index</DisplayName>
+      <Description>Location that should be unloaded</Description>
+      <DataType>
+        <Basic>Integer</Basic>
+      </DataType>
+    </Parameter>
+  </Command>
+</Feature>

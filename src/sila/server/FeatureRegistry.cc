@@ -1,9 +1,92 @@
 #include "FeatureRegistry.h"
 
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+
 namespace sila2 {
+namespace {
+
+// Attribute value on the root <Feature> tag, or "" when absent.
+// FeatureDefinition.xsd:2 sets attributeFormDefault="unqualified", so a
+// Feature's attributes are never namespace-qualified -- xmlGetNoNsProp is the
+// matching lookup, the same one FdlRuntimeParser.cc:321 uses.
+std::string featureAttribute(xmlNodePtr node, const char* name) {
+    xmlChar* raw = xmlGetNoNsProp(node, BAD_CAST name);
+    if (raw == nullptr) {
+        return {};
+    }
+    std::string value{reinterpret_cast<const char*>(raw)};
+    xmlFree(raw);
+    return value;
+}
+
+// Text of the Feature's own <Identifier>. Only DIRECT children are scanned:
+// FeatureDefinition.xsd:7-11 makes Identifier the Feature's own first child,
+// while the Identifiers of Command, Property, Metadata and
+// DefinedExecutionError (:19,:40,:59,:70) sit one level deeper -- so no
+// document-order assumption is needed to tell the Feature's from theirs.
+std::string featureIdentifier(xmlNodePtr root) {
+    for (xmlNodePtr child = root->children; child != nullptr; child = child->next) {
+        if (child->type != XML_ELEMENT_NODE || !xmlStrEqual(child->name, BAD_CAST "Identifier")) {
+            continue;
+        }
+        xmlChar* content = xmlNodeGetContent(child);
+        if (content == nullptr) {
+            return {};
+        }
+        std::string text{reinterpret_cast<const char*>(content)};
+        xmlFree(content);
+        return text;
+    }
+    return {};
+}
+
+// The FQI the FDL's own contents imply, or "" when the document carries no
+// usable root <Feature> identity. Mirrors dynamic::FeatureCatalog's
+// derivedFqi (FeatureCatalog.cc:29-33): an omitted Category becomes "none" --
+// the XSD's own declared default (FeatureDefinition.xsd:113) -- and
+// FeatureVersion is truncated to its major part.
+// libxml2's node->name is the LOCAL name (the prefix lives in node->ns), so
+// <sila:Feature> and <Feature> both match here without the namespace being
+// spelled out, which is the shape S41 tripped on.
+// ponytail: identity only, no schema validation -- the namespace href is not
+// checked and nothing below the root is read, so this rejects a *wrong*
+// identity, not a malformed Feature. Full FDL validation is available through
+// CommandParameterValidator for generated Command handling; registration
+// remains an identity-only operation.
+std::string derivedFqi(const std::string& fdlXml) {
+    if (fdlXml.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+        return {};  // xmlReadMemory takes an int length; refuse rather than truncate
+    }
+    xmlDocPtr document =
+        xmlReadMemory(fdlXml.data(), static_cast<int>(fdlXml.size()), nullptr, nullptr,
+                      XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (document == nullptr) {
+        return {};
+    }
+    std::string fqi;
+    xmlNodePtr root = xmlDocGetRootElement(document);
+    if (root != nullptr && xmlStrEqual(root->name, BAD_CAST "Feature")) {
+        const std::string originator = featureAttribute(root, "Originator");
+        const std::string category = featureAttribute(root, "Category");
+        const std::string featureVersion = featureAttribute(root, "FeatureVersion");
+        const std::string identifier = featureIdentifier(root);
+        if (!originator.empty() && !featureVersion.empty() && !identifier.empty()) {
+            const std::string major = featureVersion.substr(0, featureVersion.find('.'));
+            fqi = originator + "/" + (category.empty() ? "none" : category) + "/" + identifier +
+                  "/v" + major;
+        }
+    }
+    xmlFreeDoc(document);
+    return fqi;
+}
+
+}  // namespace
+
 // No mutex: registration only happens during the SiLAServerBase::Builder
 // chain at boot time, never concurrently with request handling.
 void FeatureRegistry::registerFeature(std::string fqi, std::string fdlXml) {
@@ -20,6 +103,24 @@ void FeatureRegistry::registerFeature(std::string fqi, std::string fdlXml) {
             throw가 현재 함수 실행을 즉시 중단, 호출 스택을 거슬러 올라가며 매칭되는 catch 블록을 찾아 제어를 넘김
         */
         throw std::invalid_argument{"Feature already registered: " + fqi};
+    }
+    // The FQI is what ListImplementedFeatures advertises and the key
+    // GetFeatureDefinition answers on; the FDL carries its own identity.
+    // Checking here rather than in Builder::AddFeature covers every caller at
+    // once: AddFeature (SiLAServerBase.cc:404-411) and the Builder's own
+    // built-in registrations (:567, :620-654) all funnel through this
+    // function. Mirrors dynamic::FeatureCatalog::add (FeatureCatalog.cc:53-58)
+    // so a Feature is checked the same way whichever side registers it.
+    const std::string derived = derivedFqi(fdlXml);
+    if (derived.empty()) {
+        throw std::invalid_argument{
+            "Feature FDL carries no root <Feature> identity (Originator, FeatureVersion and "
+            "Identifier are all required) for FQI: " +
+            fqi};
+    }
+    if (derived != fqi) {
+        throw std::invalid_argument{"FDL identity " + derived +
+                                    " does not match the registered FQI " + fqi};
     }
     definitions_.emplace(std::move(fqi), std::move(fdlXml));
     /*  std::map.emplace: 원소 in-place construct(제자리 생성) 메서드
@@ -54,5 +155,20 @@ std::vector<std::string> FeatureRegistry::registeredFeatureIdentifiers() const {
     fqis.reserve(definitions_.size());
     for (const auto& [fqi, fdlXml] : definitions_) { fqis.push_back(fqi); }
     return fqis;
+}
+
+void FeatureRegistry::registerService(const std::string& fqi,
+                                      std::shared_ptr<grpc::Service> service) {
+    // Allow transport-level services (e.g. BinaryTransfer) without a Feature definition.
+    services_[fqi] = std::move(service);
+}
+
+std::vector<grpc::Service*> FeatureRegistry::registeredServices() const {
+    std::vector<grpc::Service*> result;
+    result.reserve(services_.size());
+    for (const auto& [fqi, service] : services_) {
+        result.push_back(service.get());
+    }
+    return result;
 }
 }  // namespace sila2

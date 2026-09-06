@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.authorizationproviderservice.v1;
+
+/* Verifies access tokens on behalf of servers that delegate authorization to this provider. */
+service AuthorizationProviderService {
+    /* Validates an access token for a specific feature on the requesting server. */
+    rpc Verify(sila2.org.silastandard.core.authorizationproviderservice.v1.Verify_Parameters) returns (sila2.org.silastandard.core.authorizationproviderservice.v1.Verify_Responses) {}
+}
+
+/* Parameters for Verify */
+message Verify_Parameters {
+    sila2.org.silastandard.String AccessToken = 1;  /* The token to be used along with accessing a Command or Property on a SiLA Server. */
+    sila2.org.silastandard.String RequestedServer = 2;  /* The server for which an authorization is requested. */
+    sila2.org.silastandard.String RequestedFeature = 3;  /* The feature that is requested to access. */
+}
+
+/* Responses of Verify */
+message Verify_Responses {
+    sila2.org.silastandard.Integer TokenLifetime = 1;  /* The lifetime of the provided access token as the maximum validity period after the last SiLA Server request. */
+}

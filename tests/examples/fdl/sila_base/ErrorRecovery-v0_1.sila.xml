@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature xmlns:xsd="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SiLA2Version="1.0" FeatureVersion="0.1" Originator="com.tecan" Category="infrastructure" xmlns="http://www.sila-standard.org">
+  <Identifier>ErrorRecovery</Identifier>
+  <DisplayName>Error Recovery</DisplayName>
+  <Description>Provides the necessary service to recover from errors</Description>
+  <Command>
+    <Identifier>ListenForErrors</Identifier>
+    <DisplayName>Listen For Errors</DisplayName>
+    <Description>Starts listening for any errors in the server</Description>
+    <Observable>Yes</Observable>
+    <IntermediateResponse>
+      <Identifier>Intermediate</Identifier>
+      <DisplayName>Intermediate</DisplayName>
+      <Description>The errors as they occur</Description>
+      <DataType>
+        <DataTypeIdentifier>ErrorSignature</DataTypeIdentifier>
+      </DataType>
+    </IntermediateResponse>
+  </Command>
+  <Command>
+    <Identifier>PerformRecovery</Identifier>
+    <DisplayName>Perform Recovery</DisplayName>
+    <Description>Recovery procedure when the error has to be resolved.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>ErrorIdentifier</Identifier>
+      <DisplayName>Error Identifier</DisplayName>
+      <Description>The identifier of the error</Description>
+      <DataType>
+        <DataTypeIdentifier>ErrorIdentifier</DataTypeIdentifier>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>RecoveryStrategy</Identifier>
+      <DisplayName>Recovery Strategy</DisplayName>
+      <Description>The name of the recovery strategy</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Response>
+      <Identifier>ReturnValue</Identifier>
+      <DisplayName>Return Value</DisplayName>
+      <Description>A result of the recovery strategy</Description>
+      <DataType>
+        <DataTypeIdentifier>RecoveryStrategyConclusion</DataTypeIdentifier>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>RecoveryStrategyNotFound</Identifier>
+      <Identifier>InvalidErrorIdentifier</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Property>
+    <Identifier>AvailableRecoveryStrategies</Identifier>
+    <DisplayName>Available Recovery Strategies</DisplayName>
+    <Description>Gets the available recovery strategies by this server</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <List>
+        <DataType>
+          <Basic>String</Basic>
+        </DataType>
+      </List>
+    </DataType>
+  </Property>
+  <DefinedExecutionError>
+    <Identifier>RecoveryStrategyNotFound</Identifier>
+    <DisplayName>Recovery Strategy Not Found</DisplayName>
+    <Description>Denotes the error that the given recovery strategy does not exist</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InvalidErrorIdentifier</Identifier>
+    <DisplayName>Invalid Error Identifier</DisplayName>
+    <Description>Denotes the error that the given error identifier is invalid</Description>
+  </DefinedExecutionError>
+  <DataTypeDefinition>
+    <Identifier>ErrorSignature</Identifier>
+    <DisplayName>Error Signature</DisplayName>
+    <Description>The error signature.</Description>
+    <DataType>
+      <Structure>
+        <Element>
+          <Identifier>Identifier</Identifier>
+          <DisplayName>Identifier</DisplayName>
+          <Description>The identifier for the error</Description>
+          <DataType>
+            <DataTypeIdentifier>ErrorIdentifier</DataTypeIdentifier>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>CommandIdentifier</Identifier>
+          <DisplayName>CommandIdentifier</DisplayName>
+          <Description>The identifier of the command that was executed when the error happened</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>ExceptionTypeName</Identifier>
+          <DisplayName>ExceptionTypeName</DisplayName>
+          <Description>The name of the exception that was raised</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>ErrorCode</Identifier>
+          <DisplayName>ErrorCode</DisplayName>
+          <Description>The error code.</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+      </Structure>
+    </DataType>
+  </DataTypeDefinition>
+  <DataTypeDefinition>
+    <Identifier>ErrorIdentifier</Identifier>
+    <DisplayName>Error Identifier</DisplayName>
+    <Description>The identifier of the error.</Description>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+  </DataTypeDefinition>
+  <DataTypeDefinition>
+    <Identifier>RecoveryStrategyConclusion</Identifier>
+    <DisplayName>Recovery Strategy Conclusion</DisplayName>
+    <Description />
+    <DataType>
+      <Constrained>
+        <DataType>
+          <Basic>String</Basic>
+        </DataType>
+        <Constraints>
+          <Set>
+            <Value>EndWithError</Value>
+            <Value>EndWithoutError</Value>
+            <Value>Continue</Value>
+            <Value>Retry</Value>
+          </Set>
+        </Constraints>
+      </Constrained>
+    </DataType>
+  </DataTypeDefinition>
+</Feature>

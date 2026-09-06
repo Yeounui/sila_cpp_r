@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- OVERLAY of third_party/sila_base/schema/Constraints.xsd (submodule pin
+     878903c0d1026b96b325e947e9c59baf8b265f51, sila_base v1.2). Three changes vs
+     upstream, all required by SiLA 2 Part B:
+       1. Factor/Offset are xs:double, not xs:decimal (Part B p84-85: a real
+          number as defined per IEEE 754 double-precision floating point;
+          xs:decimal rejects valid double literals like 6.022e23, INF, NaN).
+       2. ElementCount/MinimalElementCount/MaximalElementCount are
+          xs:nonNegativeInteger, not xs:positiveInteger (Part B p85: the
+          Constraint Value MUST be an integer equal or greater than zero (0);
+          xs:positiveInteger wrongly rejects a 0 bound, e.g. an empty list).
+       3. MinimalLength is xs:nonNegativeInteger, not xs:positiveInteger (Part A
+          p67 / Part B p83: the MinimalLength Constraint Value MUST be an integer
+          equal or greater than zero (0); MaximalLength stays xs:positiveInteger
+          because Part B p83 requires it greater than zero).
+     sila_base is a submodule that must not be edited in place; regenerate this
+     file on a submodule bump; tests/codegen/test_fdl_validation.py's drift
+     guard enforces that ONLY these six element lines differ. -->
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="http://www.sila-standard.org"
+    targetNamespace="http://www.sila-standard.org">
+  <xs:include schemaLocation="DataTypes.xsd"/>
+  <xs:complexType name="Constraints">
+    <!-- All constraints should be unique for a constrained type -->
+    <xs:all>
+      <xs:element type="xs:nonNegativeInteger" name="Length" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: String, Binary</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:nonNegativeInteger" name="MinimalLength" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: String, Binary</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:positiveInteger" name="MaximalLength" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: String, Binary</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Set" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element type="xs:string" name="Value" maxOccurs="unbounded" minOccurs="1">
+              <xs:annotation>
+                <xs:documentation>Applicable to SiLA basic type: String, Integer[xs:integer], Real[xs:double],
+                  Date[xs:date], Time[xs:time] and Timestamp[xs:dateTime]</xs:documentation>
+              </xs:annotation>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element type="xs:string" name="Pattern" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: String. The pattern needs to be an XML schema regular expression</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:string" name="MaximalExclusive" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Applicable to SiLA basic type: Integer[xs:double], Real[xs:double],
+            Date[xs:date], Time[xs:time] and Timestamp[xs:dateTime]
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:string" name="MaximalInclusive" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Applicable to SiLA basic type: Integer[xs:double], Real[xs:double],
+            Date[xs:date], Time[xs:time] and Timestamp[xs:dateTime]
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:string" name="MinimalExclusive" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Applicable to SiLA basic type: Integer[xs:double], Real[xs:double],
+            Date[xs:date], Time[xs:time] and Timestamp[xs:dateTime]
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:string" name="MinimalInclusive" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Applicable to SiLA basic type: Integer[xs:double], Real[xs:double],
+            Date[xs:date], Time[xs:time] and Timestamp[xs:dateTime]
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Unit" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: Integer, Real</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element type="xs:string" name="Label"/>
+            <xs:element type="xs:double" name="Factor"/>
+            <xs:element type="xs:double" name="Offset"/>
+            <xs:element name="UnitComponent" minOccurs="1" maxOccurs="unbounded">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="SIUnit">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="Dimensionless"/>
+                        <xs:enumeration value="Meter"/>
+                        <xs:enumeration value="Kilogram"/>
+                        <xs:enumeration value="Second"/>
+                        <xs:enumeration value="Ampere"/>
+                        <xs:enumeration value="Kelvin"/>
+                        <xs:enumeration value="Mole"/>
+                        <xs:enumeration value="Candela"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:element>
+                  <xs:element type="xs:integer" name="Exponent"/>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="ContentType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: String, Binary</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element type="xs:string" name="Type"/>
+            <xs:element type="xs:string" name="Subtype"/>
+            <xs:element name="Parameters" minOccurs="0">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Parameter" minOccurs="1" maxOccurs="unbounded">
+                    <xs:complexType>
+                      <xs:sequence>
+                        <xs:element type="xs:string" name="Attribute"/>
+                        <xs:element type="xs:string" name="Value"/>
+                      </xs:sequence>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element type="xs:nonNegativeInteger" name="ElementCount" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA derived type: List</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:nonNegativeInteger" name="MinimalElementCount" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA derived type: List</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element type="xs:nonNegativeInteger" name="MaximalElementCount" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA derived type: List</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="FullyQualifiedIdentifier" minOccurs="0">
+        <xs:simpleType>
+          <xs:annotation>
+            <xs:documentation>Applicable to SiLA basic type: String</xs:documentation>
+          </xs:annotation>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="FeatureIdentifier"/>
+            <xs:enumeration value="CommandIdentifier"/>
+            <xs:enumeration value="CommandParameterIdentifier"/>
+            <xs:enumeration value="CommandResponseIdentifier"/>
+            <xs:enumeration value="IntermediateCommandResponseIdentifier"/>
+            <xs:enumeration value="DefinedExecutionErrorIdentifier"/>
+            <xs:enumeration value="PropertyIdentifier"/>
+            <xs:enumeration value="TypeIdentifier"/>
+            <xs:enumeration value="MetadataIdentifier"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Schema" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type: String, Binary</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Type">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="Xml"/>
+                  <xs:enumeration value="Json"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:element>
+            <xs:choice>
+              <xs:element type="xs:string" name="Url"/>
+              <xs:element type="xs:string" name="Inline"/>
+            </xs:choice>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="AllowedTypes" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Applicable to SiLA basic type Any</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element type="tns:DataTypeType" name="DataType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:all>
+  </xs:complexType>
+</xs:schema>

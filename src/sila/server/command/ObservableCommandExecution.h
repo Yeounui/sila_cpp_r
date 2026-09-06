@@ -87,6 +87,16 @@ public:
 
     // --- Lifetime / expiration ---
 
+    /// @return The lifetime this execution was constructed with. Zero means it
+    ///         never expires, which is also SiLA 2's meaning for an UNSET
+    ///         CommandConfirmation.lifetimeOfExecution -- so a caller stamping
+    ///         the wire field must SKIP it when this is zero rather than send
+    ///         Duration{0}, which states "already expired".
+    [[nodiscard("caller expects the configured lifetime")]]
+    // Defined inline unlike the sibling accessors: lifetime_ is const and
+    // read lock-free, so there is no locking detail to hide in the .cc.
+    std::chrono::seconds lifetime() const { return lifetime_; }
+
     /// @return true if this execution has finished AND the lifetime has elapsed.
     ///         Always false if lifetime is zero (never expires).
     [[nodiscard("caller needs to know if this execution is eligible for GC")]]

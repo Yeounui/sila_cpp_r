@@ -73,8 +73,15 @@ public:
     ~ObservablePropertyManager();
 
     /// Register a subscriber for propertyId.
-    /// If initialValue has a value, it is enqueued atomically with subscription
-    /// creation so no publish can slip between registration and the initial push.
+    /// A new subscriber receives the property's current value immediately, before
+    /// any change (SiLA Part A: an Observable Property "can be read at any time",
+    /// yet the only RPC generated for it is Subscribe_<Prop>, so the current value
+    /// MUST arrive on subscribe). That value is, in order of preference: an
+    /// explicit initialValue if the caller supplies one, else the last value seen
+    /// by publish(). Either is enqueued atomically with subscription creation so
+    /// no publish can slip between registration and the initial push. Before the
+    /// first publish and with no explicit initialValue, nothing is pushed (the
+    /// property has no value yet).
     std::shared_ptr<Subscription> subscribe(
         const std::string& propertyId,
         std::any initialValue = {},
@@ -100,8 +107,15 @@ public:
 private:
     const std::size_t defaultQueueDepth_;
     mutable std::mutex mu_;
+    bool shuttingDown_{false};
     std::unordered_map<std::string,
                        std::vector<std::shared_ptr<Subscription>>> subscribers_;
+    // Last value published per property, replayed to each new subscriber as its
+    // initial value. Retained even when a property has zero subscribers -- that
+    // is precisely the case the initial push exists for: a value published
+    // before anyone subscribed (e.g. a recoverable error raised before a client
+    // opened its subscription) would otherwise be lost to a later subscriber.
+    std::unordered_map<std::string, std::any> lastValues_;
 };
 
 }  // namespace sila2

@@ -43,7 +43,9 @@ venv/
 # ── Local-only reference material ──
 reference/sila_java/
 reference/sila_cpp/
-
+reference/docs/**
+reference/sila2-specification/**
+!reference/docs/README_ko.md
 
 # ── TLS/auth certs (e.g. SilaServerBase self-signed certs) ─
 *.pem
@@ -66,10 +68,12 @@ examples/**/*_config/
 Thumbs.db
 
 # ── Claude Code / MCP ────────────────────────────────────
-.claude/
+.claude
+.codex/
+.codegraph/
 .mcp.json
 CLAUDE.md
-repo_skeleton.md
+AGENTS.md
 
 # Local env files that commonly hold API keys/tokens
 .env

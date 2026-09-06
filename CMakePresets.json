@@ -3,8 +3,82 @@
   "configurePresets": [
     {
       "name": "default",
-      "binaryDir": "${sourceDir}/build",
-      "toolchainFile": "${sourceDir}/third_party/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      "binaryDir": "${sourceDir}/build/gcc",
+      "toolchainFile": "${sourceDir}/third_party/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/vcpkg-overlays/ports",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-overlays/triplets"
+      }
+    },
+    {
+      "name": "asan",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/asan",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer -g -fno-sanitize-recover=undefined",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
+      }
+    },
+    {
+      "name": "tsan",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/tsan",
+      "description": "GCC TSan crashes on WSL2 high-entropy ASLR; clang re-execs around it. Clean build/tsan before first configure.",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "-fsanitize=thread -g",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=thread",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=thread"
+      }
+    },
+    {
+      "name": "clang",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/clang",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "otel",
+      "inherits": "default",
+      "binaryDir": "${sourceDir}/build/otel",
+      "cacheVariables": {
+        "SILA_ENABLE_OTEL": "ON",
+        "VCPKG_MANIFEST_FEATURES": "otel"
+      }
+    },
+    {
+      "name": "fuzz",
+      "inherits": "clang",
+      "binaryDir": "${sourceDir}/build/fuzz",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=fuzzer-no-link,address -fno-omit-frame-pointer -g",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address"
+      }
     }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "output": { "outputOnFailure": true }
+    },
+    { "name": "asan",  "inherits": "default", "configurePreset": "asan" },
+    {
+      "name": "tsan",
+      "inherits": "default",
+      "configurePreset": "tsan",
+      "environment": {
+        "TSAN_OPTIONS": "suppressions=${sourceDir}/tests/tsan_suppressions.txt"
+      }
+    },
+    { "name": "clang", "inherits": "default", "configurePreset": "clang" },
+    { "name": "otel",  "inherits": "default", "configurePreset": "otel" },
+    { "name": "fuzz",  "inherits": "default", "configurePreset": "fuzz" }
   ]
 }

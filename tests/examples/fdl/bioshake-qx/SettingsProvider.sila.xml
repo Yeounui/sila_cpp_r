@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Verified" Originator="org.silastandard"
+         Category="examples"
+         xmlns="http://www.sila-standard.org"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>SettingsService</Identifier>
+  <DisplayName>Settings Service</DisplayName>
+  <Description>Feature to handle settings</Description>
+
+  <Property>
+    <Identifier>SerialPort</Identifier>
+    <DisplayName>Serial Port</DisplayName>
+    <Description>Serial port used</Description>
+    <Observable>No</Observable>
+    <DataType><Basic>String</Basic></DataType>
+  </Property>
+
+  <Command>
+    <Identifier>SetSerialPort</Identifier>
+    <DisplayName>Set Serial Port</DisplayName>
+    <Description>Set serial port to use</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>PortName</Identifier>
+      <DisplayName>Port Name</DisplayName>
+      <Description>Port name, e.g. COM3 or /dev/ttyS1</Description>
+      <DataType><Basic>String</Basic></DataType>
+    </Parameter>
+  </Command>
+</Feature>

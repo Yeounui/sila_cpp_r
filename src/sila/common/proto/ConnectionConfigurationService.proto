@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.connectionconfigurationservice.v1;
+
+/*
+    This Feature MUST be implemented by each SiLA Server that offers a Server-initiated connection.
+   */
+service ConnectionConfigurationService {
+    /* Enable the server initiated connection mode. */
+    rpc EnableServerInitiatedConnectionMode(sila2.org.silastandard.core.connectionconfigurationservice.v1.EnableServerInitiatedConnectionMode_Parameters) returns (sila2.org.silastandard.core.connectionconfigurationservice.v1.EnableServerInitiatedConnectionMode_Responses) {}
+    /* Disable the server initiated connection mode. */
+    rpc DisableServerInitiatedConnectionMode(sila2.org.silastandard.core.connectionconfigurationservice.v1.DisableServerInitiatedConnectionMode_Parameters) returns (sila2.org.silastandard.core.connectionconfigurationservice.v1.DisableServerInitiatedConnectionMode_Responses) {}
+    /* Connect a new SiLA Client. */
+    rpc ConnectSiLAClient(sila2.org.silastandard.core.connectionconfigurationservice.v1.ConnectSiLAClient_Parameters) returns (sila2.org.silastandard.core.connectionconfigurationservice.v1.ConnectSiLAClient_Responses) {}
+    /* Disconnect a configured SiLA Client. */
+    rpc DisconnectSiLAClient(sila2.org.silastandard.core.connectionconfigurationservice.v1.DisconnectSiLAClient_Parameters) returns (sila2.org.silastandard.core.connectionconfigurationservice.v1.DisconnectSiLAClient_Responses) {}
+    /* Whether or not the server initiated connection mode is active. */
+    rpc Get_ServerInitiatedConnectionModeStatus(sila2.org.silastandard.core.connectionconfigurationservice.v1.Get_ServerInitiatedConnectionModeStatus_Parameters) returns (sila2.org.silastandard.core.connectionconfigurationservice.v1.Get_ServerInitiatedConnectionModeStatus_Responses) {}
+    /* Get the configured SiLA Clients used for server-initiated connections. */
+    rpc Get_ConfiguredSiLAClients(sila2.org.silastandard.core.connectionconfigurationservice.v1.Get_ConfiguredSiLAClients_Parameters) returns (sila2.org.silastandard.core.connectionconfigurationservice.v1.Get_ConfiguredSiLAClients_Responses) {}
+}
+
+/* Parameters for EnableServerInitiatedConnectionMode */
+message EnableServerInitiatedConnectionMode_Parameters {
+}
+
+/* Responses of EnableServerInitiatedConnectionMode */
+message EnableServerInitiatedConnectionMode_Responses {
+}
+
+/* Parameters for DisableServerInitiatedConnectionMode */
+message DisableServerInitiatedConnectionMode_Parameters {
+}
+
+/* Responses of DisableServerInitiatedConnectionMode */
+message DisableServerInitiatedConnectionMode_Responses {
+}
+
+/* Parameters for ConnectSiLAClient */
+message ConnectSiLAClient_Parameters {
+    sila2.org.silastandard.String ClientName = 1;  /* Name of the SiLA Client. Has to be unique among the already connected clients. */
+    sila2.org.silastandard.String SiLAClientHost = 2;  /* Host Address of the new SiLA Client. */
+    sila2.org.silastandard.Integer SiLAClientPort = 3;  /* Port of the new SiLA Client. */
+    sila2.org.silastandard.Boolean Persist = 4;  /* Whether or not to store the SiLA Client Connection. */
+}
+
+/* Responses of ConnectSiLAClient */
+message ConnectSiLAClient_Responses {
+}
+
+/* Parameters for DisconnectSiLAClient */
+message DisconnectSiLAClient_Parameters {
+    sila2.org.silastandard.String ClientName = 1;  /* Name of the SiLA Client. */
+    sila2.org.silastandard.Boolean Remove = 2;  /* Whether or not to remove the stored SiLA Client connection details. */
+}
+
+/* Responses of DisconnectSiLAClient */
+message DisconnectSiLAClient_Responses {
+}
+
+/* Parameters for Get_ServerInitiatedConnectionModeStatus */
+message Get_ServerInitiatedConnectionModeStatus_Parameters {
+}
+
+/* Responses of Get_ServerInitiatedConnectionModeStatus */
+message Get_ServerInitiatedConnectionModeStatus_Responses {
+    sila2.org.silastandard.Boolean ServerInitiatedConnectionModeStatus = 1;  /* Whether or not the server initiated connection mode is active. */
+}
+
+/* Parameters for Get_ConfiguredSiLAClients */
+message Get_ConfiguredSiLAClients_Parameters {
+}
+
+/* Responses of Get_ConfiguredSiLAClients */
+message Get_ConfiguredSiLAClients_Responses {
+    message ConfiguredSiLAClients_Struct {
+        sila2.org.silastandard.String ClientName = 1;  /* Name of the SiLA Client. */
+        sila2.org.silastandard.String SiLAClientHost = 2;  /* Host Address of the SiLA Client. */
+        sila2.org.silastandard.Integer SiLAClientPort = 3;  /* Port of the SiLA Client. */
+    }
+    repeated sila2.org.silastandard.core.connectionconfigurationservice.v1.Get_ConfiguredSiLAClients_Responses.ConfiguredSiLAClients_Struct ConfiguredSiLAClients = 1;  /* Get the configured SiLA Clients used for server-initiated connections. */
+}

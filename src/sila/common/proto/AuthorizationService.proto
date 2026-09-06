@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.authorizationservice.v1;
+
+/*
+    This Feature provides access control for the implementing server.
+
+    It specifies the SiLA Client Metadata for the access token, that has been provided by the
+    AuthenticationService core Feature.
+   */
+service AuthorizationService {
+    /* Get fully qualified identifiers of all features, commands and properties affected by AccessToken */
+    rpc Get_FCPAffectedByMetadata_AccessToken(sila2.org.silastandard.core.authorizationservice.v1.Get_FCPAffectedByMetadata_AccessToken_Parameters) returns (sila2.org.silastandard.core.authorizationservice.v1.Get_FCPAffectedByMetadata_AccessToken_Responses) {}
+}
+
+/* Parameters for Get_FCPAffectedByMetadata_AccessToken */
+message Get_FCPAffectedByMetadata_AccessToken_Parameters {
+}
+
+/* Responses of Get_FCPAffectedByMetadata_AccessToken */
+message Get_FCPAffectedByMetadata_AccessToken_Responses {
+    repeated sila2.org.silastandard.String AffectedCalls = 1;  /* Fully qualified identifiers of all features, commands and properties affected by AccessToken */
+}
+
+/*
+    Token to be sent with every call in order to get access to the SiLA Server functionality.
+   */
+message Metadata_AccessToken {
+    sila2.org.silastandard.String AccessToken = 1;  /* Token to be sent with every call in order to get access to the SiLA Server functionality. */
+}

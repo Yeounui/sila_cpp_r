@@ -32,6 +32,41 @@ TEST(ObservablePropertyManager, InitialValue) {
     EXPECT_EQ(std::any_cast<int>(*value), 99);
 }
 
+// The reported bug: a value published before anyone subscribed must still
+// reach a subscriber that arrives afterwards, with no further publish.
+TEST(ObservablePropertyManager, ReplaysLastValueToLateSubscriber) {
+    ObservablePropertyManager manager;
+    manager.publish("prop1", std::any{42});
+
+    auto sub = manager.subscribe("prop1");
+    auto value = sub->waitForNext();
+    ASSERT_TRUE(value.has_value());
+    EXPECT_EQ(std::any_cast<int>(*value), 42);
+}
+
+// A late subscriber replays the LAST published value, not the first.
+TEST(ObservablePropertyManager, ReplaysMostRecentValue) {
+    ObservablePropertyManager manager;
+    manager.publish("prop1", std::any{1});
+    manager.publish("prop1", std::any{2});
+
+    auto sub = manager.subscribe("prop1");
+    auto value = sub->waitForNext();
+    ASSERT_TRUE(value.has_value());
+    EXPECT_EQ(std::any_cast<int>(*value), 2);
+}
+
+// An explicit initialValue takes precedence over the retained last value.
+TEST(ObservablePropertyManager, ExplicitInitialValueOverridesRetained) {
+    ObservablePropertyManager manager;
+    manager.publish("prop1", std::any{42});
+
+    auto sub = manager.subscribe("prop1", std::any{99});
+    auto value = sub->waitForNext();
+    ASSERT_TRUE(value.has_value());
+    EXPECT_EQ(std::any_cast<int>(*value), 99);
+}
+
 TEST(ObservablePropertyManager, MultipleSubscribers) {
     ObservablePropertyManager manager;
     auto sub1 = manager.subscribe("prop1");
@@ -107,6 +142,15 @@ TEST(ObservablePropertyManager, ShutdownCancelsAll) {
         sub = manager.subscribe("prop1");
     }
     EXPECT_TRUE(sub->isCancelled());
+}
+
+TEST(ObservablePropertyManager, SubscribeAfterShutdownIsCancelled) {
+    ObservablePropertyManager manager;
+    manager.shutdown();
+    auto sub = manager.subscribe("prop1");
+
+    EXPECT_TRUE(sub->isCancelled());
+    EXPECT_EQ(manager.subscriberCount("prop1"), 0);
 }
 
 TEST(ObservablePropertyManager, SubscriberCount) {

@@ -10,3 +10,10 @@ dependencies = [
 
 [dependency-groups]
 dev = ["pytest"]
+validation = [
+    "pytest>=7.0",
+    "sila2>=0.3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["../../tests/codegen"]

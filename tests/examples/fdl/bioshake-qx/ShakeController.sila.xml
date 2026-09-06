@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Verified"
+  Originator="org.silastandard"
+  Category="examples"
+  xmlns="http://www.sila-standard.org"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>ShakeController</Identifier>
+  <DisplayName>Shake Controller</DisplayName>
+  <Description>Features to control shaking</Description>
+  <Command>
+    <Identifier>ShakeForTime</Identifier>
+    <DisplayName>Shake On With Runtime</DisplayName>
+    <Description>Run the shaker for a defined runtime with the requested speed and acceleration.</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>Runtime</Identifier>
+      <DisplayName>Runtime (s)</DisplayName>
+      <Description>Runtime in seconds</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>s</Label>
+              <Factor>1</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>99999</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>TargetSpeed</Identifier>
+      <DisplayName>Target Speed (rpm)</DisplayName>
+      <Description>Target speed in rpm</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>rpm</Label>
+              <Factor>0.0166666666666666667</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>-1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>200</MinimalInclusive>
+            <MaximalInclusive>3000</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>TargetAcceleration</Identifier>
+      <DisplayName>Target Acceleration (s)</DisplayName>
+      <Description>Target acceleration in seconds</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>s</Label>
+              <Factor>1</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>0</MinimalInclusive>
+            <MaximalInclusive>99</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <IntermediateResponse>
+      <Identifier>TimeLeft</Identifier>
+      <DisplayName>Time Left (s)</DisplayName>
+      <Description>Time left in seconds</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>s</Label>
+              <Factor>1</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </IntermediateResponse>
+    <DefinedExecutionErrors>
+      <Identifier>TimeoutError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>StopShaking</Identifier>
+    <DisplayName>Stop Shaking</DisplayName>
+    <Description>Stop shaking</Description>
+    <Observable>No</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>TimeoutError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>StartShaking</Identifier>
+    <DisplayName>Start Shaking</DisplayName>
+    <Description>Run the shaker for an undefined amount of time with the requested speed and acceleration.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>TargetSpeed</Identifier>
+      <DisplayName>Target Speed (rpm)</DisplayName>
+      <Description>Target speed in rpm</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>rpm</Label>
+              <Factor>0.0166666666666666667</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>-1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>200</MinimalInclusive>
+            <MaximalInclusive>3000</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>TargetAcceleration</Identifier>
+      <DisplayName>Target Acceleration (s)</DisplayName>
+      <Description>Target acceleration in seconds</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>s</Label>
+              <Factor>1</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>0</MinimalInclusive>
+            <MaximalInclusive>99</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>TimeoutError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>GoHome</Identifier>
+    <DisplayName>GoHome</DisplayName>
+    <Description>Move the plate to home position.</Description>
+    <Observable>No</Observable>
+  </Command>
+  <Command>
+    <Identifier>UnlockPlate</Identifier>
+    <DisplayName>Unlock Plate</DisplayName>
+    <Description>Unlock plate</Description>
+    <Observable>No</Observable>
+  </Command>
+  <Command>
+    <Identifier>LockPlate</Identifier>
+    <DisplayName>Lock Plate</DisplayName>
+    <Description>Lock the plate</Description>
+    <Observable>No</Observable>
+  </Command>
+
+  <DefinedExecutionError>
+    <Identifier>TimeoutError</Identifier>
+    <DisplayName>Timeout Error</DisplayName>
+    <Description>Result was not reached on time</Description>
+  </DefinedExecutionError>
+</Feature>

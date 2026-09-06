@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SiLA2Version="1.0" FeatureVersion="1.0" Originator="com.tecan" Category="infrastructure" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd" xmlns="http://www.sila-standard.org">
+  <Identifier>RestartService</Identifier>
+  <DisplayName>Restart Service</DisplayName>
+  <Description>Interface for restarting service.</Description>
+  <Command>
+    <Identifier>Restart</Identifier>
+    <DisplayName>Restart</DisplayName>
+    <Description>Restarts the service.</Description>
+    <Observable>No</Observable>
+  </Command>
+</Feature>

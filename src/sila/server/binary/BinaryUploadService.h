@@ -1,0 +1,60 @@
+// BinaryUploadService.h — Binary Upload gRPC service (architecture.md §3.5)
+#pragma once
+
+#include <chrono>
+#include <string_view>
+
+#include <SiLABinaryTransfer.grpc.pb.h>
+
+#include <sila/server/transport/SilaHandler.h>
+
+namespace sila2 {
+
+class BinaryStore;
+struct InterceptorChain;
+
+// S14 option B (defence in depth): UploadChunk and DeleteBinary now gate on
+// this feature-level FQI too, mirroring kBinaryDownloadFqi
+// (BinaryDownloadService.h:16) — see the comment at those two dispatchToHandler
+// call sites in BinaryUploadService.cc for why CreateBinary keeps gating on
+// parameterIdentifier instead.
+inline constexpr std::string_view kBinaryUploadFqi = "org.silastandard/core/BinaryUpload/v1";
+
+/// gRPC service implementation for SiLA 2 Binary Upload (architecture.md §3.5).
+/// Delegates chunk storage and assembly to a BinaryStore; this class only
+/// translates gRPC request/response messages to/from BinaryStore calls.
+class BinaryUploadService final : public sila2::org::silastandard::BinaryUpload::Service {
+public:
+    BinaryUploadService(BinaryStore& store, std::chrono::seconds defaultLifetime,
+                        const InterceptorChain* chain = nullptr);
+
+    grpc::Status CreateBinary(grpc::ServerContext* context,
+                              const sila2::org::silastandard::CreateBinaryRequest* request,
+                              sila2::org::silastandard::CreateBinaryResponse* response) override;
+
+    grpc::Status UploadChunk(grpc::ServerContext* context,
+                             grpc::ServerReaderWriter<sila2::org::silastandard::UploadChunkResponse,
+                                                      sila2::org::silastandard::UploadChunkRequest>* stream) override;
+
+    grpc::Status DeleteBinary(grpc::ServerContext* context,
+                              const sila2::org::silastandard::DeleteBinaryRequest* request,
+                              sila2::org::silastandard::DeleteBinaryResponse* response) override;
+
+    grpc::Status createBinary(const sila2::org::silastandard::CreateBinaryRequest& request,
+                              CallContext& ctx,
+                              ResponseSink<sila2::org::silastandard::CreateBinaryResponse>& sink);
+    grpc::Status uploadChunk(const sila2::org::silastandard::UploadChunkRequest& request,
+                             CallContext& ctx,
+                             ResponseSink<sila2::org::silastandard::UploadChunkResponse>& sink);
+    grpc::Status deleteBinary(const sila2::org::silastandard::DeleteBinaryRequest& request,
+                              CallContext& ctx,
+                              ResponseSink<sila2::org::silastandard::DeleteBinaryResponse>& sink);
+
+private:
+    // Reference, not owned: BinaryStore outlives this service (owned by the server setup).
+    BinaryStore& store_;
+    std::chrono::seconds defaultLifetime_;
+    const InterceptorChain* chain_;
+};
+
+}  // namespace sila2

@@ -1,0 +1,32 @@
+{% macro render_message(msg, indent) %}
+{% if msg.comment is not none %}
+{{ indent }}/* {{ msg.comment }} */
+{% endif %}
+{{ indent }}message {{ msg.name }} {
+{% for nested in msg.nested %}
+{{ render_message(nested, indent ~ '    ') }}
+{% endfor %}
+{% for f in msg.fields %}
+{{ indent }}    {% if f.repeated %}repeated {% endif %}{{ f.type }} {{ f.name }} = {{ f.number }};  /* {{ f.description }} */
+{% endfor %}
+{{ indent }}}
+{%- endmacro %}
+syntax = "proto3";
+
+{% if import_framework %}
+import "SiLAFramework.proto";
+
+{% endif %}
+package {{ package }};
+
+/* {{ feature_description }} */
+service {{ feature_identifier }} {
+{% for rpc in service_rpcs %}
+    /* {{ rpc.comment }} */
+    rpc {{ rpc.signature }} {}
+{% endfor %}
+}
+{% for msg in messages %}
+
+{{ render_message(msg, '') }}
+{% endfor %}

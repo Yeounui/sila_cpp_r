@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.lockcontroller.v1;
+
+/* 
+    This Feature allows a SiLA Client to lock a SiLA Server for exclusive use, preventing other SiLA Clients
+    from using the SiLA Server while it is locked. To lock a SiLA Server a Lock Identifier has to be set, using the
+    'LockServer' command. This Lock Identifier has to be sent along with every (lock protected)
+    request to the SiLA Server in order to use its functionality.
+
+    To send the lock identifier the SiLA Client Meta Data 'LockIdentifier' has to be used.
+
+    When locking a SiLA Server a timeout can be specified that defines the time after which the SiLA Server will
+    be automatically unlocked if no request with a valid lock identifier has been received meanwhile.
+    After the timeout has expired or after explicit unlock no lock identifier has to be sent any more.
+   */
+service LockController {
+    /* 
+      Locks a SiLA Server for exclusive use by setting a lock identifier that has to be sent along with
+      any following (lock protected) request as long as the SiLA Server is locked.
+      The lock can be reset by issuing the 'Unlock Server' command.
+     */
+    rpc LockServer(sila2.org.silastandard.core.lockcontroller.v1.LockServer_Parameters) returns (sila2.org.silastandard.core.lockcontroller.v1.LockServer_Responses) {}
+    /* 
+      Unlocks a locked SiLA Server. No lock identifier has to be sent for any following calls until
+      the server is locked again via the 'Lock Server' command.
+     */
+    rpc UnlockServer(sila2.org.silastandard.core.lockcontroller.v1.UnlockServer_Parameters) returns (sila2.org.silastandard.core.lockcontroller.v1.UnlockServer_Responses) {}
+    /* 
+      Returns true if the SiLA Server is currently locked or false else.
+
+      This property MUST NOT be lock protected, so that any SiLA Client can query the current lock state
+      of a SiLA Server.
+     */
+    rpc Get_IsLocked(sila2.org.silastandard.core.lockcontroller.v1.Get_IsLocked_Parameters) returns (sila2.org.silastandard.core.lockcontroller.v1.Get_IsLocked_Responses) {}
+    /* Get fully qualified identifiers of all features, commands and properties affected by LockIdentifier */
+    rpc Get_FCPAffectedByMetadata_LockIdentifier(sila2.org.silastandard.core.lockcontroller.v1.Get_FCPAffectedByMetadata_LockIdentifier_Parameters) returns (sila2.org.silastandard.core.lockcontroller.v1.Get_FCPAffectedByMetadata_LockIdentifier_Responses) {}
+}
+
+/* Parameters for LockServer */
+message LockServer_Parameters {
+    sila2.org.silastandard.String LockIdentifier = 1;  /* 
+        The lock identifier that has to be sent along with every (lock protected) request to use the server's
+        functionality.
+       */
+    sila2.org.silastandard.Integer Timeout = 2;  /* 
+        The time (in seconds) after a SiLA Server is automatically unlocked when no request with a valid lock identifier
+        has been received meanwhile. A timeout of zero seconds specifies an infinite time (no timeout).
+       */
+}
+
+/* Responses of LockServer */
+message LockServer_Responses {
+}
+
+/* Parameters for UnlockServer */
+message UnlockServer_Parameters {
+    sila2.org.silastandard.String LockIdentifier = 1;  /* The lock identifier that has been used to lock the SiLA Server. */
+}
+
+/* Responses of UnlockServer */
+message UnlockServer_Responses {
+}
+
+/* Parameters for IsLocked */
+message Get_IsLocked_Parameters {
+}
+
+/* Responses of IsLocked */
+message Get_IsLocked_Responses {
+    sila2.org.silastandard.Boolean IsLocked = 1;  /* 
+      Returns true if the SiLA Server is currently locked or false else.
+
+      This property MUST NOT be lock protected, so that any SiLA Client can query the current lock state
+      of a SiLA Server.
+     */
+}
+
+/* Parameters for Get_FCPAffectedByMetadata_LockIdentifier */
+message Get_FCPAffectedByMetadata_LockIdentifier_Parameters {
+}
+
+/* Responses of Get_FCPAffectedByMetadata_LockIdentifier */
+message Get_FCPAffectedByMetadata_LockIdentifier_Responses {
+    repeated sila2.org.silastandard.String AffectedCalls = 1;  /* Fully qualified identifiers of all features, commands and properties affected by LockIdentifier */
+}
+
+/* 
+      The lock identifier has to be sent with every (lock protected) call in order to use the functionality
+      of a locked SiLA Server.
+     */
+message Metadata_LockIdentifier {
+    sila2.org.silastandard.String LockIdentifier = 1;  /* 
+      The lock identifier has to be sent with every (lock protected) call in order to use the functionality
+      of a locked SiLA Server.
+     */
+}

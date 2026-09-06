@@ -4,9 +4,18 @@
   "dependencies": [
     "protobuf",
     "grpc",
-    "pugixml",
+    "libxml2",
+    "libxslt",
     "mdns",
-    "openssl",
-    "gtest"
-  ]
+    "boringssl",
+    "gtest",
+    "nlohmann-json",
+    "json-schema-validator"
+  ],
+  "features": {
+    "otel": {
+      "description": "OpenTelemetry tracing support",
+      "dependencies": ["opentelemetry-cpp"]
+    }
+  }
 }

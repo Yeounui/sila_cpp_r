@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Verified"
+  Originator="org.silastandard"
+  Category="examples"
+  xmlns="http://www.sila-standard.org"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>TemperatureController</Identifier>
+  <DisplayName>Temperature Controller</DisplayName>
+  <Description>
+	Feature to control temperature
+  </Description>
+
+  <Command>
+    <Identifier>EnableTemperatureControl</Identifier>
+    <DisplayName>Enable Temperature Control</DisplayName>
+    <Description>Enable temperature control</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>TargetTemperature</Identifier>
+      <DisplayName>Target Temperature (°C)</DisplayName>
+      <Description>Target temperature in degrees C</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>°C</Label>
+              <Factor>1</Factor>
+              <Offset>273.15</Offset>
+              <UnitComponent>
+                <SIUnit>Kelvin</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>-20</MinimalInclusive>
+            <MaximalInclusive>99.9</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Timeout</Identifier>
+      <DisplayName>Timeout (s)</DisplayName>
+      <Description>Timeout in seconds</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>s</Label>
+              <Factor>1</Factor>
+              <Offset>0</Offset>
+              <UnitComponent>
+                <SIUnit>Second</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>99999</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <IntermediateResponse>
+      <Identifier>Temperature</Identifier>
+      <DisplayName>Temperature (°C)</DisplayName>
+      <Description>Temperature in degrees C</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <Unit>
+              <Label>°C</Label>
+              <Factor>1</Factor>
+              <Offset>273.15</Offset>
+              <UnitComponent>
+                <SIUnit>Kelvin</SIUnit>
+                <Exponent>1</Exponent>
+              </UnitComponent>
+            </Unit>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </IntermediateResponse>
+    <DefinedExecutionErrors>
+      <Identifier>TimeoutError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <Command>
+    <Identifier>DisableTemperatureControl</Identifier>
+    <DisplayName>Disable Temperature Control</DisplayName>
+    <Description>Stop temperature regulation</Description>
+    <Observable>No</Observable>
+  </Command>
+
+  <!-- Errors -->
+  <DefinedExecutionError>
+    <Identifier>TimeoutError</Identifier>
+    <DisplayName>Timeout Error</DisplayName>
+    <Description>Result was not reached on time</Description>
+  </DefinedExecutionError>
+
+</Feature>

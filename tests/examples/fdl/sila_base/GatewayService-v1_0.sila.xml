@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Draft" Originator="com.tecan" Category="core"
+         xmlns="http://www.sila-standard.org"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+    <Identifier>GatewayService</Identifier>
+    <DisplayName>Gateway Service</DisplayName>
+    <Description>
+        This Feature provides a generic gateway functionality.
+
+        It specifies the SiLA Client Metadata for the index of the device in question.
+    </Description>
+    <Metadata>
+        <Identifier>DeviceIdentifier</Identifier>
+        <DisplayName>Device Identifier</DisplayName>
+        <Description>Identifier of the device that the call should be executed on</Description>
+        <DataType>
+            <Basic>String</Basic>
+        </DataType>
+        <DefinedExecutionErrors>
+            <Identifier>InvalidDeviceIdentifier</Identifier>
+        </DefinedExecutionErrors>
+    </Metadata>
+    <Command>
+        <Identifier>GetDeviceIdentifiers</Identifier>
+        <DisplayName>Get Device Identifiers</DisplayName>
+        <Description>Gets the identifiers of devices for which the feature is applicable.</Description>
+        <Observable>No</Observable>
+        <Parameter>
+            <Identifier>FeatureIdentifier</Identifier>
+            <DisplayName>Feature Identifier</DisplayName>
+            <Description>A fully qualified identifier of the feature</Description>
+            <DataType>
+                <Constrained>
+                    <DataType>
+                        <Basic>String</Basic>
+                    </DataType>
+                    <Constraints>
+                        <FullyQualifiedIdentifier>FeatureIdentifier</FullyQualifiedIdentifier>
+                    </Constraints>
+                </Constrained>
+            </DataType>
+        </Parameter>
+        <Response>
+            <Identifier>Identifiers</Identifier>
+            <DisplayName>Identifiers</DisplayName>
+            <Description>The identifiers of the devices that support this command</Description>
+            <DataType>
+                <List>
+                    <DataType>
+                        <Basic>String</Basic>
+                    </DataType>
+                </List>
+            </DataType>
+        </Response>
+        <DefinedExecutionErrors>
+            <Identifier>FeatureOutOfRange</Identifier>
+        </DefinedExecutionErrors>
+    </Command>
+    <DefinedExecutionError>
+        <Identifier>InvalidDeviceIdentifier</Identifier>
+        <DisplayName>Invalid Device Identifier</DisplayName>
+        <Description>The sent device identifier is not known.</Description>
+    </DefinedExecutionError>
+    <DefinedExecutionError>
+        <Identifier>FeatureOutOfRange</Identifier>
+        <DisplayName>Feature out of range</DisplayName>
+        <Description>For the given feature, a device identifier is not needed.</Description>
+    </DefinedExecutionError>
+</Feature>

@@ -1,0 +1,157 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.errorrecoveryservice.v2;
+
+/* 
+    This feature enables SiLA error handling during the execution of observable commands.
+    A client can subscribe to the property "Recoverable Errors" which contains a list of recoverable errors that occurred and are not
+    handled yet.
+    
+    If a recoverable error occurs during the execution of an observable command, a respective "Recoverable Error" item will be added to the 
+    list of the "Recoverable Errors" property. Each error item contains the error description, the command execution UUID of the observable 
+    command execution during which the error occurred, the time when the error occurred and a list of possible continuation options.
+    To handle the error, the client sends one of the provided continuation options together with the command execution UUID, using the
+    command "Execute Continuation Option".
+    
+    Within a continuation option the server can specify additional input data that has to be sent by the client in order to execute that
+    continuation option, e.g. an adjusted parameter value. The structure of the required data has to be described in the "Required Input Data"
+    field of the respective continuation option. The data must be contained in the "Input Data" field of the "Execute Continuation Option"
+    command.
+    When the server receives the continuation option the according error item will be removed from the list of the "Recoverable Errors" property.
+    
+    Instead of sending a continuation option the client alternatively can use the "Abort Error Handling" command (containing the command 
+    execution UUID) to stop the handling of the respective error. The server will treat this error as a 'normal' (unrecoverable) error
+    using the standard error mechanism of SiLA.
+
+    With the command "Set Error Handling Timeout" the maximum time can be specified that the server will wait for a selected continuation 
+    option before it stops the error handling by removing the current error from the list of the "Recoverable Errors" property and behaving 
+    like without executed  error handling by returning a 'normal' (unrecoverable) SiLA error.
+    This can be used if an instrument must not be in a (blocked) waiting state for more than a certain time in order to keep its functionality 
+    alive, because some service actions have to be regularly performed.
+
+    In case of multi client access it is recommended that only one client (preferably the one that issued the according command execution)
+    handles recoverable errors, e.g. by applying the "Lock Controller" feature.
+   */
+service ErrorRecoveryService {
+    /* Executes the selected option to recover the error. */
+    rpc ExecuteContinuationOption(sila2.org.silastandard.core.errorrecoveryservice.v2.ExecuteContinuationOption_Parameters) returns (sila2.org.silastandard.core.errorrecoveryservice.v2.ExecuteContinuationOption_Responses) {}
+    /* Stops the handling of the error. The server will treat this error as a not recovered error. */
+    rpc AbortErrorHandling(sila2.org.silastandard.core.errorrecoveryservice.v2.AbortErrorHandling_Parameters) returns (sila2.org.silastandard.core.errorrecoveryservice.v2.AbortErrorHandling_Responses) {}
+    /* 
+      Sets the maximum time that the server will wait for a selected continuation option in case of a recoverable error. If no continuation 
+      option is selected within the specified time the failed request will be answered with an unrecoverable error.
+      A value of zero specifies an indefinite time, meaning that the server will wait till a continuation options is sent.
+     */
+    rpc SetErrorHandlingTimeout(sila2.org.silastandard.core.errorrecoveryservice.v2.SetErrorHandlingTimeout_Parameters) returns (sila2.org.silastandard.core.errorrecoveryservice.v2.SetErrorHandlingTimeout_Responses) {}
+    /* A list of all recoverable errors that occurred during execution and have not been handled yet. */
+    rpc Subscribe_RecoverableErrors(sila2.org.silastandard.core.errorrecoveryservice.v2.Subscribe_RecoverableErrors_Parameters) returns (stream sila2.org.silastandard.core.errorrecoveryservice.v2.Subscribe_RecoverableErrors_Responses) {}
+}
+
+/* 
+      Describes an error that can be recovered by error handling. It contains error information (such as the command execution during
+      which the error occurred, the time when the error occurred and the description of the error situation) and a list of possible
+      continuation options.
+      One of the continuation options can be marked as default option. A timeout can be specified for the automatic execution of
+      that option if the client doesn't send a continuation option during the specified duration.
+     */
+message DataType_RecoverableError {
+    message RecoverableError_Struct {
+        sila2.org.silastandard.String ErrorIdentifier = 1;  /* Unique identifier of the error type */
+        sila2.org.silastandard.String CommandIdentifier = 2;  /* The fully qualified identifier of the command whose execution produced the error. */
+        sila2.org.silastandard.String CommandExecutionUUID = 3;  /* The UUID of the observable command execution during which the error occurred. */
+        sila2.org.silastandard.Timestamp ErrorTime = 4;  /* The point in time when the error occurred. */
+        sila2.org.silastandard.String ErrorMessage = 5;  /* 
+            This message describes the error situation. It should contain the reason of the error and additional error handling
+            explanation.
+           */
+        repeated sila2.org.silastandard.core.errorrecoveryservice.v2.DataType_ContinuationOption ContinuationOptions = 6;  /* A list of possible options to recover the error and continue the command execution. */
+        sila2.org.silastandard.String DefaultOption = 7;  /* 
+            The identifier of a continuation option that is marked as the preferred option. It must be an identifier of one of the elements of the
+            "Continuation Options" list.
+            It can also be defined to be automatically selected by the client after a timeout specified by the "Automatic Selection Timeout" element.
+           */
+        sila2.org.silastandard.core.errorrecoveryservice.v2.DataType_Timeout AutomaticSelectionTimeout = 8;  /* 
+            Specifies a timeout for handling the error by the client. If the user does not select a continuation option
+            within the specified duration, the client shall select the defined default option automatically.
+            A value of 0 means, that no automatic selection shall be done by the client.
+           */
+    }
+    sila2.org.silastandard.core.errorrecoveryservice.v2.DataType_RecoverableError.RecoverableError_Struct RecoverableError = 1;  /* 
+      Describes an error that can be recovered by error handling. It contains error information (such as the command execution during
+      which the error occurred, the time when the error occurred and the description of the error situation) and a list of possible
+      continuation options.
+      One of the continuation options can be marked as default option. A timeout can be specified for the automatic execution of
+      that option if the client doesn't send a continuation option during the specified duration.
+     */
+}
+
+/* Describes a possible option to recover an occurred error. */
+message DataType_ContinuationOption {
+    message ContinuationOption_Struct {
+        sila2.org.silastandard.String Identifier = 1;  /* The identifier of the continuation option. It must be unique within the "Recoverable Error" item. */
+        sila2.org.silastandard.String Description = 2;  /* 
+            A human readable text describing the continuation option. It must explain all required manual actions by the operator
+            as well as the actions that will be executed by the server and the expectable results when this option is selected.
+            If there is additional data that can be sent along with the continuation option, the kind of the data as well as the
+            required format must be described as well.
+           */
+        sila2.org.silastandard.String RequiredInputData = 3;  /* 
+            This field defines the structure of the additional input data that is required in order to execute this continuation
+            option. The format is a SiLA data type definition according to the schema DataTypes.xsd. If this field is empty no
+            additional data is required.
+           */
+    }
+    sila2.org.silastandard.core.errorrecoveryservice.v2.DataType_ContinuationOption.ContinuationOption_Struct ContinuationOption = 1;  /* Describes a possible option to recover an occurred error. */
+}
+
+/* The timeout in seconds */
+message DataType_Timeout {
+    sila2.org.silastandard.Integer Timeout = 1;  /* The timeout in seconds */
+}
+
+/* Parameters for ExecuteContinuationOption */
+message ExecuteContinuationOption_Parameters {
+    sila2.org.silastandard.String CommandExecutionUUID = 1;  /* The UUID of the observable command execution for which the error shall be handled. */
+    sila2.org.silastandard.String ContinuationOption = 2;  /* 
+        The identifier of the continuation option to be executed. It must match the identifier of one of the continuation options
+        specified in the 'ContinuationOptions' list of the according 'RecoverableError' object.
+       */
+    sila2.org.silastandard.Any InputData = 3;  /* 
+        If required this parameter contains the data that has to be sent along with a continuation option in order to execute the requested
+        recovery option. The kind of the data as well as the required format must be described in the 'RequiredInputData' field of the
+        respective continuation option.
+       */
+}
+
+/* Responses of ExecuteContinuationOption */
+message ExecuteContinuationOption_Responses {
+}
+
+/* Parameters for AbortErrorHandling */
+message AbortErrorHandling_Parameters {
+    sila2.org.silastandard.String CommandExecutionUUID = 1;  /* The UUID of the observable command execution for which the error handling shall be aborted. */
+}
+
+/* Responses of AbortErrorHandling */
+message AbortErrorHandling_Responses {
+}
+
+/* Parameters for SetErrorHandlingTimeout */
+message SetErrorHandlingTimeout_Parameters {
+    sila2.org.silastandard.core.errorrecoveryservice.v2.DataType_Timeout ErrorHandlingTimeout = 1;  /* The timeout in seconds. */
+}
+
+/* Responses of SetErrorHandlingTimeout */
+message SetErrorHandlingTimeout_Responses {
+}
+
+/* Parameters for RecoverableErrors */
+message Subscribe_RecoverableErrors_Parameters {
+}
+
+/* Responses of RecoverableErrors */
+message Subscribe_RecoverableErrors_Responses {
+    repeated sila2.org.silastandard.core.errorrecoveryservice.v2.DataType_RecoverableError RecoverableErrors = 1;  /* A list of all recoverable errors that occurred during execution and have not been handled yet. */
+}

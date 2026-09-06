@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.examples.settingsservice.v1;
+
+/* Feature to handle settings */
+service SettingsService {
+    /* Set serial port to use */
+    rpc SetSerialPort(sila2.org.silastandard.examples.settingsservice.v1.SetSerialPort_Parameters) returns (sila2.org.silastandard.examples.settingsservice.v1.SetSerialPort_Responses) {}
+    /* Serial port used */
+    rpc Get_SerialPort(sila2.org.silastandard.examples.settingsservice.v1.Get_SerialPort_Parameters) returns (sila2.org.silastandard.examples.settingsservice.v1.Get_SerialPort_Responses) {}
+}
+
+/* Parameters for SetSerialPort */
+message SetSerialPort_Parameters {
+    sila2.org.silastandard.String PortName = 1;  /* Port name, e.g. COM3 or /dev/ttyS1 */
+}
+
+/* Responses of SetSerialPort */
+message SetSerialPort_Responses {
+}
+
+/* Parameters for SerialPort */
+message Get_SerialPort_Parameters {
+}
+
+/* Responses of SerialPort */
+message Get_SerialPort_Responses {
+    sila2.org.silastandard.String SerialPort = 1;  /* Serial port used */
+}

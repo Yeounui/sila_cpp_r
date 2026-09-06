@@ -1,14 +1,15 @@
 // ObservableCommandManager.h — UUID → ObservableCommandExecution map (architecture.md §3.3)
 #pragma once
 
-#include <atomic>
 #include <chrono>
-#include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
 #include <unordered_map>
+#include <vector>
+
+#include <sila/common/util/PeriodicGC.h>
 
 namespace sila2 {
 
@@ -22,22 +23,26 @@ class ObservableCommandExecution;
 class ObservableCommandManager {
 public:
     ObservableCommandManager();
-    // Defined in the .cc: ObservableCommandExecution is only forward-declared
-    // above, and unique_ptr's deleter needs the complete type at the point
-    // where commands_ is destroyed.
+    // Defined in the .cc, not defaulted here, to call stopAutoGC() explicitly
+    // before commands_ tears down.
     ~ObservableCommandManager();
 
     /// Create and register a new command execution with an auto-generated UUID.
     /// @param lifetime Duration after finish before the execution is eligible for GC.
     ///                 Zero means never expires.
-    /// @return Reference to the newly created execution. Valid until removeExpired()
-    ///         or the manager is destroyed.
-    ObservableCommandExecution& addCommand(
+    /// @return Shared pointer keeping the execution alive for as long as the
+    ///         caller holds it, even if a concurrent removeExpired() sweep
+    ///         erases it from commands_ in the meantime (architecture.md §4.2d) —
+    ///         same lifetime guarantee as getCommand().
+    std::shared_ptr<ObservableCommandExecution> addCommand(
         std::chrono::seconds lifetime = std::chrono::seconds{0});
 
     /// Look up a command execution by UUID.
+    /// @return Shared pointer keeping the execution alive for as long as the
+    ///         caller holds it, even if a concurrent removeExpired() sweep
+    ///         erases it from commands_ in the meantime (architecture.md §4.2d).
     /// @throws sila2::error::FrameworkError with InvalidCommandExecutionUuid if not found.
-    ObservableCommandExecution& getCommand(const std::string& uuid);
+    std::shared_ptr<ObservableCommandExecution> getCommand(const std::string& uuid);
 
     /// Remove all finished executions whose lifetime has elapsed.
     /// @return Number of executions removed.
@@ -49,15 +54,28 @@ public:
     /// Start a background thread that calls removeExpired() every @p interval.
     /// No-op if auto-GC is already running.
     /// @param interval Sweep period.
-    void startAutoGC(std::chrono::seconds interval);
+    void startAutoGC(std::chrono::seconds interval) { gc_.start(interval); }
 
     /// Stop the background GC thread. No-op if not running.
     /// Also called by the destructor.
-    void stopAutoGC();
+    void stopAutoGC() { gc_.stop(); }
 
     /// @return true if the auto-GC background thread is running.
     [[nodiscard("caller expects the auto-GC status")]]
-    bool isAutoGCRunning() const;
+    bool isAutoGCRunning() const { return gc_.isRunning(); }
+
+    using RemovalCallback = std::function<void(const std::string& uuid)>;
+
+    /// Register an observer invoked per-UUID when removeExpired() erases an
+    /// execution. Multiple observers may be registered; all fire on each removal.
+    /// Used by CloudEnvelopeRouter (executionFqis_ cleanup) and the gRPC
+    /// InterceptorChain owner registry, which independently track UUID->FQI.
+    void addRemovalObserver(RemovalCallback cb);
+
+    /// Drop all registered removal observers. Called at shutdown so observers
+    /// that captured now-dying pointers (e.g. CloudEnvelopeRouter) are not invoked
+    /// afterwards.
+    void clearRemovalObservers();
 
     /// @return Current number of tracked executions.
     [[nodiscard("caller expects the execution count")]]
@@ -71,27 +89,17 @@ private:
         key:    uuid std::string,
         value:  commands_ *ObservableCommandExecution
 
-    unique_ptr가 ObservableCommandExecution을 해제(delete)하는 경우:
-      1. 매니저 소멸 → commands_ 맵 소멸 → 전체 엔트리 해제.
-      2. 맵에서 erase (예: removeExpired()).
-      3. reset() 호출 (ptr.reset() 시 기존 객체 해제하고 nullptr 상태가 됨.
-                      ptr.reset(new_obj) 시 기존 객체 해제하고 new_obj에 대한 ptr 생성).
+    shared_ptr가 ObservableCommandExecution을 해제(delete)하는 경우 (참조 카운트 0 도달 시):
+      1. 매니저 소멸 → commands_ 맵 소멸 → 이 맵이 쥔 참조 해제.
+      2. 맵에서 erase (예: removeExpired()) → 이 맵이 쥔 참조 해제.
+      단, getCommand()가 내준 shared_ptr 사본이 살아있는 동안은
+      1·2가 일어나도 실제 해제는 그 사본이 마지막으로 소멸할 때까지 유예됨
+      (architecture.md §4.2d — GC 스윕과 경합하는 bare reference dangling 방지).
     */
-    std::unordered_map<std::string, std::unique_ptr<ObservableCommandExecution>> commands_;
-    
-    /*  std::atomic: 락 없이 여러 스레드가 동시에 읽고 써도 데이터 레이스가 발생하지 않는 boolean.
-        std::thread: OS 스레드 하나를 소유하는 RAII 핸들.
-                     소멸 전에 반드시 join() 또는 detach(). 안 하면 std::terminate.
-        std::mutex:  상호 배제 잠금(mutual exclusion lock). 
-                     lock()/unlock()으로 임계 영역을 보호하되,
-                     std::unique_lock 또는 std::lock_guard로 감싸서 RAII로 사용.
-        std::condition_variable: mutex와 짝으로 사용되어,
-                                 다른 스레드가 공유 변수를 수정하고 해당 스레드에 알릴 때까지 다른 스레드 차단.
-    */
-    std::atomic<bool> gcRunning_{false};
-    std::thread gcThread_;
-    std::mutex gcMu_;
-    std::condition_variable gcCv_;
+    std::unordered_map<std::string, std::shared_ptr<ObservableCommandExecution>> commands_;
+    std::vector<RemovalCallback> removalObservers_;
+
+    PeriodicGC gc_{[this] { removeExpired(); }};
 };
 
 }  // namespace sila2

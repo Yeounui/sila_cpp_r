@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.authenticationservice.v1;
+
+/*
+    This Feature provides SiLA Clients with access tokens based on a user identification and password.
+    1. the user needs to login with the Login command into the server with a user identification (=user name) and a password
+    2. after verification, an Access Token with the Token Lifetime information will be generated and provided by the server.
+    3. the user can log-out from the server with the Logout command - a valid Access Token is required to run this command.
+   */
+service AuthenticationService {
+    /* Provides an access token based on user information. */
+    rpc Login(sila2.org.silastandard.core.authenticationservice.v1.Login_Parameters) returns (sila2.org.silastandard.core.authenticationservice.v1.Login_Responses) {}
+    /* Invalidates the given access token immediately. */
+    rpc Logout(sila2.org.silastandard.core.authenticationservice.v1.Logout_Parameters) returns (sila2.org.silastandard.core.authenticationservice.v1.Logout_Responses) {}
+}
+
+/* Parameters for Login */
+message Login_Parameters {
+    sila2.org.silastandard.String UserIdentification = 1;  /* The user identification string (e.g. a user name) */
+    sila2.org.silastandard.String Password = 2;  /* The password */
+    sila2.org.silastandard.String RequestedServer = 3;  /* The ServerUUID of the server for which an authorization is requested. */
+    repeated sila2.org.silastandard.String RequestedFeatures = 4;  /* The fully qualified identifiers of features that are requested to access. If no feature is provided, this means that all features are requested. */
+}
+
+/* Responses of Login */
+message Login_Responses {
+    sila2.org.silastandard.String AccessToken = 1;  /* The token to be used along with accessing a Command or Property on a SiLA Server. */
+    sila2.org.silastandard.Integer TokenLifetime = 2;  /* The lifetime (in seconds) of the provided access token as the maximum validity period after the last SiLA Server request. */
+}
+
+/* Parameters for Logout */
+message Logout_Parameters {
+    sila2.org.silastandard.String AccessToken = 1;  /* The access token to be invalidated. */
+}
+
+/* Responses of Logout */
+message Logout_Responses {
+}

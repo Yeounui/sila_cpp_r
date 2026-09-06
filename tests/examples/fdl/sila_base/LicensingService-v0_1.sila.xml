@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature xmlns:xsd="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SiLA2Version="1.0" FeatureVersion="0.1" Originator="com.tecan" Category="infrastructure" xmlns="http://www.sila-standard.org">
+  <Identifier>LicensingService</Identifier>
+  <DisplayName>Licensing Service</DisplayName>
+  <Description>Denotes an interface for licensing</Description>
+  <Command>
+    <Identifier>LoadLicense</Identifier>
+    <DisplayName>Load License</DisplayName>
+    <Description>Loads a license from the specified file</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LicenseFile</Identifier>
+      <DisplayName>License File</DisplayName>
+      <Description>The license file</Description>
+      <DataType>
+        <Basic>Binary</Basic>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>InvalidLicense</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>ActivateLicense</Identifier>
+    <DisplayName>Activate License</DisplayName>
+    <Description>Binds the given activation key to the provided customer</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>CustomerInfo</Identifier>
+      <DisplayName>Customer Info</DisplayName>
+      <Description>The customer to which the activation key should be bound to</Description>
+      <DataType>
+        <DataTypeIdentifier>CustomerInfo</DataTypeIdentifier>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>ActivationKey</Identifier>
+      <DisplayName>Activation Key</DisplayName>
+      <Description>A key that can activate a license</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>MissingValue</Identifier>
+      <Identifier>Validation</Identifier>
+      <Identifier>InvalidActivationKey</Identifier>
+      <Identifier>ActivationKeyAlreadyUsed</Identifier>
+      <Identifier>LicenseServerConnection</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Property>
+    <Identifier>IsLicensed</Identifier>
+    <DisplayName>Is Licensed</DisplayName>
+    <Description>Gets whether the server is licensed or not</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <Basic>Boolean</Basic>
+    </DataType>
+  </Property>
+  <DefinedExecutionError>
+    <Identifier>InvalidLicense</Identifier>
+    <DisplayName>Invalid License</DisplayName>
+    <Description>Denotes the error that a license file is invalid</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>MissingValue</Identifier>
+    <DisplayName>Missing Value</DisplayName>
+    <Description>Denotes the error that a value is missing for the activation of the license</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>Validation</Identifier>
+    <DisplayName>Validation</DisplayName>
+    <Description>Denotes the exception that the provided customer information could not be validated</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InvalidActivationKey</Identifier>
+    <DisplayName>Invalid Activation Key</DisplayName>
+    <Description>Denotes an exception that the provided activation key is invalid</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>ActivationKeyAlreadyUsed</Identifier>
+    <DisplayName>Activation Key Already Used</DisplayName>
+    <Description>Denotes the exception that the activation key has already been used</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>LicenseServerConnection</Identifier>
+    <DisplayName>License Server Connection</DisplayName>
+    <Description>Denotes that there was an error in the connection to the license server</Description>
+  </DefinedExecutionError>
+  <DataTypeDefinition>
+    <Identifier>CustomerInfo</Identifier>
+    <DisplayName>Customer Info</DisplayName>
+    <Description>Denotes a contract for customer information</Description>
+    <DataType>
+      <Structure>
+        <Element>
+          <Identifier>FirstName</Identifier>
+          <DisplayName>First Name</DisplayName>
+          <Description>The first name of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>LastName</Identifier>
+          <DisplayName>Last Name</DisplayName>
+          <Description>The last name of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Company</Identifier>
+          <DisplayName>Company</DisplayName>
+          <Description>The company of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>EmailAddress</Identifier>
+          <DisplayName>Email Address</DisplayName>
+          <Description>The email address of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>PhoneNumber</Identifier>
+          <DisplayName>Phone Number</DisplayName>
+          <Description>The phone number of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>MobileNumber</Identifier>
+          <DisplayName>Mobile Number</DisplayName>
+          <Description>The mobile number of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Street</Identifier>
+          <DisplayName>Street</DisplayName>
+          <Description>The street part in the address of the customer</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Town</Identifier>
+          <DisplayName>Town</DisplayName>
+          <Description>The town the customer lives in</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>County</Identifier>
+          <DisplayName>County</DisplayName>
+          <Description>The county (if applicable)</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Postcode</Identifier>
+          <DisplayName>Postcode</DisplayName>
+          <Description>The post code of the customers address</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Country</Identifier>
+          <DisplayName>Country</DisplayName>
+          <Description>The country of the customers address</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+      </Structure>
+    </DataType>
+  </DataTypeDefinition>
+</Feature>

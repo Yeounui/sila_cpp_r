@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Feature xmlns:xsd="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" SiLA2Version="1.0" FeatureVersion="0.1" Originator="com.tecan" Category="infrastructure" xmlns="http://www.sila-standard.org">
+  <Identifier>Logging</Identifier>
+  <DisplayName>Logging</DisplayName>
+  <Description>Provides services for integration of device logging</Description>
+  <Command>
+    <Identifier>ListenForLogEntries</Identifier>
+    <DisplayName>Listen for log entries</DisplayName>
+    <Description>Starts listening for log entries from the device</Description>
+    <Observable>Yes</Observable>
+    <IntermediateResponse>
+      <Identifier>Intermediate</Identifier>
+      <DisplayName>Intermediate</DisplayName>
+      <Description>Log entries as they are created from the server</Description>
+      <DataType>
+        <DataTypeIdentifier>LogEntry</DataTypeIdentifier>
+      </DataType>
+    </IntermediateResponse>
+  </Command>
+  <DataTypeDefinition>
+    <Identifier>LogEntry</Identifier>
+    <DisplayName>Log Entry</DisplayName>
+    <Description>Describes a log entry</Description>
+    <DataType>
+      <Structure>
+        <Element>
+          <Identifier>Message</Identifier>
+          <DisplayName>Message</DisplayName>
+          <Description>The log message.</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Channel</Identifier>
+          <DisplayName>Channel</DisplayName>
+          <Description>The channel name, including a hint to the software part that is responsible for the log entry.</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Severity</Identifier>
+          <DisplayName>Severity</DisplayName>
+          <Description>The severity level.</Description>
+          <DataType>
+            <DataTypeIdentifier>Severity</DataTypeIdentifier>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Data</Identifier>
+          <DisplayName>Data</DisplayName>
+          <Description>The additional information.</Description>
+          <DataType>
+            <List>
+              <DataType>
+                <DataTypeIdentifier>LogEntryData</DataTypeIdentifier>
+              </DataType>
+            </List>
+          </DataType>
+        </Element>
+      </Structure>
+    </DataType>
+  </DataTypeDefinition>
+  <DataTypeDefinition>
+    <Identifier>Severity</Identifier>
+    <DisplayName>Severity</DisplayName>
+    <Description />
+    <DataType>
+      <Constrained>
+        <DataType>
+          <Basic>String</Basic>
+        </DataType>
+        <Constraints>
+          <Set>
+            <Value>Debug</Value>
+            <Value>Info</Value>
+            <Value>Warning</Value>
+            <Value>Error</Value>
+            <Value>Critical</Value>
+          </Set>
+        </Constraints>
+      </Constrained>
+    </DataType>
+  </DataTypeDefinition>
+  <DataTypeDefinition>
+    <Identifier>LogEntryData</Identifier>
+    <DisplayName>Log Entry Data</DisplayName>
+    <Description>The log entry data.</Description>
+    <DataType>
+      <Structure>
+        <Element>
+          <Identifier>Key</Identifier>
+          <DisplayName>Key</DisplayName>
+          <Description>The key.</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Value</Identifier>
+          <DisplayName>Value</DisplayName>
+          <Description>The value.</Description>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </Element>
+        <Element>
+          <Identifier>Children</Identifier>
+          <DisplayName>Children</DisplayName>
+          <Description>The children.</Description>
+          <DataType>
+            <List>
+              <DataType>
+                <DataTypeIdentifier>LogEntryData</DataTypeIdentifier>
+              </DataType>
+            </List>
+          </DataType>
+        </Element>
+      </Structure>
+    </DataType>
+  </DataTypeDefinition>
+</Feature>

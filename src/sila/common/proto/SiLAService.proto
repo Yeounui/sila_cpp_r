@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.core.silaservice.v1;
+
+/* This Feature MUST be implemented by each SiLA Server. It specifies Commands
+   and Properties to discover the Features a SiLA Server implements as well as
+   details about the SiLA Server, like name, type, description, vendor and UUID. */
+service SiLAService {
+    /* Get the Feature Definition of an implemented Feature by its fully qualified Feature Identifier */
+    rpc GetFeatureDefinition(sila2.org.silastandard.core.silaservice.v1.GetFeatureDefinition_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.GetFeatureDefinition_Responses) {}
+    /* Set a human readable name to the Server Name Property */
+    rpc SetServerName(sila2.org.silastandard.core.silaservice.v1.SetServerName_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.SetServerName_Responses) {}
+    /* Human readable name of the SiLA Server */
+    rpc Get_ServerName(sila2.org.silastandard.core.silaservice.v1.Get_ServerName_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ServerName_Responses) {}
+    /* The type of this server */
+    rpc Get_ServerType(sila2.org.silastandard.core.silaservice.v1.Get_ServerType_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ServerType_Responses) {}
+    /* Globally unique identifier that identifies a SiLA Server */
+    rpc Get_ServerUUID(sila2.org.silastandard.core.silaservice.v1.Get_ServerUUID_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ServerUUID_Responses) {}
+    /* Description of the SiLA Server */
+    rpc Get_ServerDescription(sila2.org.silastandard.core.silaservice.v1.Get_ServerDescription_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ServerDescription_Responses) {}
+    /* Returns the version of the SiLA Server */
+    rpc Get_ServerVersion(sila2.org.silastandard.core.silaservice.v1.Get_ServerVersion_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ServerVersion_Responses) {}
+    /* Returns the URL to the website of the vendor or the product of this SiLA Server */
+    rpc Get_ServerVendorURL(sila2.org.silastandard.core.silaservice.v1.Get_ServerVendorURL_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ServerVendorURL_Responses) {}
+    /* Returns a list of fully qualified Feature identifiers of all implemented Features */
+    rpc Get_ImplementedFeatures(sila2.org.silastandard.core.silaservice.v1.Get_ImplementedFeatures_Parameters) returns (sila2.org.silastandard.core.silaservice.v1.Get_ImplementedFeatures_Responses) {}
+}
+
+/* Parameters for GetFeatureDefinition */
+message GetFeatureDefinition_Parameters {
+    sila2.org.silastandard.String FeatureIdentifier = 1;  /* The fully qualified Feature identifier */
+}
+
+/* Responses of GetFeatureDefinition */
+message GetFeatureDefinition_Responses {
+    sila2.org.silastandard.String FeatureDefinition = 1;  /* The Feature definition in XML format */
+}
+
+/* Parameters for SetServerName */
+message SetServerName_Parameters {
+    sila2.org.silastandard.String ServerName = 1;  /* The human readable name to assign */
+}
+
+/* Responses of SetServerName */
+message SetServerName_Responses {
+}
+
+/* Parameters for ServerName */
+message Get_ServerName_Parameters {
+}
+
+/* Responses of ServerName */
+message Get_ServerName_Responses {
+    sila2.org.silastandard.String ServerName = 1;  /* Human readable name of the SiLA Server */
+}
+
+/* Parameters for ServerType */
+message Get_ServerType_Parameters {
+}
+
+/* Responses of ServerType */
+message Get_ServerType_Responses {
+    sila2.org.silastandard.String ServerType = 1;  /* The type of this server */
+}
+
+/* Parameters for ServerUUID */
+message Get_ServerUUID_Parameters {
+}
+
+/* Responses of ServerUUID */
+message Get_ServerUUID_Responses {
+    sila2.org.silastandard.String ServerUUID = 1;  /* Globally unique identifier */
+}
+
+/* Parameters for ServerDescription */
+message Get_ServerDescription_Parameters {
+}
+
+/* Responses of ServerDescription */
+message Get_ServerDescription_Responses {
+    sila2.org.silastandard.String ServerDescription = 1;  /* Description of the SiLA Server */
+}
+
+/* Parameters for ServerVersion */
+message Get_ServerVersion_Parameters {
+}
+
+/* Responses of ServerVersion */
+message Get_ServerVersion_Responses {
+    sila2.org.silastandard.String ServerVersion = 1;  /* Version of the SiLA Server */
+}
+
+/* Parameters for ServerVendorURL */
+message Get_ServerVendorURL_Parameters {
+}
+
+/* Responses of ServerVendorURL */
+message Get_ServerVendorURL_Responses {
+    sila2.org.silastandard.String ServerVendorURL = 1;  /* URL to the vendor website */
+}
+
+/* Parameters for ImplementedFeatures */
+message Get_ImplementedFeatures_Parameters {
+}
+
+/* Responses of ImplementedFeatures */
+message Get_ImplementedFeatures_Responses {
+    repeated sila2.org.silastandard.String ImplementedFeatures = 1;  /* List of fully qualified Feature identifiers */
+}

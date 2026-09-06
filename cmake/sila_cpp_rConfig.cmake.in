@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+include(CMakeFindDependencyMacro)
+find_dependency(Protobuf CONFIG)
+find_dependency(gRPC CONFIG)
+find_dependency(LibXml2 CONFIG)
+find_dependency(LibXslt CONFIG)
+find_dependency(nlohmann_json_schema_validator CONFIG)
+@SILA2_OTEL_FIND_DEPENDENCY@
+include("${CMAKE_CURRENT_LIST_DIR}/sila_cpp_rTargets.cmake")
+check_required_components(sila_cpp_r)
