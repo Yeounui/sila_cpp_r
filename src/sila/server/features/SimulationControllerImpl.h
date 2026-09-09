@@ -51,7 +51,8 @@ namespace simctrl_proto = sila2::org::silastandard::core::simulationcontroller::
 ///
 /// Not installed by any `SiLAServerBase::Builder::WithX()` call; a server
 /// author registers it like a custom Feature, via
-/// `Builder::AddFeature(std::string{kSimulationControllerFqi}, simulationControllerFdlXml(), impl.service())`.
+/// `Builder::AddFeature(std::string{kSimulationControllerFqi}, simulationControllerFdlXml(),
+/// impl.service())`.
 class SimulationControllerImpl final : public simctrl_proto::SimulationController::Service {
 public:
     // No registry dependency — mode state is entirely local to this object.

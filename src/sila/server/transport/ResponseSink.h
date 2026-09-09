@@ -10,7 +10,8 @@
 namespace sila2 {
 
 /// How a @ref gl_feature "Feature" handler returns its result, or an error, to the
-/// @ref gl_sila_client "SiLA Client"; a handler receives one as its last argument (see SilaHandler).
+/// @ref gl_sila_client "SiLA Client" ; a handler receives one as its last argument (see
+/// SilaHandler).
 ///
 /// Transport-neutral interface for sending responses back to a SiLA Client
 /// (architecture.md §3.8). Unobservable RPCs call send() once then finish();

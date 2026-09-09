@@ -27,7 +27,7 @@ public:
     /// @throws error::FrameworkError (InvalidMetadata) if the call is protected and no
     ///         access token was sent.
     /// @throws error::DefinedExecutionError
-    ///         ("org.silastandard/core/AuthorizationService/v1/DefinedExecutionError/InvalidAccessToken")
+    /// ("org.silastandard/core/AuthorizationService/v1/DefinedExecutionError/InvalidAccessToken")
     ///         if the token is missing from the store, expired, or not scoped to `targetFqi`.
     void intercept(CallContext& ctx, const std::string& targetFqi);
 

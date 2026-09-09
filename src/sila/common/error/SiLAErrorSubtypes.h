@@ -111,7 +111,8 @@ protected:
 /// A SiLA 2 Execution Error declared in the FDL by the Feature designer.
 /// Its errorIdentifier() lets a SiLA Client react to the specific error, since
 /// the error's nature and recovery options are known ahead of time. The
-/// SiLA Client receives this as a @ref gl_defined_execution_error "Defined Execution Error" on the wire.
+/// SiLA Client receives this as a @ref gl_defined_execution_error "Defined Execution Error" on the
+/// wire.
 /// @see LockControllerImpl::lockServer
 class DefinedExecutionError : public ExecutionError {
 public:
@@ -129,7 +130,8 @@ public:
 ///
 /// A SiLA 2 Execution Error that was not declared in the FDL — unexpected,
 /// implementation-dependent, and not foreseeable by the Feature designer.
-/// The SiLA Client receives this as an @ref gl_undefined_execution_error "Undefined Execution Error" on the wire.
+/// The SiLA Client receives this as an
+/// @ref gl_undefined_execution_error "Undefined Execution Error" on the wire.
 /// @see error::guardHandler
 class UndefinedExecutionError : public ExecutionError {
 public:

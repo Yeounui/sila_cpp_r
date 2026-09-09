@@ -333,7 +333,8 @@ public:
         const InterceptorChain* chain() const;
 
         /// Finishes configuration and returns the assembled server, not yet listening;
-        /// call Run() on it to start serving. Call once, after every AddFeature() and With...() call.
+        /// call Run() on it to start serving. Call once, after every AddFeature() and With...()
+        /// call.
         ///
         /// @throws std::logic_error if neither WithSelfSignedCertificate nor
         /// WithCertificate was called — SiLA2 requires TLS (architecture.md §3.7).
