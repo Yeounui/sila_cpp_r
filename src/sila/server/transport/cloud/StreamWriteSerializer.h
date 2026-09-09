@@ -14,6 +14,11 @@ namespace sila2 {
 
 namespace cloud = org::silastandard;
 
+/// Serializes concurrent writes onto one @ref gl_connection_method "Server-Initiated Connection"
+/// (cloud connectivity) bidi stream, since a
+/// gRPC stream is not itself safe for concurrent Write() calls. Owned by
+/// CloudTransport, one per connected cloud stream; not part of the server
+/// author's API.
 class StreamWriteSerializer {
 public:
     // cancelFn: called when a write exceeds writeTimeout — typically
@@ -51,6 +56,10 @@ public:
     StreamWriteSerializer(StreamWriteSerializer&&) = delete;
     StreamWriteSerializer& operator=(StreamWriteSerializer&&) = delete;
 
+    /// Writes one envelope to the stream, blocking until gRPC accepts it (or
+    /// the write times out, if a nonzero writeTimeout was given). Safe to
+    /// call from multiple threads at once. Returns false if the write failed
+    /// — the stream is broken and the caller should stop sending on it.
     bool write(const cloud::SiLAServerMessage& msg);
 
 private:

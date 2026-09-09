@@ -99,6 +99,13 @@ inline bool parseCloudParameters(google::protobuf::Message& request,
 
 }  // namespace detail
 
+/// Builds the CloudDispatchFn for one unobservable command or property: it
+/// parses the envelope's parameter bytes into `Req`, runs `method` on `svc`
+/// through the same error::guardHandler every gRPC handler runs through, and
+/// writes the response (or error) as a single envelope. Used by a generated
+/// Feature adapter through regCmd/regProp below, on the
+/// @ref gl_connection_method "Server-Initiated Connection" (cloud connectivity)
+/// path; not called directly by a server author.
 template <typename Req, typename Resp, typename Service, typename Handler>
 CloudDispatchFn wrapGrpc(
     std::shared_ptr<Service> svc,
@@ -133,6 +140,11 @@ CloudDispatchFn wrapGrpc(
     };
 }
 
+/// Registers `svc`'s handler for an @ref gl_unobservable_command "Unobservable Command" so it is
+/// also reachable over the @ref gl_connection_method "Server-Initiated Connection" (cloud
+/// connectivity)
+/// path, under `fqi + "/Command/" + name`. Emitted by codegen's generated
+/// Feature adapters; a server author does not call this directly.
 template <typename Svc, typename Req, typename Resp>
 void regCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
             std::shared_ptr<Svc> svc,
@@ -142,6 +154,8 @@ void regCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
                                                  CloudErrorField::kCommandError));
 }
 
+/// Registers `svc`'s handler for an @ref gl_property "Property" so it is
+/// also reachable over the cloud connectivity path, under `fqi + "/Property/" + name`.
 template <typename Svc, typename Req, typename Resp>
 void regProp(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
              std::shared_ptr<Svc> svc,
@@ -151,6 +165,8 @@ void regProp(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
                                                   CloudErrorField::kPropertyError));
 }
 
+/// Overload of regCmd for a codegen'd adapter's SilaHandler member instead
+/// of a plain member function.
 template <typename Svc, typename Req, typename Resp>
 void regCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
             std::shared_ptr<Svc> svc, SilaHandler<Req, Resp> Svc::*m) {
@@ -159,6 +175,7 @@ void regCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
                                                  CloudErrorField::kCommandError));
 }
 
+/// Overload of regProp for a codegen'd adapter's SilaHandler member.
 template <typename Svc, typename Req, typename Resp>
 void regProp(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
              std::shared_ptr<Svc> svc, SilaHandler<Req, Resp> Svc::*m) {
@@ -255,6 +272,9 @@ private:
 
 }  // namespace detail
 
+/// Builds the CloudDispatchFn that initiates an @ref gl_observable_command "Observable Command"
+/// execution over the cloud connectivity path and
+/// confirms it to the client with its @ref gl_command_execution_uuid "Command Execution UUID".
 // Observable command initiation: wraps as observableCommandConfirmation and
 // registers the execution UUID→FQI mapping for follow-up dispatch.
 template <typename Req, typename Resp, typename Service, typename Handler>
@@ -293,6 +313,11 @@ CloudDispatchFn wrapObsInit(std::shared_ptr<Service> svc, Handler method,
     };
 }
 
+/// Builds the CloudDispatchFn for one @ref gl_observable_command "Observable Command" follow-up
+/// stream (@ref gl_command_execution_info "Command Execution Info",
+/// @ref gl_intermediate_command_response "Intermediate Command Response" , or the final result),
+/// keyed by an
+/// already-initiated execution's @ref gl_command_execution_uuid "Command Execution UUID".
 // Observable command follow-up (_Intermediate / _Result): wraps as
 // observableCommandIntermediateResponse or observableCommandResponse.
 template <typename Req, typename Resp, typename Service, typename Handler>
@@ -317,6 +342,9 @@ CloudDispatchFn wrapObsFollowup(std::shared_ptr<Service> svc, Handler method,
     };
 }
 
+/// Registers `svc`'s init/intermediate/result handlers for one
+/// @ref gl_observable_command "Observable Command" `name` under `fqi`, so its
+/// whole lifetime is reachable over the cloud connectivity path.
 // Plain-member-function overload: registers no "_Info" handler. Its only
 // callers are test_cloud_handler_registration.cc's three regObsCmd sites,
 // which bind &StreamingFollowupService::Init/Intermediate/Result -- plain
@@ -341,6 +369,9 @@ void regObsCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
         wrapObsFollowup<ResReq, ResResp>(svc, resMethod, ObsFollowupField::kResult));
 }
 
+/// Overload of regObsCmd for a codegen'd adapter's SilaHandler members,
+/// also registering `name`'s @ref gl_command_execution_info "Command Execution Info" follow-up
+/// stream.
 // The shape codegen emits (service_adapter.h.j2): init, info, [intermediate],
 // result. infoMethod sits right after initMethod so the with- and
 // without-intermediate overloads below share the same prefix, differing only
@@ -368,6 +399,9 @@ void regObsCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
         wrapObsFollowup<ResReq, ResResp>(svc, resMethod, ObsFollowupField::kResult));
 }
 
+/// Overload of regObsCmd for a command whose FDL definition has no
+/// @ref gl_intermediate_command_response "Intermediate Command Response" (1.2i):
+/// registers no `_Intermediate` handler.
 // Observable command without IntermediateResponse (1.2i): the same wiring minus
 // the _Intermediate stream, which the FDL does not define for this shape. Not
 // registering that suffix is deliberate -- an intermediate subscription then
@@ -389,6 +423,8 @@ void regObsCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
         wrapObsFollowup<ResReq, ResResp>(svc, resMethod, ObsFollowupField::kResult));
 }
 
+/// Builds the CloudDispatchFn for a codegen'd @ref gl_observable_property "Observable Property"
+/// @ref gl_property_subscription "Subscription" .
 // Observable property subscription for codegen'd adapters (1.2k): runs the SAME
 // Subscribe_X SilaHandler the direct-gRPC path runs, on a router pump thread,
 // emitting one observablePropertyValue envelope per sink.send(). The generated
@@ -416,6 +452,11 @@ CloudDispatchFn wrapObsProp(std::shared_ptr<Service> svc, Handler method) {
     };
 }
 
+/// Registers `svc`'s Subscribe_X handler for an @ref gl_observable_property "Observable Property"
+/// `name` under `fqi`, so it is reachable over the
+/// cloud connectivity path.
+/// @see CloudEnvelopeRouter::registerObservableProperty for the
+/// manager-based alternative used by hand-wired (non-codegen'd) Features.
 template <typename Svc, typename Req, typename Resp>
 void regObsProp(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
                 std::shared_ptr<Svc> svc, SilaHandler<Req, Resp> Svc::*m) {

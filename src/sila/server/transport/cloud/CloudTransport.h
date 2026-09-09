@@ -22,9 +22,12 @@ namespace sila2 {
 
 namespace cloud = org::silastandard;
 
-/// Manages one server-initiated connection to a SiLA Client's
-/// CloudClientEndpoint: this server connects out to the client's cloud
-/// endpoint and opens a bidi stream (architecture.md §3.9).
+/// Manages one @ref gl_connection_method "Server-Initiated Connection"
+/// (cloud connectivity) to a SiLA Client's CloudClientEndpoint: this server
+/// connects out to the client's cloud endpoint and opens a bidi stream
+/// (architecture.md §3.9). A server author never constructs this directly —
+/// it is created and owned by SiLAServerBase for each host/port pair the
+/// ConnectionConfigurationService is told to connect to.
 class CloudTransport {
 public:
     CloudTransport(std::string host,
@@ -40,8 +43,17 @@ public:
     CloudTransport(CloudTransport&&) = delete;
     CloudTransport& operator=(CloudTransport&&) = delete;
 
+    /// Opens the outbound stream and starts the background thread that reads
+    /// and dispatches incoming envelopes on it. Reconnects with backoff on
+    /// its own if the stream later breaks. A no-op if already connected or
+    /// still tearing down from a prior disconnect().
     void connect();
+    /// Cancels the outbound stream, cancels every call still in flight on
+    /// it, joins the receive thread, and releases the channel. A no-op if
+    /// not currently connected.
     void disconnect();
+    /// Whether the outbound stream is currently open. False while a broken
+    /// stream is being retried in the background.
     bool isConnected() const { return connected_.load(); }
 
 private:

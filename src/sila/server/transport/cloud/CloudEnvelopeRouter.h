@@ -56,8 +56,14 @@ using CloudDispatchMap = std::map<std::string, CloudDispatchFn, util::CaseInsens
 /// serialized bytes for ObservablePropertyValue on the cloud wire.
 using CloudValueSerializer = std::function<std::string(const std::any&)>;
 
-/// Dispatches SiLAClientMessage envelopes arriving on the cloud bidi stream
-/// to registered Command/Property handlers (architecture.md §3.9).
+/// Dispatches incoming envelopes on a @ref gl_connection_method "Server-Initiated Connection"
+/// (cloud connectivity) stream to the same
+/// Command/Property handlers the direct-gRPC path runs (architecture.md
+/// §3.9). One router is shared by every CloudTransport a server has open. A
+/// server author does not construct or call this directly: SiLAServerBase
+/// builds and populates it from the Features registered via
+/// SiLAServerBase::Builder::AddFeature, and CloudTransport is what drives it
+/// per connection.
 class CloudEnvelopeRouter {
 public:
     explicit CloudEnvelopeRouter(FeatureRegistry& registry,
@@ -75,12 +81,28 @@ public:
     /// them at shutdown (§4.2h).
     ~CloudEnvelopeRouter();
 
+    /// Whether at least one ObservableCommandManager was registered at
+    /// construction, i.e. this server has @ref gl_observable_command "Observable Commands" the
+    /// router can look executions up on.
     bool hasObservableCommands() const { return !observableCommands_.empty(); }
+    /// Looks up a running @ref gl_observable_command "Observable Command"
+    /// execution by its @ref gl_command_execution_uuid "Command Execution UUID".
+    /// @throws error::FrameworkError (InvalidCommandExecutionUuid) if no
+    /// registered ObservableCommandManager knows this UUID.
     std::shared_ptr<ObservableCommandExecution> findExecution(const std::string& uuid) const;
 
+    /// The write timeout this router was constructed with, applied to every
+    /// StreamWriteSerializer it creates for a cloud stream.
     std::chrono::seconds cloudWriteTimeout() const { return cloudWriteTimeout_; }
 
+    /// Registers the dispatch closure for one unobservable command's fully
+    /// qualified identifier, e.g.
+    /// `org.silastandard/core/SiLAService/v1/Command/GetFeatureDefinition`.
+    /// Called by CloudHandlerRegistration.h's regCmd for each command a
+    /// Feature adapter exposes; not called directly by a server author.
     void registerCommandHandler(const std::string& fqi, CloudDispatchFn handler);
+    /// Registers the dispatch closure for one unobservable property's fully
+    /// qualified identifier. Called by CloudHandlerRegistration.h's regProp.
     void registerPropertyHandler(const std::string& fqi, CloudDispatchFn handler);
 
     /// Registers a codegen'd Subscribe_X handler for an observable property
@@ -92,6 +114,11 @@ public:
     /// when the same FQI is registered both ways.
     void registerObservablePropertyHandler(const std::string& fqi, CloudDispatchFn handler);
 
+    /// Registers an @ref gl_observable_property "Observable Property" whose
+    /// @ref gl_property_subscription "Property Subscription" the router owns
+    /// end to end: it takes new values from `mgr`, converts them with
+    /// `serializer`, and writes one envelope per value itself. Takes
+    /// precedence over registerObservablePropertyHandler for the same fqi.
     void registerObservableProperty(const std::string& fqi,
                                     const std::string& propertyId,
                                     ObservablePropertyManager* mgr,
@@ -100,12 +127,28 @@ public:
     // accessToken defaulted to nullopt: keeps every pre-S15 2-arg call site
     // compiling. wrapObsInit (CloudHandlerRegistration.h) is the only
     // production caller and always passes the initiation's token.
+    /// Records which command fqi an @ref gl_observable_command "Observable Command" execution
+    /// belongs to, and (when given) the access token its
+    /// initiating call presented, so a later _Info/_Intermediate/_Result
+    /// envelope for the same @ref gl_command_execution_uuid "Command Execution UUID" can be routed
+    /// and re-authorized without carrying its
+    /// own SiLA Client Metadata. Called by CloudHandlerRegistration.h's
+    /// wrapObsInit when an execution is initiated.
     void registerExecutionFQI(const std::string& uuid, const std::string& fqi,
                               std::optional<std::string> accessToken = std::nullopt);
+    /// Drops an execution's fqi/access-token entry, e.g. once its result has
+    /// been delivered.
     void removeExecutionFQI(const std::string& uuid);
 
-    /// Dispatches a single incoming envelope. Safe to call concurrently with
-    /// registerCommandHandler/registerPropertyHandler.
+    /// Dispatches a single incoming SiLAClientMessage envelope to the
+    /// matching Command or Property handler, and writes the response (or
+    /// error) envelope back through `writer`. A subscription or a
+    /// long-running Observable Command follow-up runs on its own pump
+    /// thread instead of blocking this call. Safe to call concurrently with
+    /// registerCommandHandler/registerPropertyHandler, and from multiple
+    /// threads at once (e.g. one CloudTransport receive thread and its own
+    /// reconnect() verification read). Called by CloudTransport for every
+    /// envelope it reads off the stream.
     void route(const cloud::SiLAClientMessage& msg,
                StreamWriteSerializer& writer,
                std::shared_ptr<StreamWriteSerializer> writerOwnership,
