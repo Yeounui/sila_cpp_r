@@ -96,7 +96,7 @@ class ListType:
 
 
 @dataclass(kw_only=True)
-class SiLaelement:
+class SilaElement:
     class Meta:
         name = "SiLAElement"
 
@@ -135,7 +135,7 @@ class SiLaelement:
 
 @dataclass(kw_only=True)
 class StructureType:
-    element: list[SiLaelement] = field(
+    element: list[SilaElement] = field(
         default_factory=list,
         metadata={
             "name": "Element",

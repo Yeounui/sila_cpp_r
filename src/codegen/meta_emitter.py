@@ -5,7 +5,6 @@ from typing import Any
 
 import jinja2
 
-from fdl_parser import fqi as compute_fqi
 from fdl_parser import fqi, package_name, property_rpc_name
 from models.feature_definition import CommandObservable, Feature
 from schema_provisioning import collect_schema_urls
@@ -37,7 +36,7 @@ def _raw_delimiter(text: str) -> str:
 def _build_context(
     feature: Feature, xml_text: str, provisioned_schemas: list[dict[str, Any]] | None
 ) -> dict[str, Any]:
-    fqi_str = compute_fqi(feature)
+    fqi_str = fqi(feature)
     return {
         "feature_identifier": feature.identifier,
         "namespace_lower": feature.identifier.lower(),

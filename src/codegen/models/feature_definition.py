@@ -5,7 +5,7 @@ from enum import Enum
 
 from models.data_types import (
     DataTypeType,
-    SiLaelement,
+    SilaElement,
 )
 
 __NAMESPACE__ = "http://www.sila-standard.org"
@@ -96,7 +96,7 @@ class Feature:
             "type": "Element",
         },
     )
-    data_type_definition: list[SiLaelement] = field(
+    data_type_definition: list[SilaElement] = field(
         default_factory=list,
         metadata={
             "name": "DataTypeDefinition",
@@ -178,21 +178,21 @@ class Feature:
                 "type": "Element",
             }
         )
-        parameter: list[SiLaelement] = field(
+        parameter: list[SilaElement] = field(
             default_factory=list,
             metadata={
                 "name": "Parameter",
                 "type": "Element",
             },
         )
-        response: list[SiLaelement] = field(
+        response: list[SilaElement] = field(
             default_factory=list,
             metadata={
                 "name": "Response",
                 "type": "Element",
             },
         )
-        intermediate_response: list[SiLaelement] = field(
+        intermediate_response: list[SilaElement] = field(
             default_factory=list,
             metadata={
                 "name": "IntermediateResponse",

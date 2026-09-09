@@ -9,7 +9,7 @@ from models.data_types import (
     ConstrainedType,
     DataTypeType,
     ListType,
-    SiLaelement,
+    SilaElement,
     StructureType,
 )
 from models.feature_definition import (
@@ -29,7 +29,7 @@ __all__ = [
     "ConstrainedType",
     "DataTypeType",
     "ListType",
-    "SiLaelement",
+    "SilaElement",
     "StructureType",
     "CommandObservable",
     "DefinedExecutionErrorList",

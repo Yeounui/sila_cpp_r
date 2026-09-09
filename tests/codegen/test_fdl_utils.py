@@ -8,7 +8,7 @@ sys.path.insert(0, str(_REPO_ROOT / "src" / "codegen"))
 
 from fdl_parser import fqi, package_name, property_rpc_name
 from meta_emitter import emit_meta_header, emit_meta_source
-from models.data_types import BasicType, DataTypeType, SiLaelement
+from models.data_types import BasicType, DataTypeType, SilaElement
 from models.feature_definition import CommandObservable, Feature, PropertyObservable
 from proto_emitter import emit_proto
 
@@ -84,7 +84,7 @@ def _minimal_feature() -> Feature:
         description="Does something",
         observable=CommandObservable.NO,
         parameter=[
-            SiLaelement(
+            SilaElement(
                 identifier="Input",
                 display_name="Input",
                 description="An input",
@@ -92,7 +92,7 @@ def _minimal_feature() -> Feature:
             )
         ],
         response=[
-            SiLaelement(
+            SilaElement(
                 identifier="Output",
                 display_name="Output",
                 description="An output",
@@ -147,7 +147,7 @@ def _observable_command_feature(*, with_intermediate: bool) -> Feature:
         description="Runs for a while",
         observable=CommandObservable.YES,
         parameter=[
-            SiLaelement(
+            SilaElement(
                 identifier="Duration",
                 display_name="Duration",
                 description="How long to run",
@@ -155,7 +155,7 @@ def _observable_command_feature(*, with_intermediate: bool) -> Feature:
             )
         ],
         response=[
-            SiLaelement(
+            SilaElement(
                 identifier="Result",
                 display_name="Result",
                 description="The result",
@@ -163,7 +163,7 @@ def _observable_command_feature(*, with_intermediate: bool) -> Feature:
             )
         ],
         intermediate_response=[
-            SiLaelement(
+            SilaElement(
                 identifier="Progress",
                 display_name="Progress",
                 description="Current progress",

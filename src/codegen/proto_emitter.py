@@ -6,7 +6,7 @@ from pathlib import Path
 import jinja2
 
 from fdl_parser import package_name, property_rpc_name
-from models.data_types import DataTypeType, SiLaelement
+from models.data_types import DataTypeType, SilaElement
 from models.feature_definition import CommandObservable, Feature
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -202,7 +202,7 @@ def _property_messages(prop: Feature.Property, pkg: str) -> list[ProtoMessage]:
     # The property's single response field is the property itself; model it
     # as a SiLAElement so it can go through the same field-resolution path
     # (including struct/list nesting) as any other element.
-    response_element = SiLaelement(
+    response_element = SilaElement(
         identifier=prop.identifier,
         display_name=prop.display_name,
         description=prop.description,
@@ -237,7 +237,7 @@ def _metadata_messages(meta: Feature.Metadata, pkg: str) -> list[ProtoMessage]:
             )
         ],
     )
-    metadata_element = SiLaelement(
+    metadata_element = SilaElement(
         identifier=meta.identifier,
         display_name=meta.display_name,
         description=meta.description,
@@ -253,7 +253,7 @@ def _metadata_messages(meta: Feature.Metadata, pkg: str) -> list[ProtoMessage]:
 def _build_message(
     name: str,
     comment: str | None,
-    elements: list[SiLaelement],
+    elements: list[SilaElement],
     pkg: str,
     msg_path: str | None = None,
 ) -> ProtoMessage:
