@@ -22,6 +22,9 @@ inline std::string asciiLower(std::string_view value) {
     return lowered;
 }
 
+/// An internal helper for containers keyed by FQI or UUID; a library user
+/// does not need to name this type directly.
+///
 /// Transparent std::map comparator ordering keys by their ASCII-lowered form, so
 /// a map keyed by FQI or UUID matches a lookup whatever case the peer sent while
 /// its stored keys keep the canonical case (what ListImplementedFeatures

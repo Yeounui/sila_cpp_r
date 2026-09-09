@@ -18,8 +18,8 @@ namespace types {
 
 /// A SiLA 2 Timezone offset from UTC.
 struct Timezone {
-    int32_t hours;
-    uint32_t minutes;
+    int32_t hours;    ///< -12..14
+    uint32_t minutes; ///< 0..59
 };
 
 /// A SiLA 2 calendar date, with an attached Timezone.
@@ -58,6 +58,10 @@ struct AnyValue {
     std::vector<uint8_t> payload;
 };
 
+/// Wraps a native value as a SiLA 2 Basic type proto message, and back.
+/// One overload pair per Basic type below (String, Integer, Real, Boolean,
+/// Date, Time, Timestamp, Duration, Binary, Any); the value never fails to
+/// round-trip, so none of these throw.
 [[nodiscard("caller expects the converted proto message")]]
 inline sila2::org::silastandard::String toProto(const std::string& val) {
     sila2::org::silastandard::String msg;
@@ -208,6 +212,7 @@ inline Timestamp timestampFromSystemClock(std::chrono::system_clock::time_point 
     return value;
 }
 
+/// Wraps a duration as a SiLA Duration, and back.
 [[nodiscard("caller expects the converted proto message")]]
 inline sila2::org::silastandard::Duration toProto(std::chrono::nanoseconds val) {
     sila2::org::silastandard::Duration msg;
@@ -225,6 +230,9 @@ inline std::chrono::nanoseconds fromProto(const sila2::org::silastandard::Durati
     return std::chrono::nanoseconds{msg.seconds() * kNanosPerSecond + msg.nanos()};
 }
 
+/// Wraps bytes as an inline SiLA Binary. For a payload large enough to need
+/// @ref gl_binary_transfer "Binary Transfer" instead, the caller does not use
+/// this overload; see the BinaryStore-aware path that sets binaryTransferUUID.
 [[nodiscard("caller expects the converted proto message")]]
 inline sila2::org::silastandard::Binary toProto(const std::vector<uint8_t>& val) {
     sila2::org::silastandard::Binary msg;
@@ -232,6 +240,10 @@ inline sila2::org::silastandard::Binary toProto(const std::vector<uint8_t>& val)
     return msg;
 }
 
+/// Unwraps an inline SiLA Binary's bytes.
+/// @throws std::invalid_argument if msg has no inline value (it went through
+///         @ref gl_binary_transfer "Binary Transfer" instead; resolve it via
+///         the BinaryStore, not this function).
 [[nodiscard("caller expects the converted native value")]]
 inline std::vector<uint8_t> fromProto(const sila2::org::silastandard::Binary& msg) {
     // Only the inline bytes case is handled here; a set binaryTransferUUID
@@ -244,6 +256,8 @@ inline std::vector<uint8_t> fromProto(const sila2::org::silastandard::Binary& ms
     return std::vector<uint8_t>{bytes.begin(), bytes.end()};
 }
 
+/// Wraps an AnyValue (@ref gl_sila_any_type "SiLA Any Type" descriptor plus
+/// undecoded payload) as its proto message, and back.
 [[nodiscard("caller expects the converted proto message")]]
 inline sila2::org::silastandard::Any toProto(const AnyValue& val) {
     sila2::org::silastandard::Any msg;

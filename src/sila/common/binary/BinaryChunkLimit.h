@@ -19,6 +19,9 @@ namespace binary {
 // whether a binary is held in RAM vs. spooled to disk. Neither of those is
 // this per-chunk wire ceiling, and per the binding constraint neither is
 // retargeted to reuse this constant.
+/// The largest single chunk a @ref gl_binary_transfer "Binary Transfer" may
+/// carry on the wire, in bytes. Callers that split or reassemble a large
+/// binary must stay within this size per chunk.
 static constexpr std::size_t kMaxBinaryChunkSize = 2 * 1024 * 1024;
 
 }  // namespace binary

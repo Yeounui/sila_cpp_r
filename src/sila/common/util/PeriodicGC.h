@@ -12,7 +12,8 @@ namespace sila2 {
 
 /// Runs a caller-supplied sweep callback on a fixed interval in a background
 /// thread.  Used by BinaryStore and ObservableCommandManager to periodically
-/// remove expired entries.
+/// remove expired entries. An internal helper; a library user does not need
+/// this directly.
 ///
 /// start() and stop() are NOT safe to call concurrently with each other: a
 /// stop() racing a start() can observe running_ == true and reach
@@ -33,6 +34,8 @@ public:
     PeriodicGC(const PeriodicGC&) = delete;
     PeriodicGC& operator=(const PeriodicGC&) = delete;
 
+    /// Starts the background sweep thread. A no-op if already running.
+    /// @param interval How often to invoke the sweep callback.
     void start(std::chrono::seconds interval) {
         if (running_.exchange(true)) { return; }
         thread_ = std::thread{[this, interval] {
@@ -44,6 +47,8 @@ public:
         }};
     }
 
+    /// Stops the background sweep thread and joins it. A no-op if not
+    /// running; also called from the destructor.
     void stop() {
         if (!running_.exchange(false)) { return; }
         {
@@ -64,6 +69,7 @@ public:
         if (thread_.joinable()) { thread_.join(); }
     }
 
+    /// True between a completed start() and the next stop().
     [[nodiscard]] bool isRunning() const { return running_.load(); }
 
 private:
