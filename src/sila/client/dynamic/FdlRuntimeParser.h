@@ -10,9 +10,25 @@
 namespace sila2 {
 namespace dynamic {
 
+/// Parses one @ref gl_feature_definition "Feature Definition" XML document
+/// into the Feature intermediate representation FeatureCatalog::add() and
+/// DescriptorBuilder consume.
+/// @throws std::invalid_argument if fdlXml is empty, not well-formed XML,
+/// fails the official SiLA FDL XSD/XSLT validation, or names an unknown
+/// @ref BasicType, unsupported @ref gl_constraint "Constraint", or a
+/// FullyQualifiedIdentifier kind this parser does not recognize.
 Feature parseFdl(std::string_view fdlXml);
+/// Parses a standalone `<DataType>` XML document -- the type XML carried
+/// inside a wire @ref gl_sila_any_type "SiLA Any Type" (`SiLAFramework.Any`)
+/// message -- into a DataType, without the enclosing `<Feature>` element
+/// parseFdl() expects.
+/// @throws std::invalid_argument on the same conditions as parseFdl(), plus
+/// if the root element is not `<DataType>` or the document has more than one
+/// root element.
 DataType parseDataTypeXml(std::string_view typeXml);
 
+/// Checks documentXml against a `Schema` @ref gl_constraint "Constraint"'s
+/// inline W3C XML Schema, schemaXml.
 // Part A p70 Schema (Type Xml, Source Inline): validate documentXml against the
 // inline W3C XML Schema schemaXml. Both are parsed with no external resolution
 // (self-contained): a refuse-all resource loader blocks xs:import/xs:include and
