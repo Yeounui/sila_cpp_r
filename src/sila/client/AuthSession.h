@@ -16,35 +16,45 @@
 
 namespace sila2 {
 
+/// The access-token lifecycle for one SilaClientBase connection: logs in to
+/// the AuthenticationService, holds the resulting token, and renews it in a
+/// background thread before it expires. Normally driven by
+/// SilaClientBase::authenticate(); a caller does not construct or call this
+/// directly.
 class AuthSession {
 public:
-    // user/password: credentials for Login RPC
-    // serverUuid: RequestedServer parameter for Login
-    // channel: the gRPC channel to the target server (used to create AuthenticationService stub)
+    /// @param user,password Login RPC credentials.
+    /// @param serverUuid RequestedServer parameter for Login.
+    /// @param channel The gRPC channel to the target server, used to create
+    ///        the AuthenticationService stub.
     AuthSession(std::string user, std::string password,
                 std::string serverUuid,
                 std::shared_ptr<grpc::Channel> channel);
     ~AuthSession();
 
-    // Perform Login and obtain token. Returns true on success.
-    // On success, accessToken() becomes valid and the auto-renewal timer starts.
+    /// Performs Login and obtains a token. On success, accessToken()
+    /// becomes valid and the auto-renewal timer starts.
+    /// @return True on success.
     bool login(const std::vector<std::string>& requestedFeatures = {});
 
-    // Current access token (empty if not logged in or expired).
+    /// @return The current access token, or empty if not logged in or expired.
     // By value: a reference into the guarded member would outlive the lock and
     // the renewal thread can rewrite it under the caller's feet.
     std::string accessToken() const;
 
-    // True if we have a valid (non-expired) token
+    /// @return True if we have a valid (non-expired) token.
     bool isAuthenticated() const;
 
-    // Stop auto-renewal and clear token
+    /// Stops auto-renewal and clears the token.
     void logout();
 
-    // Token lifetime from last Login response
+    /// @return The token lifetime reported by the last Login response.
     std::chrono::seconds tokenLifetime() const;
 
     using TokenChangeCallback = std::function<void(const std::string& newToken)>;
+    /// Registers a callback invoked with the new token each time
+    /// auto-renewal replaces it. SilaClientBase uses this to keep
+    /// MetadataInjector's access-token entry current.
     void setTokenChangeCallback(TokenChangeCallback cb);
 
 private:

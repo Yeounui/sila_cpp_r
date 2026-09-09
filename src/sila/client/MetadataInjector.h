@@ -12,6 +12,12 @@ class ClientContext;
 
 namespace sila2 {
 
+/// Holds the @ref gl_sila_client_metadata "SiLA Client Metadata" one
+/// SilaClientBase connection sends with every call, and writes it onto a
+/// gRPC call's headers on request. Obtained from
+/// SilaClientBase::metadataInjector(). The dynamic client
+/// (sila2::dynamic::DynamicCall) applies it automatically; a caller using a
+/// generated static stub directly must call apply() itself before each RPC.
 class MetadataInjector {
 public:
     /// Register a metadata value to be attached to every subsequent call.
@@ -31,6 +37,8 @@ public:
     void removeRaw(const std::string& key);
 
     /// Attach every registered metadata entry to ctx as a binary header.
+    /// Call this on a static stub's grpc::ClientContext before each RPC;
+    /// sila2::dynamic::DynamicCall already does this for you.
     void apply(grpc::ClientContext& ctx) const;
 
     /// Remove all registered metadata entries.

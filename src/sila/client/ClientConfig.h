@@ -16,13 +16,20 @@ class ChannelCredentials;
 
 namespace sila2 {
 
-/// mTLS material for a single client connection (SiLA2 mandates TLS).
+/// The client-side mTLS certificate/key pair and, optionally, the server's
+/// CA certificate, used to build the gRPC channel for one connection.
+/// Obtained by the caller and passed to ClientConfig::setTlsCredentials().
 struct TlsCredentials {
     std::string certificatePem;    // client cert (mTLS)
     std::string privateKeyPem;     // client key
     std::string caCertificatePem;  // server CA cert (for verification)
 };
 
+/// Settings for one connection to a @ref gl_sila_server "SiLA Server": TLS
+/// credentials, login credentials, the @ref gl_lock "lock" identifier, and
+/// where to persist Observable Command executions. Built by the caller and
+/// passed to SilaClientBase's constructor.
+///
 /// Per-connection settings for a SiLA2 client (architecture.md §4.4, §3.10).
 /// Concrete value/settings holder — unlike ServerConfig, there is only one
 /// way to configure a client connection, so no interface is warranted.
@@ -43,8 +50,9 @@ public:
     ///         target is not a private-range IP.
     std::shared_ptr<grpc::ChannelCredentials> channelCredentials(std::string_view host) const;
 
-    /// Store user/password credentials for AuthenticationService login
-    /// (§4.4).
+    /// Store the username/password SilaClientBase::authenticate() logs in
+    /// with.
+    /// @see SilaClientBase::authenticate
     void setUserCredentials(std::string user, std::string password);
 
     /// @return The configured username.
@@ -56,10 +64,13 @@ public:
     /// @return True if setUserCredentials() has been called.
     bool hasUserCredentials() const;
 
-    /// Store the lock identifier to inject as request metadata (§3.10).
+    /// Store the lock identifier this client chose when calling `LockServer`, so
+    /// SilaClientBase attaches it as @ref gl_sila_client_metadata "SiLA
+    /// Client Metadata" to every call it makes.
     void setLockIdentifier(std::string lockId);
 
-    /// @return The configured lock identifier, or nullopt if unlocked.
+    /// @return The configured @ref gl_lock "lock" identifier, or nullopt if
+    /// this client has not locked the server.
     const std::optional<std::string>& lockIdentifier() const;
 
     /// Set the file SilaClientBase persists issued Observable Command
