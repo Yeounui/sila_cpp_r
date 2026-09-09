@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "src" / "codegen"))
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO_ROOT / "src" / "codegen"))
 
 from fdl_parser import FdlError, parse_fdl  # noqa: E402
-XSD_PATH = REPO_ROOT / "third_party/sila_base/schema/FeatureDefinition.xsd"
-FDL_ROOT = REPO_ROOT / "tests/examples/fdl/sila_base"
-VALID_DIR = FDL_ROOT / "valid-fdl"
-INVALID_DIR = FDL_ROOT / "invalid-fdl"
+_XSD_PATH = _REPO_ROOT / "third_party/sila_base/schema/FeatureDefinition.xsd"
+_FDL_ROOT = _REPO_ROOT / "tests/examples/fdl/sila_base"
+_VALID_DIR = _FDL_ROOT / "valid-fdl"
+_INVALID_DIR = _FDL_ROOT / "invalid-fdl"
 
 # Part B p84-85 (R2-9): Conversion Factor/Offset are IEEE 754 doubles. Part B
 # p85 (R2-7): ElementCount/MinimalElementCount/MaximalElementCount MUST accept
@@ -21,15 +21,15 @@ INVALID_DIR = FDL_ROOT / "invalid-fdl"
 # bound too. The overlay below retypes all of these; this drift guard makes
 # sure a future submodule bump does not silently change anything else in the
 # copy.
-SILA_BASE_CONSTRAINTS = REPO_ROOT / "third_party/sila_base/schema/Constraints.xsd"
-OVERLAY_CONSTRAINTS = REPO_ROOT / "src/schema/Constraints.xsd"
+_SILA_BASE_CONSTRAINTS = _REPO_ROOT / "third_party/sila_base/schema/Constraints.xsd"
+_OVERLAY_CONSTRAINTS = _REPO_ROOT / "src/schema/Constraints.xsd"
 
 # Part A p66 / Part B p83 (R9-47): a SiLA Constrained Type MAY be based on
 # another SiLA Constrained Type (the two constraint layers act as a logical
 # AND). The pinned sila_base fdl-validation.xsl rejects that nesting outright,
 # so this overlay removes only that one xsl:when.
-SILA_BASE_XSLT = REPO_ROOT / "third_party/sila_base/xslt/fdl-validation.xsl"
-OVERLAY_XSLT = REPO_ROOT / "src/schema/fdl-validation.xsl"
+_SILA_BASE_XSLT = _REPO_ROOT / "third_party/sila_base/xslt/fdl-validation.xsl"
+_OVERLAY_XSLT = _REPO_ROOT / "src/schema/fdl-validation.xsl"
 
 # Part A p66 / Part B p83 (R9-47): the corpus fixture stays filed under
 # invalid-fdl/ (the corpus mirrors sila_base's own fixtures verbatim and is
@@ -40,7 +40,7 @@ OVERLAY_XSLT = REPO_ROOT / "src/schema/fdl-validation.xsl"
 
 @pytest.fixture
 def xsd_path() -> Path:
-    return XSD_PATH
+    return _XSD_PATH
 
 
 def _sila_files(directory: Path) -> list[Path]:
@@ -51,10 +51,10 @@ def _invalid_fdl_files_excluding_reclassified() -> list[Path]:
     # ConstrainedConstrained.sila.xml is spec-valid (R9-47) but still lives
     # under invalid-fdl/ because the corpus mirrors sila_base verbatim; drop
     # it here and cover it separately in test_reclassified_constrained_on_constrained_accepted.
-    return _sila_files(INVALID_DIR)
+    return _sila_files(_INVALID_DIR)
 
 
-@pytest.mark.parametrize("fdl_path", _sila_files(VALID_DIR), ids=lambda p: p.stem)
+@pytest.mark.parametrize("fdl_path", _sila_files(_VALID_DIR), ids=lambda p: p.stem)
 def test_valid_fdl_accepted(fdl_path: Path, xsd_path: Path) -> None:
     parse_fdl(fdl_path, xsd_path)
 
@@ -511,8 +511,8 @@ def test_constraints_overlay_retypes_only_documented_lines() -> None:
     # header comment plus six 'replace' opcodes -- two decimal->double
     # (Factor/Offset, R2-9) and four positiveInteger->nonNegativeInteger
     # (the ElementCount trio, R2-7, plus MinimalLength, R9-6).
-    base_lines = SILA_BASE_CONSTRAINTS.read_text().splitlines()
-    overlay_lines = OVERLAY_CONSTRAINTS.read_text().splitlines()
+    base_lines = _SILA_BASE_CONSTRAINTS.read_text().splitlines()
+    overlay_lines = _OVERLAY_CONSTRAINTS.read_text().splitlines()
 
     matcher = difflib.SequenceMatcher(a=base_lines, b=overlay_lines)
     replace_pairs: list[tuple[str, str]] = []
@@ -563,8 +563,8 @@ def test_validation_xslt_overlay_differs_only_on_documented_lines() -> None:
     # type through nested Constrained layers and (4) the constraint-
     # applicability arms of detect-invalid-constraint testing $base instead of
     # the immediate sila:DataType child.
-    base_lines = SILA_BASE_XSLT.read_text().splitlines()
-    overlay_lines = OVERLAY_XSLT.read_text().splitlines()
+    base_lines = _SILA_BASE_XSLT.read_text().splitlines()
+    overlay_lines = _OVERLAY_XSLT.read_text().splitlines()
 
     matcher = difflib.SequenceMatcher(a=base_lines, b=overlay_lines)
     deleted_runs: list[list[str]] = []
