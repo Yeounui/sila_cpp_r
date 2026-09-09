@@ -38,7 +38,7 @@ The UUID identifying one running or completed execution of an Observable Command
 In this library: sila2::ObservableCommandManager::getCommand. (Part A p.49)
 
 ## Lifetime of Execution {#gl_lifetime_of_execution}
-The duration for which a Command Execution UUID stays valid, measured from when the server returned it to the client. (Part A p.49)
+The duration for which a Command Execution UUID stays valid. The specification measures it from the moment the server returned the UUID to the client. In this library the value passed to sila2::ObservableCommandManager::addCommand is applied after the execution finishes: the UUID stays valid for the whole run plus that duration, and a value of zero keeps it valid until the server shuts down. (Part A p.49)
 
 ## Command Execution Info / Command Execution Status {#gl_command_execution_info}
 Command Execution Info reports the current state of a running Observable Command: its Command Execution Status ("Command Waiting" → "Command Running" → "Command Finished Successfully" or "Command Finished With Error", a sequence that never reverts), plus optional Progress Info and Estimated Remaining Time.
