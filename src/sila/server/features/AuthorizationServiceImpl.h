@@ -47,11 +47,14 @@ public:
         const authz_proto::Get_FCPAffectedByMetadata_AccessToken_Parameters* request,
         authz_proto::Get_FCPAffectedByMetadata_AccessToken_Responses* response) override;
 
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// FCPAffectedByMetadata_AccessToken query.
     void getFcpAffectedByMetadataAccessToken(
         const authz_proto::Get_FCPAffectedByMetadata_AccessToken_Parameters& request,
         CallContext& ctx,
         ResponseSink<authz_proto::Get_FCPAffectedByMetadata_AccessToken_Responses>& sink);
 
+    /// @return The protected FQI list given to the constructor.
     // Builder::authConfig_ (the source of protectedFqis_) dies with the
     // Builder when Build() returns, so initCloudRouter() — which runs after
     // Build() — reaches the same list through this instance instead.

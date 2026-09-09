@@ -49,7 +49,10 @@ namespace auth_proto = sila2::org::silastandard::core::authenticationservice::v1
 /// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
 class AuthenticationServiceImpl final : public auth_proto::AuthenticationService::Service {
 public:
-    // Dependencies by reference, not owned. All must outlive this object.
+    /// Constructs the service from the store, verifier, policy, and
+    /// configuration it authenticates against.
+    ///
+    /// Dependencies by reference, not owned. All must outlive this object.
     AuthenticationServiceImpl(auth::AuthTokenStore& store,
                                auth::CredentialVerifier& verifier,
                                const auth::AccessPolicy& policy,
@@ -84,8 +87,12 @@ public:
         const auth_proto::Logout_Parameters* request,
         auth_proto::Logout_Responses* response) override;
 
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// Login command.
     void login(const auth_proto::Login_Parameters& request, CallContext& ctx,
                ResponseSink<auth_proto::Login_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// Logout command.
     void logout(const auth_proto::Logout_Parameters& request, CallContext& ctx,
                 ResponseSink<auth_proto::Logout_Responses>& sink);
 

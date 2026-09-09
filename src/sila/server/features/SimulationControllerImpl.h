@@ -54,6 +54,9 @@ namespace simctrl_proto = sila2::org::silastandard::core::simulationcontroller::
 /// passing kSimulationControllerFqi, simulationControllerFdlXml() and the service.
 class SimulationControllerImpl final : public simctrl_proto::SimulationController::Service {
 public:
+    /// Constructs the service starting in Real Mode.
+    ///
+    /// @param chain The server's interceptor chain, applied to calls arriving over the cloud path.
     // No registry dependency — mode state is entirely local to this object.
     explicit SimulationControllerImpl(const InterceptorChain* chain = nullptr);
 
@@ -91,12 +94,18 @@ public:
         const simctrl_proto::Get_SimulationMode_Parameters* request,
         simctrl_proto::Get_SimulationMode_Responses* response) override;
 
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// StartSimulationMode command.
     void startSimulationMode(const simctrl_proto::StartSimulationMode_Parameters& request,
                              CallContext& ctx,
                              ResponseSink<simctrl_proto::StartSimulationMode_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// StartRealMode command.
     void startRealMode(const simctrl_proto::StartRealMode_Parameters& request,
                        CallContext& ctx,
                        ResponseSink<simctrl_proto::StartRealMode_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// SimulationMode property.
     void getSimulationMode(const simctrl_proto::Get_SimulationMode_Parameters& request,
                            CallContext& ctx,
                            ResponseSink<simctrl_proto::Get_SimulationMode_Responses>& sink);

@@ -57,6 +57,10 @@ namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller:
 /// Installed by @ref SiLAServerBase::Builder::WithLock().
 class LockControllerImpl final : public lockcontroller_proto::LockController::Service {
 public:
+    /// Constructs the service with no lock held.
+    ///
+    /// @param chain The server's interceptor chain, consulted for which
+    ///        calls are affected by the LockIdentifier metadata.
     // chain outlives this object (owned by SiLAServerBase, which constructs
     // LockControllerImpl during Builder::Build()). Dropped the FeatureRegistry
     // parameter this constructor used to take: the FCP property below now
@@ -103,12 +107,20 @@ public:
         const lockcontroller_proto::Get_FCPAffectedByMetadata_LockIdentifier_Parameters* request,
         lockcontroller_proto::Get_FCPAffectedByMetadata_LockIdentifier_Responses* response) override;
 
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// LockServer command.
     void lockServer(const lockcontroller_proto::LockServer_Parameters& request, CallContext& ctx,
                     ResponseSink<lockcontroller_proto::LockServer_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// UnlockServer command.
     void unlockServer(const lockcontroller_proto::UnlockServer_Parameters& request, CallContext& ctx,
                       ResponseSink<lockcontroller_proto::UnlockServer_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// IsLocked property.
     void getIsLocked(const lockcontroller_proto::Get_IsLocked_Parameters& request, CallContext& ctx,
                      ResponseSink<lockcontroller_proto::Get_IsLocked_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// FCPAffectedByMetadata_LockIdentifier query.
     void getFcpAffectedByMetadataLockIdentifier(
         const lockcontroller_proto::Get_FCPAffectedByMetadata_LockIdentifier_Parameters& request,
         CallContext& ctx,

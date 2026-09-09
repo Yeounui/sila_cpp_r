@@ -67,10 +67,14 @@ public:
         const authzconfig_proto::Get_AuthorizationProvider_Parameters* request,
         authzconfig_proto::Get_AuthorizationProvider_Responses* response) override;
 
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// SetAuthorizationProvider command.
     void setAuthorizationProvider(
         const authzconfig_proto::SetAuthorizationProvider_Parameters& request,
         CallContext& ctx,
         ResponseSink<authzconfig_proto::SetAuthorizationProvider_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// AuthorizationProvider property.
     void getAuthorizationProvider(
         const authzconfig_proto::Get_AuthorizationProvider_Parameters& request,
         CallContext& ctx,

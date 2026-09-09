@@ -170,24 +170,36 @@ public:
         const connconfig_proto::Get_ConfiguredSiLAClients_Parameters* request,
         connconfig_proto::Get_ConfiguredSiLAClients_Responses* response) override;
 
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// EnableServerInitiatedConnectionMode command.
     void enableServerInitiatedConnectionMode(
         const connconfig_proto::EnableServerInitiatedConnectionMode_Parameters& request,
         CallContext& ctx,
         ResponseSink<connconfig_proto::EnableServerInitiatedConnectionMode_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// DisableServerInitiatedConnectionMode command.
     void disableServerInitiatedConnectionMode(
         const connconfig_proto::DisableServerInitiatedConnectionMode_Parameters& request,
         CallContext& ctx,
         ResponseSink<connconfig_proto::DisableServerInitiatedConnectionMode_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// ConnectSiLAClient command.
     void connectSiLAClient(const connconfig_proto::ConnectSiLAClient_Parameters& request,
                            CallContext& ctx,
                            ResponseSink<connconfig_proto::ConnectSiLAClient_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// DisconnectSiLAClient command.
     void disconnectSiLAClient(const connconfig_proto::DisconnectSiLAClient_Parameters& request,
                               CallContext& ctx,
                               ResponseSink<connconfig_proto::DisconnectSiLAClient_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// ServerInitiatedConnectionModeStatus property.
     void getServerInitiatedConnectionModeStatus(
         const connconfig_proto::Get_ServerInitiatedConnectionModeStatus_Parameters& request,
         CallContext& ctx,
         ResponseSink<connconfig_proto::Get_ServerInitiatedConnectionModeStatus_Responses>& sink);
+    /// Handler body shared by the gRPC override and the cloud path for the
+    /// ConfiguredSiLAClients property.
     void getConfiguredSiLAClients(
         const connconfig_proto::Get_ConfiguredSiLAClients_Parameters& request,
         CallContext& ctx,

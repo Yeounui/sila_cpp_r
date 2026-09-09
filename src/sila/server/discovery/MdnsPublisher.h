@@ -41,14 +41,24 @@ class MdnsPublisher {
 public:
     /// One DNS-SD TXT record key/value pair (RFC 6763 6.3).
     struct TxtEntry {
-        std::string key;
-        std::string value;
+        std::string key;    ///< DNS-SD TXT record key.
+        std::string value;  ///< DNS-SD TXT record value.
     };
 
-    // uuid is the mDNS Service Instance Name source (Part B p76 MUST); serverName and
-    // description feed the server_name/description TXT entries (Part B p77 SHOULD);
-    // caCertPem, when non-empty, is the untrusted certificate's own CA and is split into
-    // ca<l>= TXT entries (Part B p75-76 MUST) -- pass "" for a trusted certificate.
+    /// Constructs the publisher without opening any sockets; publish() starts advertising.
+    ///
+    /// @param uuid mDNS Service Instance Name source (Part B p76 MUST).
+    /// @param serverName Feeds the server_name TXT entry (Part B p77 SHOULD).
+    /// @param description Feeds the description TXT entry (Part B p77 SHOULD).
+    /// @param caCertPem The untrusted certificate's own CA, split into ca<l>=
+    ///        TXT entries (Part B p75-76 MUST) when non-empty; pass "" for a
+    ///        trusted certificate.
+    /// @param port TCP port advertised in the SRV record (the gRPC listen port).
+    /// @param readvertiseInterval How often the records are re-announced.
+    /// @param recordTtl Time-to-live of the published records.
+    /// @param probeWait How long to wait for conflicting probe responses before claiming the name.
+    /// @throws std::invalid_argument if the resulting TXT records would not
+    ///         fit in one mDNS packet (see txtWireBytes()).
     MdnsPublisher(const std::string& uuid, const std::string& serverName,
                   const std::string& description, const std::string& caCertPem,
                   uint16_t port, std::chrono::seconds readvertiseInterval,
