@@ -24,11 +24,11 @@ namespace sila2::discovery {
 /// the SRV `<hostname>.local.` target never qualifies (Codex finding on
 /// SC30/S74, 2026-09-04).
 struct ResolveEvent {
-    std::string host;
-    std::string address;
-    uint16_t port;
-    std::string uuid;
-    std::string name;
+    std::string host;     ///< SRV target hostname (`<name>.local.`).
+    std::string address;  ///< IPv4 address from the A record, dotted literal; empty if none was sent.
+    uint16_t port;         ///< SRV target port.
+    std::string uuid;     ///< @ref gl_sila_server_uuid "UUID" advertised in the TXT record.
+    std::string name;     ///< mDNS instance name shown to users.
 };
 
 /// Client side of @ref gl_sila_server_discovery "SiLA Server Discovery":

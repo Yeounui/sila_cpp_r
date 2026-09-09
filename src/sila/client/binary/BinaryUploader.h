@@ -21,12 +21,15 @@ class MetadataInjector;
 /// parameter.
 class BinaryUploader {
 public:
-    // channel: gRPC channel to the server
-    // maxRetries, maxBackoff: from ClientConfig
-    // injector: SiLA Client Metadata attached to every RPC this uploader
-    //   issues, the access token included. Null means "attach nothing", which
-    //   is what an ungated server needs and what every existing caller gets.
-    //   Non-owning: the injector must outlive this uploader.
+    /// Wraps `channel` for uploads, retrying up to `maxRetries` times (with
+    /// `maxBackoff` as the exponential-backoff ceiling) on a broken stream.
+    /// @param channel gRPC channel to the server.
+    /// @param maxRetries Attempts before giving up on a broken stream.
+    /// @param maxBackoff Ceiling for the exponential retry delay.
+    /// @param injector @ref gl_sila_client_metadata "SiLA Client Metadata"
+    /// attached to every RPC this uploader issues, the access token
+    /// included. Null means "attach nothing", which is what an ungated
+    /// server needs. Non-owning: must outlive this uploader.
     BinaryUploader(std::shared_ptr<grpc::Channel> channel,
                    int maxRetries = 3,
                    std::chrono::seconds maxBackoff = std::chrono::seconds{60},

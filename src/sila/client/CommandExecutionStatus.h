@@ -25,9 +25,9 @@ enum class CommandExecutionStatus {
 /// terminal status set by ExecutionInfoSubscriber itself (rather than
 /// received from the server) carries the failure reason in `statusMessage`.
 struct ExecutionUpdate {
-    CommandExecutionStatus status;
-    float progress;
-    std::string statusMessage;
+    CommandExecutionStatus status;      ///< The execution's current status.
+    float progress;                     ///< Fraction complete in [0, 1]; meaningful only while status is kRunning.
+    std::string statusMessage;          ///< Free-text status detail; meaningful only while status is kRunning, or the failure reason on a locally-set terminal status.
 };
 
 using ExecutionUpdateCallback = std::function<void(const ExecutionUpdate& update)>;

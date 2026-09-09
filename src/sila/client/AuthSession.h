@@ -51,6 +51,8 @@ public:
     /// @return The token lifetime reported by the last Login response.
     std::chrono::seconds tokenLifetime() const;
 
+    /// Callback signature for setTokenChangeCallback(): invoked with the new
+    /// access token whenever auto-renewal replaces it.
     using TokenChangeCallback = std::function<void(const std::string& newToken)>;
     /// Registers a callback invoked with the new token each time
     /// auto-renewal replaces it. SilaClientBase uses this to keep

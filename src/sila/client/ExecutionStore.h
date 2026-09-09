@@ -29,12 +29,12 @@ namespace sila2 {
 
 /// One issued-but-not-yet-terminal Observable Command execution.
 struct PersistedExecution {
-    std::string serverUuid;
-    std::string featureFqi;
-    std::string commandId;
-    std::string executionUuid;
-    std::string issueTime;
-    std::string lastStatus;
+    std::string serverUuid;      ///< @ref gl_sila_server_uuid "UUID" of the server the command was issued to.
+    std::string featureFqi;      ///< @ref gl_fully_qualified_identifier "FQI" of the Feature that owns the command.
+    std::string commandId;       ///< The command's identifier within that Feature (not the full FQI).
+    std::string executionUuid;   ///< @ref gl_command_execution_uuid "Command Execution UUID" to re-attach with.
+    std::string issueTime;       ///< ISO 8601 timestamp of when the command was issued.
+    std::string lastStatus;      ///< Most recently observed execution status, as text (e.g. "waiting", "running").
 };
 
 /// File-backed record of @ref gl_observable_command "Observable Command"
@@ -61,6 +61,7 @@ public:
     /// kFinishedWithError) for it.
     void prune(const std::string& executionUuid);
 
+    /// @return Every persisted execution, across all servers.
     [[nodiscard]] std::vector<PersistedExecution> list() const;
 
     /// Same as list(), filtered to executions issued against `serverUuid`

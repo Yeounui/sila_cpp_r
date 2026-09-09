@@ -55,11 +55,13 @@ public:
 
     /// One @ref gl_sila_server "SiLA Server" this registry knows about.
     struct ServerEntry {
-        std::string uuid;
-        std::string host;
-        uint16_t port;
-        std::string serverName;
-        ConnectionState state{ConnectionState::kDisconnected};
+        std::string uuid;         ///< @ref gl_sila_server_uuid "UUID" of the server.
+        std::string host;         ///< Host or IP literal to connect to.
+        uint16_t port;            ///< Port to connect to.
+        std::string serverName;   ///< The server's human-readable Server Name.
+        ConnectionState state{ConnectionState::kDisconnected};  ///< Current connection state; see updateState().
+        /// The live connection, or nullptr for an entry restored from the
+        /// store that has not been re-registered yet.
         std::shared_ptr<SilaClientBase> client;
         // FeatureCatalog is populated on first dynamic call (lazy, §4.2)
     };

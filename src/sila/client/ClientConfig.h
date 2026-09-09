@@ -20,9 +20,9 @@ namespace sila2 {
 /// CA certificate, used to build the gRPC channel for one connection.
 /// Obtained by the caller and passed to ClientConfig::setTlsCredentials().
 struct TlsCredentials {
-    std::string certificatePem;    // client cert (mTLS)
-    std::string privateKeyPem;     // client key
-    std::string caCertificatePem;  // server CA cert (for verification)
+    std::string certificatePem;    ///< Client certificate (PEM), presented during mTLS.
+    std::string privateKeyPem;     ///< Private key (PEM) matching certificatePem.
+    std::string caCertificatePem;  ///< Server's CA certificate (PEM), used to verify the server.
 };
 
 /// Settings for one connection to a @ref gl_sila_server "SiLA Server": TLS

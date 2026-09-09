@@ -66,6 +66,9 @@ public:
     /// peers. Empty when the caller supplied pre-built ServerCredentials.
     const std::string& certificatePem() const { return certificatePem_; }
 
+    /// @return True if this listener requires and verifies a connecting
+    /// server's client certificate, binding its claimed
+    /// @ref gl_sila_server_uuid "UUID" to that certificate.
     // True when this listener demands a verified client certificate and
     // therefore enforces the certificate-to-uuid binding, INCLUDING that
     // "sila-server-uuid" metadata is mandatory. False under the default

@@ -64,7 +64,9 @@ public:
         return ServiceStub::NewStub(channel_);
     }
 
+    /// @return This connection's ClientConfig.
     const ClientConfig& config() const;
+    /// @overload
     ClientConfig& config();
 
     /// @return True if the underlying grpc::Channel reports a connected
@@ -77,6 +79,7 @@ public:
     /// grpc::ClientContext before every RPC; sila2::dynamic::DynamicCall
     /// does this automatically.
     [[nodiscard]] MetadataInjector& metadataInjector();
+    /// @overload
     [[nodiscard]] const MetadataInjector& metadataInjector() const;
 
     /// Logs in to the AuthenticationService with the username/password set
