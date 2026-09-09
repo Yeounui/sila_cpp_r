@@ -400,7 +400,7 @@ void regObsCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
 }
 
 /// Overload of regObsCmd for a command whose FDL definition has no
-/// @ref gl_intermediate_command_response "Intermediate Command Response" (1.2i):
+/// @ref gl_intermediate_command_response "Intermediate Command Response":
 /// registers no `_Intermediate` handler.
 // Observable command without IntermediateResponse (1.2i): the same wiring minus
 // the _Intermediate stream, which the FDL does not define for this shape. Not
