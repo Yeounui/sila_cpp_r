@@ -37,6 +37,12 @@ struct AnyCodec {
         const google::protobuf::Message& msg,
         std::string typeXml);
 
+    /// Reads a @ref gl_sila_any_type "SiLA Any Type" message's wire fields
+    /// (its type XML and serialized payload) into typeXml and payloadBytes
+    /// via protobuf reflection.
+    /// @return false if anyMessage is not shaped like a SiLA Any (a field is
+    /// missing or the wrong type), letting the caller leave it untouched.
+    ///
     // Reads the SiLAFramework.Any wire fields (Part B p66: string type = 1;
     // bytes payload = 2) off a proto message by reflection into typeXml/
     // payloadBytes. Returns false when anyMessage is not shaped like a

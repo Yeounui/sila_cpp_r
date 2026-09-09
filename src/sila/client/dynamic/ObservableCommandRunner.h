@@ -22,15 +22,15 @@ namespace dynamic {
 class FeatureCatalog;
 
 /// Outcome of driving an @ref gl_observable_command "Observable Command" from
-/// the client side to completion: the @ref gl_command_execution_uuid
-/// "Command Execution UUID" the server assigned, the raw result bytes (empty
+/// the client side to completion: the @ref gl_command_execution_uuid "Command Execution UUID" the
+/// server assigned, the raw result bytes (empty
 /// unless the command finished successfully), and the gRPC status of the
 /// last call made. Returned by executeObservableCommand() and
 /// reattachObservableCommand().
 struct ObservableCommandResult {
-    std::string commandExecutionUuid;
-    grpc::ByteBuffer result;
-    grpc::Status status;
+    std::string commandExecutionUuid;  ///< The @ref gl_command_execution_uuid "Command Execution UUID" the server assigned; empty if the initiating call failed.
+    grpc::ByteBuffer result;           ///< The Command's serialized result message; empty unless the execution finished successfully.
+    grpc::Status status;               ///< The gRPC status of the last call made (issue, subscribe, or result fetch).
 };
 
 /// Issues an @ref gl_observable_command "Observable Command" and drives it to

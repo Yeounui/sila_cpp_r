@@ -46,6 +46,9 @@ namespace dynamic {
 /// @endcode
 class FeatureCatalog {
 public:
+    /// Creates an empty catalog whose types resolve against frameworkPool
+    /// (e.g. `DescriptorPool::generated_pool()`) before any Feature is
+    /// registered via add().
     explicit FeatureCatalog(const google::protobuf::DescriptorPool& frameworkPool);
     ~FeatureCatalog();
 
