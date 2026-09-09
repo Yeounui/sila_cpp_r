@@ -20,11 +20,22 @@ struct InterceptorChain;
 // parameterIdentifier instead.
 inline constexpr std::string_view kBinaryUploadFqi = "org.silastandard/core/BinaryUpload/v1";
 
+/// Lets a SiLA Client upload a binary parameter too large to fit inline, in
+/// chunks, and get back the Binary Transfer UUID
+/// (@ref gl_binary_transfer) to reference it in a command call. Installed
+/// automatically by sila2::SiLAServerBase::Builder::WithBinaryTransfer(); a
+/// Feature implementer never constructs or calls this class directly, and
+/// never sees the UUID itself -- BinaryParameterInterceptor resolves it to
+/// bytes before the handler runs.
+///
 /// gRPC service implementation for SiLA 2 Binary Upload (architecture.md §3.5).
 /// Delegates chunk storage and assembly to a BinaryStore; this class only
 /// translates gRPC request/response messages to/from BinaryStore calls.
+/// @see BinaryStore, BinaryDownloadService, sila2::binary::resolveBinaryParameters
 class BinaryUploadService final : public sila2::org::silastandard::BinaryUpload::Service {
 public:
+    /// @param store Chunk store backing every upload; must outlive this service.
+    /// @param defaultLifetime Slot lifetime applied when a request does not extend it.
     BinaryUploadService(BinaryStore& store, std::chrono::seconds defaultLifetime,
                         const InterceptorChain* chain = nullptr);
 

@@ -15,11 +15,19 @@ struct InterceptorChain;
 
 inline constexpr std::string_view kBinaryDownloadFqi = "org.silastandard/core/BinaryDownload/v1";
 
+/// Lets a SiLA Client fetch a binary result too large to fit inline, in
+/// chunks, by its Binary Transfer UUID (@ref gl_binary_transfer). Installed
+/// automatically by sila2::SiLAServerBase::Builder::WithBinaryTransfer(); a
+/// Feature implementer never constructs or calls this class directly.
+///
 /// gRPC service implementation for SiLA 2 Binary Download (architecture.md §3.5).
 /// Delegates lookup and chunk retrieval to a BinaryStore; this class only
 /// translates gRPC request/response messages to/from BinaryStore calls.
+/// @see BinaryStore, BinaryUploadService
 class BinaryDownloadService final : public sila2::org::silastandard::BinaryDownload::Service {
 public:
+    /// @param store Chunk store backing every download; must outlive this service.
+    /// @param defaultLifetime Slot lifetime applied when a request does not extend it.
     BinaryDownloadService(BinaryStore& store, std::chrono::seconds defaultLifetime,
                           const InterceptorChain* chain = nullptr);
 

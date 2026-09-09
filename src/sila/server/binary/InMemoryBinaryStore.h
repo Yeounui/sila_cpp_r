@@ -14,6 +14,11 @@
 
 namespace sila2 {
 
+/// Holds binary chunks in RAM. Fits small binaries and low-traffic servers;
+/// pick @ref FileSpoolBinaryStore for large binaries that should not sit
+/// entirely in memory, or @ref HybridBinaryStore to route between the two by
+/// size automatically.
+///
 /// Thread-safe in-memory chunk store for SiLA 2 Binary Transfer (architecture.md §3.5).
 /// Owns the UUID → Slot map: generates UUIDs for CreateBinary, accepts chunks by
 /// index (idempotent, order-independent), and assembles the completed binary for
@@ -22,6 +27,7 @@ namespace sila2 {
 /// Thread-safe: all public methods lock an internal mutex.
 class InMemoryBinaryStore : public BinaryStore {
 public:
+    /// @param maxBytes Ceiling on a single binary's size in bytes.
     // maxBytes == 0 (default) means unbounded, i.e. pre-S70 behaviour: a
     // small in-RAM binary practically always fits, and no ServerConfig field
     // expresses a RAM ceiling. HybridBinaryStore routes large binaries to

@@ -24,6 +24,9 @@
 namespace sila2 {
 namespace binary {
 
+/// The largest Binary value size sent inline in a message; larger binaries
+/// go through @ref gl_binary_transfer "Binary Transfer" chunking instead.
+///
 // Binary Transfer inlines values up to this size; anything larger must go
 // through CreateBinary/UploadChunk (SiLABinaryTransfer.proto) instead of
 // being embedded directly in the request/response message.
@@ -171,6 +174,10 @@ bool visitAnyPayload(google::protobuf::Message* anyMessage, const BinaryFn& fn, 
 
 /// Replace every Binary field carrying a binaryTransferUUID with its
 /// assembled bytes, so handler code only ever sees resolved values.
+/// Called by the generated service adapter on every request, before
+/// parameter validation and before the Feature implementer's handler runs --
+/// a command or property handler never sees a raw binaryTransferUUID, whether
+/// the client sent it inline or through BinaryUploadService.
 /// Recurses into nested message fields and Any payloads at any depth.
 /// @throws error::FrameworkError{CommandExecutionNotAccepted} if a referenced UUID is unknown or its
 /// upload is still incomplete.

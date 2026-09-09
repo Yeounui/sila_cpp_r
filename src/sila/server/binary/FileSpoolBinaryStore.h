@@ -16,6 +16,11 @@
 
 namespace sila2 {
 
+/// Holds binary chunks as files on disk, so a large binary never has to sit
+/// entirely in RAM. Pick @ref InMemoryBinaryStore for small binaries where
+/// disk I/O would be wasted, or @ref HybridBinaryStore to route between the
+/// two by size automatically.
+///
 /// Disk-backed chunk store for SiLA 2 Binary Transfer (architecture.md §3.5).
 /// Stores chunk payloads as individual files under a spool directory
 /// (tmpDir/uuid/chunk-NNNN.bin), keeping only metadata in memory.
@@ -31,6 +36,8 @@ public:
     // host's real free disk.
     using AvailableSpaceFn = std::function<std::uintmax_t()>;
 
+    /// @param tmpDir Directory the store creates per-slot subdirectories under;
+    ///        must exist and be writable, and outlive the store.
     // availableSpaceFn defaults to empty, meaning createSlot() queries
     // std::filesystem::space(tmpDir_) directly.
     explicit FileSpoolBinaryStore(std::filesystem::path tmpDir,

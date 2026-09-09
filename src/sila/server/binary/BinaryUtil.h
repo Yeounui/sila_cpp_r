@@ -11,6 +11,9 @@
 
 namespace sila2 {
 
+/// Builds the gRPC status a Binary Transfer RPC returns for @p type, such as
+/// an unknown or expired Binary Transfer UUID.
+///
 // Mirrors SiLAError::toStatus() (architecture.md §3.4): errors travel as
 // ABORTED status with the serialized error proto Base64-encoded into the
 // status message (Part B p65) and the raw bytes kept in error_details.
@@ -26,6 +29,10 @@ inline grpc::Status makeBinaryTransferStatus(
     return grpc::Status{grpc::StatusCode::ABORTED, base64Encode(serialized), serialized};
 }
 
+/// Shared DeleteBinary implementation for both BinaryUploadService and
+/// BinaryDownloadService: removes @p uuid's slot from @p store.
+/// @return An INVALID_BINARY_TRANSFER_UUID status if @p uuid is unknown,
+///         otherwise grpc::Status::OK.
 inline grpc::Status deleteBinarySlot(BinaryStore& store, const std::string& uuid) {
     if (!store.contains(uuid)) {
         return makeBinaryTransferStatus(

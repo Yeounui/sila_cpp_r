@@ -12,6 +12,12 @@
 
 namespace sila2 {
 
+/// Keeps small binaries in RAM and spools large ones to disk, so callers get
+/// @ref InMemoryBinaryStore speed for the common small case and
+/// @ref FileSpoolBinaryStore's bounded memory use for large ones without
+/// choosing between them. This is the store
+/// sila2::SiLAServerBase::Builder::WithBinaryTransfer() installs.
+///
 /// Routes binary slots to InMemoryBinaryStore or FileSpoolBinaryStore
 /// based on binarySize vs spoolThreshold (architecture.md §3.5).
 /// Binaries <= threshold stay in memory; larger ones spool to disk.
@@ -20,6 +26,10 @@ namespace sila2 {
 /// provide their own synchronisation.
 class HybridBinaryStore : public BinaryStore {
 public:
+    /// @param spoolThreshold Binaries at most this many bytes stay in memory;
+    ///        larger ones spool to disk.
+    /// @param tmpDir Root directory for the disk-backed store's per-slot
+    ///        subdirectories; must exist and be writable, and outlive this store.
     // spoolThreshold: binaries with binarySize > this value are spooled to disk.
     // tmpDir: root directory for FileSpoolBinaryStore's per-slot subdirectories.
     HybridBinaryStore(std::size_t spoolThreshold, std::filesystem::path tmpDir);

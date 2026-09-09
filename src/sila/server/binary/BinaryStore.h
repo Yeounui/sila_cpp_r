@@ -10,12 +10,19 @@
 
 namespace sila2 {
 
+/// Holds the chunks of an in-flight @ref gl_binary_transfer "Binary Transfer"
+/// from the moment a slot is created until the binary is assembled and
+/// removed or its Lifetime of Binary expires.
+///
 /// Pure virtual interface for SiLA 2 Binary Transfer chunk stores
 /// (architecture.md §3.5). Concrete implementations (InMemoryBinaryStore,
-/// FileSpoolBinaryStore) hold the actual storage; this base class owns only
-/// the periodic GC thread, which both implementations reuse identically.
+/// FileSpoolBinaryStore, HybridBinaryStore) hold the actual storage; this
+/// base class owns only the periodic GC thread, which all implementations
+/// reuse identically. Installed by
+/// sila2::SiLAServerBase::Builder::WithBinaryTransfer().
 ///
 /// Thread safety: implementations must synchronise their own state.
+/// @see BinaryUploadService, BinaryDownloadService
 class BinaryStore {
 public:
     virtual ~BinaryStore();
