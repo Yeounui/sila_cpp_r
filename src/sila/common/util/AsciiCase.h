@@ -31,7 +31,11 @@ inline std::string asciiLower(std::string_view value) {
 /// advertises). Compares char-by-char rather than lowering both sides, so a
 /// lookup allocates nothing. is_transparent enables string_view lookups.
 struct CaseInsensitiveLess {
+    /// Marker enabling heterogeneous lookups (e.g. by std::string_view) in a
+    /// std::map or std::set keyed by this comparator, without allocating a
+    /// temporary key.
     using is_transparent = void;
+    /// @return true if lhs sorts before rhs, comparing ASCII-lowered bytes.
     bool operator()(std::string_view lhs, std::string_view rhs) const {
         const std::size_t common = std::min(lhs.size(), rhs.size());
         for (std::size_t i = 0; i < common; ++i) {

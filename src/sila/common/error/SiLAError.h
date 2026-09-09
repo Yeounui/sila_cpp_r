@@ -97,6 +97,10 @@ public:
     [[nodiscard("the gRPC Status carries the error — dropping it silently loses the failure")]] \
     grpc::Status toStatus() const;
 
+    /// Converts the SiLA error to its SiLA Error protobuf message directly,
+    /// without wrapping it in a grpc::Status.
+    /// @return The protobuf message; the caller takes ownership.
+    /// @see toStatus, makeErrorMessage
     [[nodiscard("the protobuf message owns the serialized error — dropping it leaks the allocation")]] \
     std::unique_ptr<sila2::org::silastandard::SiLAError> toProto() const;
 
@@ -113,7 +117,7 @@ protected:
     virtual std::unique_ptr<sila2::org::silastandard::SiLAError>
     makeErrorMessage() const = 0;
 
-    ErrorType type_;
+    ErrorType type_; ///< This error's type, set at construction; see errorType().
 };
 }  // namespace error
 }  // namespace sila2

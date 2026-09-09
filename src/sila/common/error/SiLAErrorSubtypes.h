@@ -100,7 +100,7 @@ protected:
     std::unique_ptr<sila2::org::silastandard::SiLAError>
     makeErrorMessage() const override;
 
-    std::string errorIdentifier_;
+    std::string errorIdentifier_; ///< FQI of the Defined Error, or empty for an Undefined Execution Error; see errorIdentifier().
 };
 
 /// Throw this from a Feature Command implementation for an execution

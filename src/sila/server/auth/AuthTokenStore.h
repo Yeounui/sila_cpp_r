@@ -23,8 +23,8 @@ public:
     /// One token's authorization state: which user it belongs to and which FQIs it
     /// authorizes, per @ref AccessPolicy::allowedFqis "the AccessPolicy that granted it".
     struct TokenEntry {
-        std::string userIdentifier;
-        std::unordered_set<std::string> allowedFqis;
+        std::string userIdentifier;                  ///< Identifies the user this token was issued to.
+        std::unordered_set<std::string> allowedFqis; ///< FQIs this token authorizes calls against.
     };
 
     /// Issues a fresh token for `userIdentifier`, scoped to `allowedFqis`, expiring
@@ -65,8 +65,11 @@ public:
     /// Runs removeExpired() on a background timer every `interval`, so expired
     /// tokens are reclaimed without a validate() call happening to hit them first.
     void startAutoGC(std::chrono::seconds interval) { gc_.start(interval); }
+    /// Stops the background GC timer started by startAutoGC(), if running.
     void stopAutoGC() { gc_.stop(); }
 
+    /// @return The number of tokens currently stored, including any already
+    ///         expired but not yet swept by removeExpired().
     [[nodiscard("caller expects the token count")]]
     std::size_t size() const;
 

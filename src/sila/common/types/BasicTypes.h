@@ -24,38 +24,38 @@ struct Timezone {
 
 /// A SiLA 2 calendar date, with an attached Timezone.
 struct Date {
-    uint32_t day;
-    uint32_t month;
-    uint32_t year;
-    Timezone timezone;
+    uint32_t day;      ///< Day of month, 1-31.
+    uint32_t month;    ///< Month, 1-12.
+    uint32_t year;     ///< Full year, e.g. 2024.
+    Timezone timezone; ///< UTC offset for this date.
 };
 
 /// A SiLA 2 time-of-day, with an attached Timezone.
 struct Time {
-    uint32_t second;
-    uint32_t minute;
-    uint32_t hour;
-    Timezone timezone;
-    uint32_t millisecond;
+    uint32_t second;      ///< Seconds, 0-59.
+    uint32_t minute;      ///< Minutes, 0-59.
+    uint32_t hour;        ///< Hour of day, 0-23.
+    Timezone timezone;    ///< UTC offset for this time.
+    uint32_t millisecond; ///< Milliseconds, 0-999.
 };
 
 /// A SiLA 2 combined date and time-of-day, with an attached Timezone.
 struct Timestamp {
-    uint32_t second;
-    uint32_t minute;
-    uint32_t hour;
-    uint32_t day;
-    uint32_t month;
-    uint32_t year;
-    Timezone timezone;
-    uint32_t millisecond;
+    uint32_t second;      ///< Seconds, 0-59.
+    uint32_t minute;      ///< Minutes, 0-59.
+    uint32_t hour;        ///< Hour of day, 0-23.
+    uint32_t day;          ///< Day of month, 1-31.
+    uint32_t month;        ///< Month, 1-12.
+    uint32_t year;         ///< Full year, e.g. 2024.
+    Timezone timezone;    ///< UTC offset for this timestamp.
+    uint32_t millisecond; ///< Milliseconds, 0-999.
 };
 
 /// An opaque SiLA 2 Any value — a type descriptor (XML) plus an
 /// undecoded payload. Interpreting the payload is the caller's job.
 struct AnyValue {
-    std::string typeXml;
-    std::vector<uint8_t> payload;
+    std::string typeXml;          ///< SiLA Data Type descriptor XML describing payload's shape.
+    std::vector<uint8_t> payload; ///< Undecoded value bytes, encoded per typeXml.
 };
 
 /// Wraps a native value as a SiLA 2 Basic type proto message, and back.

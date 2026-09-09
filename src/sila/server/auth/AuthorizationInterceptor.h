@@ -18,6 +18,10 @@ namespace sila2::auth {
 /// server author.
 class AuthorizationInterceptor {
 public:
+    /// @param store The token store to validate access tokens against; must
+    ///        outlive this interceptor.
+    /// @param isProtected Predicate returning true if the given FQI requires
+    ///        a valid access token.
     AuthorizationInterceptor(AuthTokenStore& store,
                              std::function<bool(const std::string&)> isProtected);
 

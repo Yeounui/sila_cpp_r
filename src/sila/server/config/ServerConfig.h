@@ -39,16 +39,16 @@ public:
         // ServerType Pattern ([A-Z][a-zA-Z0-9]*) out of the box. Callers are
         // expected to override it; Builder::Build() rejects a non-conformant
         // explicit value (SiLAServerBase.cc).
-        std::string serverType = "SiLAServer";
+        std::string serverType = "SiLAServer"; ///< Server type or model name; must match [A-Z][a-zA-Z0-9]*.
         // SiLAService-v1_0.sila.xml:152-160 -- ServerDescription carries no
         // <Constrained> wrapper, so it gets no compliance-driven default.
-        std::string description;
+        std::string description; ///< Human-readable description of what this server does.
         // SiLAService-v1_0.sila.xml:177's ServerVersion Pattern. Nothing
         // keeps it in sync with the project's own version -- servers built on
         // this library are expected to set their own.
-        std::string version = "0.1.0";
+        std::string version = "0.1.0"; ///< This server implementation's version string.
         // SiLAService-v1_0.sila.xml:197's ServerVendorURL Pattern (https?://.+).
-        std::string vendorUrl = "https://sila-standard.org";
+        std::string vendorUrl = "https://sila-standard.org"; ///< URL of the vendor or maintainer, e.g. "https://example.com".
     };
 
     /// The tuning values InMemoryServerConfig fixes at construction (queue depths,
@@ -56,15 +56,15 @@ public:
     ///
     /// Runtime tuning knobs — all have sensible defaults.
     struct Tuning {
-        std::size_t subscriptionQueueDepth = 16;
-        std::size_t binarySpoolThreshold = 2 * 1024 * 1024;
-        std::chrono::seconds binarySlotLifetime{300};
-        std::chrono::seconds cloudWriteTimeout{30};
-        std::size_t maxConcurrentCloudSubscriptions = 64;
-        std::chrono::seconds errorHandlingTimeout{60};
-        std::chrono::seconds mdnsReadvertiseInterval{60};
-        std::chrono::seconds mdnsRecordTtl{120};
-        std::chrono::milliseconds mdnsProbeWait{250};
+        std::size_t subscriptionQueueDepth = 16; ///< Per-subscription queue depth for observable properties and command execution info streams. Default 16.
+        std::size_t binarySpoolThreshold = 2 * 1024 * 1024; ///< Byte threshold above which BinaryStore spools chunks to disk. Default 2 MiB.
+        std::chrono::seconds binarySlotLifetime{300}; ///< Lifetime of an idle binary slot before GC reclaims it. Default 300s.
+        std::chrono::seconds cloudWriteTimeout{30}; ///< Write timeout for server-initiated cloud connections. Default 30s.
+        std::size_t maxConcurrentCloudSubscriptions = 64; ///< Max concurrent long-running cloud pumps (subscriptions plus in-flight _Result fetches). Default 64.
+        std::chrono::seconds errorHandlingTimeout{60}; ///< Default error handling timeout before automatic recovery. Default 60s.
+        std::chrono::seconds mdnsReadvertiseInterval{60}; ///< Interval between mDNS re-advertisements. Default 60s.
+        std::chrono::seconds mdnsRecordTtl{120}; ///< TTL for mDNS resource records. Default 120s.
+        std::chrono::milliseconds mdnsProbeWait{250}; ///< Wait time for mDNS probe responses before declaring no conflict. Default 250ms.
     };
 
     /// @return The @ref gl_sila_server_uuid "Server UUID", stable across restarts. Backs the
