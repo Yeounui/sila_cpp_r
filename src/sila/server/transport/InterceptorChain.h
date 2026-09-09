@@ -24,10 +24,10 @@ namespace auth { class AuthorizationInterceptor; }
 /// each handler invocation. Assembled by SiLAServerBase::Builder::Build()
 /// and passed by raw pointer to generated service adapters.
 struct InterceptorChain {
-    auth::AuthorizationInterceptor* auth = nullptr;  // null if WithAuthentication not called
-    BinaryStore* binaryStore = nullptr;              // null if WithBinaryTransfer not called
-    std::chrono::seconds binarySlotLifetime{300};    // lifetime for injectBinaryResults slots
-    LogCallback logCallback;                         // null (empty) if no callback installed
+    auth::AuthorizationInterceptor* auth = nullptr;  ///< null if WithAuthentication not called
+    BinaryStore* binaryStore = nullptr;              ///< null if WithBinaryTransfer not called
+    std::chrono::seconds binarySlotLifetime{300};    ///< lifetime for injectBinaryResults slots
+    LogCallback logCallback;                         ///< null (empty) if no callback installed
 
     // Validates the LockIdentifier metadata of one call and renews the lock's
     // inactivity timeout on a match (LockControllerImpl::checkLockMetadata).
@@ -43,7 +43,7 @@ struct InterceptorChain {
     // error::DefinedExecutionError{InvalidLockIdentifier}); both call sites are
     // already inside a SiLAError boundary.
     std::function<void(std::string_view targetFqi,
-                       const std::optional<std::string>& serializedLockIdentifier)> lockGate;
+                       const std::optional<std::string>& serializedLockIdentifier)> lockGate;  ///< Checks/renews the LockIdentifier metadata; empty if WithLock() was not called.
 
     // FQIs of every Feature registered on this server, snapshotted at Build().
     // CreateBinary gates auth on the caller's parameterIdentifier
@@ -51,7 +51,7 @@ struct InterceptorChain {
     // no registered Feature accounts for is a free pass past that gate.
     // Empty means the chain was assembled outside SiLAServerBase::Builder
     // (unit tests wiring only an auth interceptor); validation is then skipped.
-    std::vector<std::string> registeredFeatureFqis;
+    std::vector<std::string> registeredFeatureFqis;  ///< Every Feature FQI registered on this server, snapshotted at Build().
 
     // Every SiLA Client Metadata this server declares: fully qualified
     // Metadata identifier -> the Features / Commands / Properties it affects
@@ -65,7 +65,7 @@ struct InterceptorChain {
     // what discovery names, so a second table would be a way for the server to
     // demand something it never advertised.
     // Empty means nothing is declared and the gate's rule (c) is a no-op.
-    std::map<std::string, std::vector<std::string>> metadataAffectedCalls;
+    std::map<std::string, std::vector<std::string>> metadataAffectedCalls;  ///< Declared SiLA Client Metadata FQI to the calls it affects.
 
     // Observable Command follow-up ownership (Batch C, High-2).
     //
@@ -101,29 +101,32 @@ struct InterceptorChain {
     // whose follow-up envelopes have no metadata field at all. Trade-off inherited from the
     // cloud twin: a token that expires mid-execution cannot be refreshed over the wire
     // (CloudEnvelopeRouter.h:238-248).
+    /// One Observable Command execution's authorization owner: the Command that
+    /// initiated it, and the access token to replay on its follow-up RPCs.
     struct ObservableOwnerEntry {
-        std::string fqi;                    // owning Command's FQI
-        std::optional<std::string> token;   // access token snapshotted at initiation; nullopt if the initiation was unprotected
+        std::string fqi;                    ///< owning Command's FQI
+        std::optional<std::string> token;   ///< access token snapshotted at initiation; nullopt if the initiation was unprotected
     };
+    /// Thread-safe table of ObservableOwnerEntry, keyed by lower-cased Command Execution UUID.
     struct ObservableOwnerRegistry {
-        std::mutex mu;
-        std::unordered_map<std::string, ObservableOwnerEntry> owners;
+        std::mutex mu;  ///< guards owners
+        std::unordered_map<std::string, ObservableOwnerEntry> owners;  ///< entries, keyed by lower-cased UUID
     };
     std::shared_ptr<ObservableOwnerRegistry> observableOwners_ =
-        std::make_shared<ObservableOwnerRegistry>();
+        std::make_shared<ObservableOwnerRegistry>();  ///< Authorization-owner table shared by every copy of this chain.
 
-    // Records `ownerFqi` as the owner of the Observable Command execution identified by
-    // `uuid`. Called once, when the observable command is created. Overwrites silently if
-    // the UUID is somehow reused, since UUID collision is outside this table's remit.
+    /// Records `ownerFqi` as the owner of the Observable Command execution identified by
+    /// `uuid`. Called once, when the observable command is created. Overwrites silently if
+    /// the UUID is somehow reused, since UUID collision is outside this table's remit.
     void registerObservableOwner(const std::string& uuid, std::string ownerFqi,
                                  std::optional<std::string> token) const {
         std::lock_guard<std::mutex> lock{observableOwners_->mu};
         observableOwners_->owners[uuid] = ObservableOwnerEntry{std::move(ownerFqi), std::move(token)};
     }
 
-    // Looks up the owner FQI and snapshotted token for `uuid`. std::nullopt means this UUID
-    // was never registered here -- callers treat that as "not one of ours" and defer to the
-    // existing unknown-UUID error path rather than treating it as an authorization failure.
+    /// Looks up the owner FQI and snapshotted token for `uuid`. std::nullopt means this UUID
+    /// was never registered here -- callers treat that as "not one of ours" and defer to the
+    /// existing unknown-UUID error path rather than treating it as an authorization failure.
     std::optional<ObservableOwnerEntry> observableOwnerEntry(const std::string& uuid) const {
         // Part A p90 / Part B p88: UUID comparison MUST ignore case. `uuid` here
         // is the client-supplied CommandExecutionUUID (GrpcTransport.h follow-up
@@ -137,8 +140,8 @@ struct InterceptorChain {
         return it->second;
     }
 
-    // Drops the ownership record for `uuid`, e.g. once the execution has finished and no
-    // further follow-up RPCs are expected. Erasing an absent key is a harmless no-op.
+    /// Drops the ownership record for `uuid`, e.g. once the execution has finished and no
+    /// further follow-up RPCs are expected. Erasing an absent key is a harmless no-op.
     void eraseObservableOwner(const std::string& uuid) const {
         // Same case-folding as observableOwnerEntry above, for the same reason.
         std::lock_guard<std::mutex> lock{observableOwners_->mu};

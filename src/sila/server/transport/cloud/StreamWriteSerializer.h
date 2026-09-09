@@ -21,9 +21,13 @@ namespace cloud = org::silastandard;
 /// author's API.
 class StreamWriteSerializer {
 public:
-    // cancelFn: called when a write exceeds writeTimeout — typically
-    // context_->TryCancel(), which unblocks the hung Write() and tears
-    // down the stream so CloudTransport can reconnect.
+    /// Wraps `stream`, which the caller must keep alive for at least this
+    /// serializer's own lifetime (see the shared_ptr overload below for a
+    /// caller that cannot guarantee that by scope alone).
+    ///
+    /// cancelFn: called when a write exceeds writeTimeout — typically
+    /// context_->TryCancel(), which unblocks the hung Write() and tears
+    /// down the stream so CloudTransport can reconnect.
     StreamWriteSerializer(
         grpc::ClientReaderWriter<cloud::SiLAServerMessage, cloud::SiLAClientMessage>* stream,
         std::chrono::seconds writeTimeout = std::chrono::seconds{0},
@@ -41,6 +45,8 @@ public:
     // member's .get() while handing the serializer's shared_ptr to route()'s
     // detached thread, which could outlive TearDown()'s stream_ destruction.
     // Fixed there by switching that harness to this overload too.
+    /// Shared-ownership overload: keeps `stream` alive for as long as this
+    /// serializer lives, for a caller that cannot otherwise guarantee that.
     StreamWriteSerializer(
         std::shared_ptr<grpc::ClientReaderWriter<cloud::SiLAServerMessage, cloud::SiLAClientMessage>> stream,
         std::chrono::seconds writeTimeout = std::chrono::seconds{0},

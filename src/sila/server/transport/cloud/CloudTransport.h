@@ -30,6 +30,12 @@ namespace cloud = org::silastandard;
 /// ConnectionConfigurationService is told to connect to.
 class CloudTransport {
 public:
+    /// Configures the outbound target; call connect() to actually open the stream.
+    /// @param host The SiLA Client's cloud endpoint host to connect out to.
+    /// @param port The SiLA Client's cloud endpoint port.
+    /// @param creds TLS credentials this server presents when connecting out.
+    /// @param router Dispatches every envelope read from the opened stream; must outlive this
+    /// object.
     CloudTransport(std::string host,
                    uint16_t port,
                    std::shared_ptr<grpc::ChannelCredentials> creds,

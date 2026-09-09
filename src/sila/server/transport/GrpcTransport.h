@@ -46,6 +46,7 @@ namespace sila2 {
 template <typename T>
 class GrpcUnaryResponseSink : public ResponseSink<T> {
 public:
+    /// Wraps the gRPC response message this sink fills via send().
     explicit GrpcUnaryResponseSink(T* response)
         : response_{response} {}
 
@@ -79,6 +80,7 @@ private:
 template <typename T, typename Writer = grpc::ServerWriter<T>>
 class GrpcStreamResponseSink : public ResponseSink<T> {
 public:
+    /// Wraps the gRPC ServerWriter this sink streams values to via send().
     explicit GrpcStreamResponseSink(Writer* writer)
         : writer_{writer} {}
 

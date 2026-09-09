@@ -17,8 +17,8 @@ namespace sila2 {
 // the constructor rewrites each matching Xml or Json Url Schema to use this text
 // so the inline-Schema path (ValueValidator::validateSchema) checks it (Part A p70).
 struct ProvisionedSchema {
-    std::string_view url;
-    std::string_view schemaXml;
+    std::string_view url;        ///< The Schema's Url as it appears in the FDL.
+    std::string_view schemaXml;  ///< The resolved schema text (Xml or Json) for that Url.
 };
 
 /// Checks a @ref gl_command "Command"'s parameters against its Feature's FDL constraints
@@ -30,6 +30,13 @@ struct ProvisionedSchema {
 /// startup from that Feature's FDL XML.
 class CommandParameterValidator {
 public:
+    /// Parses fdlXml once at construction and prepares to validate that Feature's
+    /// @ref gl_command "Command" parameters against it.
+    /// @param fdlXml The Feature's @ref gl_feature_definition "Feature Definition" as XML text.
+    /// @param featureFqi The Feature's Fully Qualified Identifier, used to build each
+    ///        offending parameter's own FQI when validate() throws.
+    /// @param provisionedSchemas Url -> resolved-text pairs for every Schema Constraint whose
+    ///        source is a Url rather than inline text; empty when the Feature declares none.
     CommandParameterValidator(std::string_view fdlXml, std::string_view featureFqi,
                                std::span<const ProvisionedSchema> provisionedSchemas = {});
 

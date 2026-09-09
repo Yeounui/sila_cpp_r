@@ -87,32 +87,34 @@ class SiLAServerBase {
 public:
     /// Internal components assembled by Build(); not for direct use by callers.
     struct OwnedComponents {
-        std::unique_ptr<BinaryStore> binaryStore;
-        std::shared_ptr<BinaryUploadService> uploadService;
-        std::shared_ptr<BinaryDownloadService> downloadService;
-        std::unique_ptr<auth::AuthTokenStore> authTokenStore;
-        std::unique_ptr<auth::CredentialVerifier> credentialVerifier;
-        std::unique_ptr<auth::AccessPolicy> accessPolicy;
-        std::shared_ptr<AuthenticationServiceImpl> authService;
-        std::shared_ptr<AuthorizationServiceImpl> authzService;
-        std::shared_ptr<AuthorizationConfigurationServiceImpl> authzConfigService;
-        std::unique_ptr<auth::AuthorizationInterceptor> authzInterceptor;
-        std::unique_ptr<recovery::RecoverableErrorGate> errorGate;
-        std::shared_ptr<ErrorRecoveryServiceImpl> errorRecoveryService;
-        std::unique_ptr<ObservablePropertyManager> errorRecoveryPropMgr;
+        std::unique_ptr<BinaryStore> binaryStore;  ///< Binary Transfer chunk store, when WithBinaryTransfer() was called.
+        std::shared_ptr<BinaryUploadService> uploadService;  ///< gRPC service for binary chunk uploads.
+        std::shared_ptr<BinaryDownloadService> downloadService;  ///< gRPC service for binary chunk downloads.
+        std::unique_ptr<auth::AuthTokenStore> authTokenStore;  ///< Issued access tokens, when WithAuthentication() was called.
+        std::unique_ptr<auth::CredentialVerifier> credentialVerifier;  ///< Caller-supplied verifier from WithAuthentication().
+        std::unique_ptr<auth::AccessPolicy> accessPolicy;  ///< Caller-supplied access policy from WithAuthentication().
+        std::shared_ptr<AuthenticationServiceImpl> authService;  ///< AuthenticationService Feature implementation (Login/Logout).
+        std::shared_ptr<AuthorizationServiceImpl> authzService;  ///< AuthorizationService Feature implementation.
+        std::shared_ptr<AuthorizationConfigurationServiceImpl> authzConfigService;  ///< AuthorizationConfigurationService Feature implementation.
+        std::unique_ptr<auth::AuthorizationInterceptor> authzInterceptor;  ///< Runs the auth gate on every protected call.
+        std::unique_ptr<recovery::RecoverableErrorGate> errorGate;  ///< Tracks recoverable errors, when WithErrorRecovery() was called.
+        std::shared_ptr<ErrorRecoveryServiceImpl> errorRecoveryService;  ///< ErrorRecoveryService Feature implementation.
+        std::unique_ptr<ObservablePropertyManager> errorRecoveryPropMgr;  ///< Backs ErrorRecoveryService's RecoverableErrors subscription.
         // shared_ptr, not unique_ptr: registerService and regCmd/regProp both
         // take shared ownership, the same shape authService above uses.
-        std::shared_ptr<LockControllerImpl> lockController;
-        std::unique_ptr<discovery::MdnsPublisher> mdnsPublisher;
-        std::unique_ptr<InterceptorChain> chain;
-        std::vector<ObservableCommandManager*> commandManagers;
-        std::unique_ptr<CloudEnvelopeRouter> cloudRouter;
+        std::shared_ptr<LockControllerImpl> lockController;  ///< LockController Feature implementation, when WithLock() was called.
+        std::unique_ptr<discovery::MdnsPublisher> mdnsPublisher;  ///< SiLA Server Discovery mDNS advertiser.
+        std::unique_ptr<InterceptorChain> chain;  ///< Interceptor bundle applied to every dispatched call.
+        std::vector<ObservableCommandManager*> commandManagers;  ///< Every registered manager, stopped on shutdown.
+        std::unique_ptr<CloudEnvelopeRouter> cloudRouter;  ///< Router for Server-Initiated Connection envelopes.
         // Must be destroyed before cloudRouter: its managed CloudTransports
         // dispatch through that router while they are shutting down.
-        std::shared_ptr<ConnectionConfigurationServiceImpl> connectionConfigurationService;
+        std::shared_ptr<ConnectionConfigurationServiceImpl> connectionConfigurationService;  ///< ConnectionConfigurationService Feature implementation.
         ~OwnedComponents();
         OwnedComponents();
+        /// Moves every owned component from `other`, leaving it empty.
         OwnedComponents(OwnedComponents&&) noexcept;
+        /// Moves every owned component from `other`, leaving it empty.
         OwnedComponents& operator=(OwnedComponents&&) noexcept;
     };
 

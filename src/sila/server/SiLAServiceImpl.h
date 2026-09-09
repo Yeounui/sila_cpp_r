@@ -68,6 +68,8 @@ namespace silaservice_proto = sila2::org::silastandard::core::silaservice::v1;
 /// constructs one directly.
 class SiLAServiceImpl final : public silaservice_proto::SiLAService::Service {
 public:
+    /// Constructs the SiLA Service handler for one server. Installed automatically by
+    /// SiLAServerBase::Builder::Build() -- a server author never constructs one directly.
     // registry, config, and publisher must outlive this object — SiLAServerBase owns all.
     // publisher is nullable at the type level (defaults to nullptr) but Build() always
     // passes a non-null one: discovery is always enabled (Part B p75 MUST).
@@ -151,30 +153,48 @@ public:
         const silaservice_proto::Get_ImplementedFeatures_Parameters* request,
         silaservice_proto::Get_ImplementedFeatures_Responses* response) override;
 
+    /// Transport-neutral handler for the GetFeatureDefinition command.
+    /// @see GetFeatureDefinition
     void getFeatureDefinition(const silaservice_proto::GetFeatureDefinition_Parameters& request,
                               CallContext& ctx,
                               ResponseSink<silaservice_proto::GetFeatureDefinition_Responses>& sink);
+    /// Transport-neutral handler for the SetServerName command.
+    /// @see SetServerName
     void setServerName(const silaservice_proto::SetServerName_Parameters& request,
                        CallContext& ctx,
                        ResponseSink<silaservice_proto::SetServerName_Responses>& sink);
+    /// Transport-neutral handler for the ServerName property read.
+    /// @see Get_ServerName
     void getServerName(const silaservice_proto::Get_ServerName_Parameters& request,
                        CallContext& ctx,
                        ResponseSink<silaservice_proto::Get_ServerName_Responses>& sink);
+    /// Transport-neutral handler for the ServerType property read.
+    /// @see Get_ServerType
     void getServerType(const silaservice_proto::Get_ServerType_Parameters& request,
                        CallContext& ctx,
                        ResponseSink<silaservice_proto::Get_ServerType_Responses>& sink);
+    /// Transport-neutral handler for the ServerUUID property read.
+    /// @see Get_ServerUUID
     void getServerUuid(const silaservice_proto::Get_ServerUUID_Parameters& request,
                        CallContext& ctx,
                        ResponseSink<silaservice_proto::Get_ServerUUID_Responses>& sink);
+    /// Transport-neutral handler for the ServerDescription property read.
+    /// @see Get_ServerDescription
     void getServerDescription(const silaservice_proto::Get_ServerDescription_Parameters& request,
                               CallContext& ctx,
                               ResponseSink<silaservice_proto::Get_ServerDescription_Responses>& sink);
+    /// Transport-neutral handler for the ServerVersion property read.
+    /// @see Get_ServerVersion
     void getServerVersion(const silaservice_proto::Get_ServerVersion_Parameters& request,
                           CallContext& ctx,
                           ResponseSink<silaservice_proto::Get_ServerVersion_Responses>& sink);
+    /// Transport-neutral handler for the ServerVendorURL property read.
+    /// @see Get_ServerVendorURL
     void getServerVendorUrl(const silaservice_proto::Get_ServerVendorURL_Parameters& request,
                             CallContext& ctx,
                             ResponseSink<silaservice_proto::Get_ServerVendorURL_Responses>& sink);
+    /// Transport-neutral handler for the ImplementedFeatures property read.
+    /// @see Get_ImplementedFeatures
     void getImplementedFeatures(
         const silaservice_proto::Get_ImplementedFeatures_Parameters& request,
         CallContext& ctx,

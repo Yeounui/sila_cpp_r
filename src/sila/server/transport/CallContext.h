@@ -101,6 +101,8 @@ public:
     /// Giving gRPC callbacks too would need a watchdog thread per RPC; add one
     /// only if a gRPC-side caller actually needs push notification.
     using CancellationCallback = std::function<void()>;
+    /// Registers `callback` to run once cancellation is requested, invoked
+    /// immediately if the call is already cancelled at registration time.
     void onCancellation(CancellationCallback callback);
 
     /// @return the reason passed to the requestCancellation() call that set
