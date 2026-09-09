@@ -34,10 +34,14 @@ public:
     // Returns the bytes currently free on the spool volume. Injectable so a
     // test can force the insufficient-space branch without depending on the
     // host's real free disk.
+    /// Callback queried for bytes free on the spool volume; a test can inject
+    /// one to force the insufficient-space branch.
     using AvailableSpaceFn = std::function<std::uintmax_t()>;
 
     /// @param tmpDir Directory the store creates per-slot subdirectories under;
     ///        must exist and be writable, and outlive the store.
+    /// @param availableSpaceFn Reports the bytes free on the spool volume; empty means
+    ///        createSlot() queries std::filesystem::space(tmpDir) directly.
     // availableSpaceFn defaults to empty, meaning createSlot() queries
     // std::filesystem::space(tmpDir_) directly.
     explicit FileSpoolBinaryStore(std::filesystem::path tmpDir,
@@ -72,9 +76,11 @@ public:
     std::size_t binarySize(const std::string& uuid) const override;
     [[nodiscard("caller expects the remaining lifetime")]]
     std::chrono::seconds remainingLifetime(const std::string& uuid) const override;
+    /// See BinaryStore::contains.
     [[nodiscard("caller expects the presence check result")]]
     bool contains(const std::string& uuid) const override;
     std::size_t removeExpired() override;
+    /// See BinaryStore::size.
     [[nodiscard("caller expects the slot count")]]
     std::size_t size() const override;
 

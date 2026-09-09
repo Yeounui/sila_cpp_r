@@ -40,6 +40,8 @@ enum class OverflowPolicy : uint8_t {
 /// (consumer side) may run concurrently.
 class Subscription {
 public:
+    /// @param maxDepth Maximum number of queued values before policy applies.
+    /// @param policy What to do when a new value arrives with the queue at maxDepth.
     Subscription(std::size_t maxDepth, OverflowPolicy policy);
 
     /// Publisher-side, non-blocking.
@@ -54,6 +56,7 @@ public:
     /// Signal cancellation, wake all blocked waiters.
     void cancel();
 
+    /// @return true if cancel() has been called on this Subscription.
     [[nodiscard("caller expects the cancellation status")]]
     bool isCancelled() const;
 
@@ -76,6 +79,8 @@ private:
 /// Thread-safe: all public methods lock an internal mutex.
 class ObservablePropertyManager {
 public:
+    /// @param defaultQueueDepth Maximum number of queued values each Subscription
+    ///        created by subscribe() may hold before its OverflowPolicy applies.
     explicit ObservablePropertyManager(std::size_t defaultQueueDepth = 16);
     ~ObservablePropertyManager();
 

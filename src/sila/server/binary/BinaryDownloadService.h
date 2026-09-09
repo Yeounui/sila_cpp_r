@@ -28,27 +28,39 @@ class BinaryDownloadService final : public sila2::org::silastandard::BinaryDownl
 public:
     /// @param store Chunk store backing every download; must outlive this service.
     /// @param defaultLifetime Slot lifetime applied when a request does not extend it.
+    /// @param chain Optional interceptor chain applied to every RPC; nullptr skips interception.
     BinaryDownloadService(BinaryStore& store, std::chrono::seconds defaultLifetime,
                           const InterceptorChain* chain = nullptr);
 
+    /// Serves the GetBinaryInfo RPC of SiLA Binary Download.
     grpc::Status GetBinaryInfo(grpc::ServerContext* context,
                                const sila2::org::silastandard::GetBinaryInfoRequest* request,
                                sila2::org::silastandard::GetBinaryInfoResponse* response) override;
 
+    /// Serves the GetChunk RPC of SiLA Binary Download.
     grpc::Status GetChunk(grpc::ServerContext* context,
                           grpc::ServerReaderWriter<sila2::org::silastandard::GetChunkResponse,
                                                     sila2::org::silastandard::GetChunkRequest>* stream) override;
 
+    /// Serves the DeleteBinary RPC of SiLA Binary Download.
     grpc::Status DeleteBinary(grpc::ServerContext* context,
                               const sila2::org::silastandard::DeleteBinaryRequest* request,
                               sila2::org::silastandard::DeleteBinaryResponse* response) override;
 
+    /// Transport-neutral handler body shared by the gRPC GetBinaryInfo override
+    /// above and the cloud transport path; reports the binary's size and
+    /// remaining lifetime via store_.binarySize()/remainingLifetime().
     grpc::Status getBinaryInfo(const sila2::org::silastandard::GetBinaryInfoRequest& request,
                                CallContext& ctx,
                                ResponseSink<sila2::org::silastandard::GetBinaryInfoResponse>& sink);
+    /// Transport-neutral handler body shared by the gRPC GetChunk override
+    /// above and the cloud transport path; returns one byte range via
+    /// store_.readRange() and renews the slot's lifetime.
     grpc::Status getChunk(const sila2::org::silastandard::GetChunkRequest& request,
                           CallContext& ctx,
                           ResponseSink<sila2::org::silastandard::GetChunkResponse>& sink);
+    /// Transport-neutral handler body shared by the gRPC DeleteBinary override
+    /// above and the cloud transport path; removes the slot via store_.remove().
     grpc::Status deleteBinary(const sila2::org::silastandard::DeleteBinaryRequest& request,
                               CallContext& ctx,
                               ResponseSink<sila2::org::silastandard::DeleteBinaryResponse>& sink);

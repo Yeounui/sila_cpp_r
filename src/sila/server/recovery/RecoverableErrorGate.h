@@ -34,8 +34,8 @@ inline constexpr const char* kRecoverableErrorsPropertyId =
 
 /// One recovery choice offered to the client for a raised error.
 struct ContinuationOption {
-    std::string identifier;
-    bool isDefault = false;
+    std::string identifier;  ///< This option's identifier; RecoveryChoice::optionIdentifier names it back.
+    bool isDefault = false;  ///< True if the client auto-selects this option once automaticSelectionTimeout elapses with no response.
     // Published as the RecoverableError's wire-level AutomaticSelectionTimeout
     // when this option is the one flagged isDefault
     // (ErrorRecoveryService-v2_0.sila.xml:261-272). FDL :264-268: "the client
@@ -43,19 +43,19 @@ struct ContinuationOption {
     // duration elapses -- the CLIENT performs that selection, not the gate;
     // the gate never resolves to this option on its own. 0 = no automatic
     // selection.
-    std::chrono::seconds automaticSelectionTimeout{0};
+    std::chrono::seconds automaticSelectionTimeout{0};  ///< How long the client waits before auto-selecting this option when isDefault is true; zero means no automatic selection.
     // Appended after automaticSelectionTimeout, not inserted earlier: existing
     // call sites use positional aggregate init ({"retry", false, seconds{0}})
     // and would silently misbind if a std::string landed mid-struct.
-    std::string description;        // FDL ContinuationOption.Description
-    std::string requiredInputData;  // FDL ContinuationOption.RequiredInputData
+    std::string description;        ///< FDL ContinuationOption.Description
+    std::string requiredInputData;  ///< FDL ContinuationOption.RequiredInputData
 };
 
 /// The client's answer to a raised error: which option, plus any option-
 /// specific input data (e.g. a corrected parameter value).
 struct RecoveryChoice {
-    std::string optionIdentifier;
-    std::any inputData;
+    std::string optionIdentifier;  ///< The ContinuationOption::identifier the client selected.
+    std::any inputData;            ///< Option-specific input data the client supplied, or empty if the option needs none.
 };
 
 /// One raised recoverable error, mirroring the FDL RecoverableError structure
@@ -66,12 +66,12 @@ struct RecoveryChoice {
 /// option flagged isDefault, so the FDL rule that DefaultOption must name one
 /// of the ContinuationOptions holds by construction.
 struct RecoverableError {
-    std::string commandExecutionUuid;
-    std::string errorIdentifier;
-    std::string commandIdentifier;
-    std::string errorMessage;
-    std::vector<ContinuationOption> continuationOptions;
-    // Stamped by raiseAndWait(); any value a caller sets is overwritten.
+    std::string commandExecutionUuid;  ///< The @ref gl_command_execution_uuid "Command Execution UUID" of the command that raised this error.
+    std::string errorIdentifier;       ///< The Defined Execution Error identifier this recoverable error corresponds to.
+    std::string commandIdentifier;     ///< Fully Qualified Identifier of the command that raised this error.
+    std::string errorMessage;          ///< Human-readable description of the error.
+    std::vector<ContinuationOption> continuationOptions;  ///< The choices offered to the client; must not be empty.
+    /// Stamped by raiseAndWait(); any value a caller sets is overwritten.
     sila2::types::Timestamp errorTime{};
 };
 
@@ -92,6 +92,11 @@ struct RecoverableError {
 /// @see SiLAServerBase::Builder::WithErrorRecovery
 class RecoverableErrorGate {
 public:
+    /// @param propertyManager Publishes the RecoverableErrors
+    /// @ref gl_observable_property "Observable Property" this gate raises errors through; must
+    /// outlive the gate.
+    /// @param defaultTimeout ErrorHandlingTimeout applied until setErrorHandlingTimeout() changes
+    /// it.
     explicit RecoverableErrorGate(
         ObservablePropertyManager& propertyManager,
         std::chrono::seconds defaultTimeout = std::chrono::seconds{0});

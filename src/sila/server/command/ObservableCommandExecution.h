@@ -50,12 +50,16 @@ public:
 
     // --- Identity ---
 
+    /// @return The @ref gl_command_execution_uuid "Command Execution UUID" identifying this
+    /// execution.
     [[nodiscard("caller expects the command execution UUID")]]
     const std::string& uuid() const;
 
+    /// @return The current Command Execution Status.
     [[nodiscard("the state drives dispatch — ignoring it misroutes command handling")]]
     State state() const;
 
+    /// @return The human-readable name of @p state, for logging and error text.
     [[nodiscard("caller expects the state name string")]]
     static std::string stateToString(State state);
 
@@ -80,9 +84,11 @@ public:
     /// @param remaining Estimated time remaining.
     void setProgress(double fraction, std::chrono::seconds remaining);
 
+    /// @return The last progress fraction reported via setProgress(), 0.0 if none yet.
     [[nodiscard("caller expects the progress fraction")]]
     double progress() const;
 
+    /// @return The last estimated remaining time reported via setProgress(), zero if none yet.
     [[nodiscard("caller expects the estimated remaining time")]]
     std::chrono::seconds estimatedRemaining() const;
 
@@ -115,6 +121,7 @@ public:
 
     // --- Error info (valid only in FinishedWithError state) ---
 
+    /// @return The error message set by fail(), valid once state() is FinishedWithError.
     [[nodiscard("caller expects the error message")]]
     std::string errorMessage() const;
 

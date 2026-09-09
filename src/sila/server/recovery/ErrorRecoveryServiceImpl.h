@@ -65,22 +65,29 @@ void fillRecoverableErrorsResponse(
 class ErrorRecoveryServiceImpl final : public errorrecovery_proto::ErrorRecoveryService::Service {
 public:
     // gate and propMgr must outlive this object.
+    /// @param gate Resolves ExecuteContinuationOption/AbortErrorHandling calls against
+    ///        raiseAndWait(); must outlive this service.
+    /// @param propMgr Backs the RecoverableErrors subscription; must outlive this service.
+    /// @param chain Optional interceptor chain applied to every RPC; nullptr skips interception.
     ErrorRecoveryServiceImpl(recovery::RecoverableErrorGate& gate,
                               ObservablePropertyManager& propMgr,
                               const InterceptorChain* chain = nullptr);
 
     // ---- Commands ----
 
+    /// Serves the ExecuteContinuationOption RPC of SiLA ErrorRecoveryService.
     grpc::Status ExecuteContinuationOption(
         grpc::ServerContext* context,
         const errorrecovery_proto::ExecuteContinuationOption_Parameters* request,
         errorrecovery_proto::ExecuteContinuationOption_Responses* response) override;
 
+    /// Serves the AbortErrorHandling RPC of SiLA ErrorRecoveryService.
     grpc::Status AbortErrorHandling(
         grpc::ServerContext* context,
         const errorrecovery_proto::AbortErrorHandling_Parameters* request,
         errorrecovery_proto::AbortErrorHandling_Responses* response) override;
 
+    /// Serves the SetErrorHandlingTimeout RPC of SiLA ErrorRecoveryService.
     grpc::Status SetErrorHandlingTimeout(
         grpc::ServerContext* context,
         const errorrecovery_proto::SetErrorHandlingTimeout_Parameters* request,
@@ -88,6 +95,7 @@ public:
 
     // ---- Observable Property (server-streaming) ----
 
+    /// Serves the Subscribe_RecoverableErrors RPC of SiLA ErrorRecoveryService.
     grpc::Status Subscribe_RecoverableErrors(
         grpc::ServerContext* context,
         const errorrecovery_proto::Subscribe_RecoverableErrors_Parameters* request,
@@ -100,13 +108,22 @@ public:
         const errorrecovery_proto::ExecuteContinuationOption_Parameters& request,
         CallContext& ctx,
         ResponseSink<errorrecovery_proto::ExecuteContinuationOption_Responses>& sink);
+    /// Transport-neutral handler body shared by the gRPC AbortErrorHandling
+    /// override above and the cloud transport path; resolves gate_'s matching
+    /// raiseAndWait() with no option selected.
     void abortErrorHandling(const errorrecovery_proto::AbortErrorHandling_Parameters& request,
                             CallContext& ctx,
                             ResponseSink<errorrecovery_proto::AbortErrorHandling_Responses>& sink);
+    /// Transport-neutral handler body shared by the gRPC SetErrorHandlingTimeout
+    /// override above and the cloud transport path; forwards to gate_'s
+    /// setErrorHandlingTimeout().
     void setErrorHandlingTimeout(
         const errorrecovery_proto::SetErrorHandlingTimeout_Parameters& request,
         CallContext& ctx,
         ResponseSink<errorrecovery_proto::SetErrorHandlingTimeout_Responses>& sink);
+    /// Transport-neutral handler body shared by the gRPC Subscribe_RecoverableErrors
+    /// override above and the cloud transport path; streams gate_'s currently
+    /// raised errors through propMgr_'s subscription queue.
     void subscribeRecoverableErrors(
         const errorrecovery_proto::Subscribe_RecoverableErrors_Parameters& request,
         CallContext& ctx,

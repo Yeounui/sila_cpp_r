@@ -82,6 +82,7 @@ public:
     [[nodiscard("caller expects the remaining lifetime")]]
     virtual std::chrono::seconds remainingLifetime(const std::string& uuid) const = 0;
 
+    /// @return true if a slot for uuid exists (created but possibly still incomplete).
     [[nodiscard("caller expects the presence check result")]]
     virtual bool contains(const std::string& uuid) const = 0;
 
@@ -89,6 +90,7 @@ public:
     /// @return Number of slots removed.
     virtual std::size_t removeExpired() = 0;
 
+    /// @return Number of slots currently held, complete or not.
     [[nodiscard("caller expects the slot count")]]
     virtual std::size_t size() const = 0;
 
@@ -103,6 +105,7 @@ public:
     /// Stop the background GC thread. No-op if not running. Also called by the destructor.
     void stopAutoGC() { gc_.stop(); }
 
+    /// @return true if startAutoGC() is currently running its background sweep thread.
     [[nodiscard("caller expects the auto-GC status")]]
     bool isAutoGCRunning() const { return gc_.isRunning(); }
 

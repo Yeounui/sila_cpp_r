@@ -50,8 +50,10 @@ public:
     void remove(const std::string& uuid) override;
     std::size_t binarySize(const std::string& uuid) const override;
     std::chrono::seconds remainingLifetime(const std::string& uuid) const override;
+    /// See BinaryStore::contains.
     bool contains(const std::string& uuid) const override;
     std::size_t removeExpired() override;
+    /// See BinaryStore::size.
     std::size_t size() const override;
 
 private:

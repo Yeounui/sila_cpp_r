@@ -50,7 +50,7 @@ public:
     // (BinaryUploader's default chunk size is ~2 MiB, i.e. far fewer chunks
     // for any binary this store is realistically asked to hold) while
     // keeping worst-case resize() overhead bounded to a low single-digit MB.
-    static constexpr std::size_t kMaxChunkCount = 65536;
+    static constexpr std::size_t kMaxChunkCount = 65536;  ///< Upper bound on chunkCount per slot, independent of binarySize.
 
     /// @throws std::invalid_argument if chunkCount exceeds either binarySize
     ///         (no chunk can carry less than one byte) or kMaxChunkCount, or
@@ -72,9 +72,11 @@ public:
     std::size_t binarySize(const std::string& uuid) const override;
     [[nodiscard("caller expects the remaining lifetime")]]
     std::chrono::seconds remainingLifetime(const std::string& uuid) const override;
+    /// See BinaryStore::contains.
     [[nodiscard("caller expects the presence check result")]]
     bool contains(const std::string& uuid) const override;
     std::size_t removeExpired() override;
+    /// See BinaryStore::size.
     [[nodiscard("caller expects the slot count")]]
     std::size_t size() const override;
 

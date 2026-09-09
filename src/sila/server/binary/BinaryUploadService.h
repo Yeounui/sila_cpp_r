@@ -36,27 +36,39 @@ class BinaryUploadService final : public sila2::org::silastandard::BinaryUpload:
 public:
     /// @param store Chunk store backing every upload; must outlive this service.
     /// @param defaultLifetime Slot lifetime applied when a request does not extend it.
+    /// @param chain Optional interceptor chain applied to every RPC; nullptr skips interception.
     BinaryUploadService(BinaryStore& store, std::chrono::seconds defaultLifetime,
                         const InterceptorChain* chain = nullptr);
 
+    /// Serves the CreateBinary RPC of SiLA Binary Upload.
     grpc::Status CreateBinary(grpc::ServerContext* context,
                               const sila2::org::silastandard::CreateBinaryRequest* request,
                               sila2::org::silastandard::CreateBinaryResponse* response) override;
 
+    /// Serves the UploadChunk RPC of SiLA Binary Upload.
     grpc::Status UploadChunk(grpc::ServerContext* context,
                              grpc::ServerReaderWriter<sila2::org::silastandard::UploadChunkResponse,
                                                       sila2::org::silastandard::UploadChunkRequest>* stream) override;
 
+    /// Serves the DeleteBinary RPC of SiLA Binary Upload.
     grpc::Status DeleteBinary(grpc::ServerContext* context,
                               const sila2::org::silastandard::DeleteBinaryRequest* request,
                               sila2::org::silastandard::DeleteBinaryResponse* response) override;
 
+    /// Transport-neutral handler body shared by the gRPC CreateBinary override
+    /// above and the cloud transport path; creates a slot via store_.createSlot()
+    /// and returns its Binary Transfer UUID.
     grpc::Status createBinary(const sila2::org::silastandard::CreateBinaryRequest& request,
                               CallContext& ctx,
                               ResponseSink<sila2::org::silastandard::CreateBinaryResponse>& sink);
+    /// Transport-neutral handler body shared by the gRPC UploadChunk override
+    /// above and the cloud transport path; stores one Binary Chunk via
+    /// store_.storeChunk().
     grpc::Status uploadChunk(const sila2::org::silastandard::UploadChunkRequest& request,
                              CallContext& ctx,
                              ResponseSink<sila2::org::silastandard::UploadChunkResponse>& sink);
+    /// Transport-neutral handler body shared by the gRPC DeleteBinary override
+    /// above and the cloud transport path; removes the slot via store_.remove().
     grpc::Status deleteBinary(const sila2::org::silastandard::DeleteBinaryRequest& request,
                               CallContext& ctx,
                               ResponseSink<sila2::org::silastandard::DeleteBinaryResponse>& sink);
