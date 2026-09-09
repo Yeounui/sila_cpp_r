@@ -9,6 +9,9 @@
 
 namespace sila2 {
 
+/// How a @ref gl_feature "Feature" handler returns its result, or an error, to the
+/// @ref gl_sila_client "SiLA Client"; a handler receives one as its last argument (see SilaHandler).
+///
 /// Transport-neutral interface for sending responses back to a SiLA Client
 /// (architecture.md §3.8). Unobservable RPCs call send() once then finish();
 /// streaming RPCs call send() repeatedly.
@@ -23,7 +26,8 @@ public:
     /// Signal successful completion of the response stream.
     virtual void finish() = 0;
 
-    /// Signal an error and terminate the response stream.
+    /// Signal an error and terminate the response stream: the client receives
+    /// @p error as the SiLA error it represents (see sila2::error::SiLAError and its subtypes).
     virtual void fail(const error::SiLAError& error) = 0;
 };
 
