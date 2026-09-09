@@ -20,11 +20,20 @@
 #include <string>
 
 namespace sila2 {
-/// Tracks the lifecycle of a single Observable Command execution (architecture.md §3.3).
+/// Tracks the lifecycle of a single @ref gl_observable_command "Observable Command" execution
+/// (architecture.md §3.3): its state machine (Waiting → Running → one of the two Finished
+/// states), progress, and error message -- everything a `_Info` stream RPC reports as
+/// @ref gl_command_execution_info "Command Execution Info". Obtained from
+/// ObservableCommandManager::addCommand() or ObservableCommandManager::getCommand(); never
+/// constructed directly by a Feature implementation.
+///
 /// Thread-safe: the executor thread calls start()/setProgress()/finish()/fail(),
 /// while the gRPC serving thread reads state()/progress()/isExpired().
 class ObservableCommandExecution {
 public:
+    /// The Command Execution Status reported in
+    /// @ref gl_command_execution_info "Command Execution Info". Transitions only forward,
+    /// never reverts: Waiting → Running → FinishedSuccessfully or FinishedWithError.
     enum class State : uint8_t {
         Waiting,
         Running,
@@ -32,8 +41,10 @@ public:
         FinishedWithError,
     };
 
-    /// @param uuid Unique command execution identifier.
-    /// @param lifetime Duration after finish before this execution becomes eligible for GC.
+    /// @param uuid The @ref gl_command_execution_uuid "Command Execution UUID" identifying
+    ///             this execution.
+    /// @param lifetime The @ref gl_lifetime_of_execution "Lifetime of Execution": duration
+    ///                 after finish before this execution becomes eligible for GC.
     ///                 Zero means never expires (manual removal only).
     ObservableCommandExecution(std::string uuid, std::chrono::seconds lifetime);
 

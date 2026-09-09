@@ -25,12 +25,16 @@
 
 namespace sila2 {
 
+/// What a Subscription does when a new value arrives and its queue is already at capacity.
 enum class OverflowPolicy : uint8_t {
-    DiscardOldest,
-    TerminateOnFull,
+    DiscardOldest,   ///< Drop the oldest queued value to make room for the new one.
+    TerminateOnFull, ///< Cancel the subscription instead of dropping a value.
 };
 
-/// A single subscriber's bounded value queue.
+/// A single client's @ref gl_property_subscription "Property Subscription": a bounded queue of
+/// values still waiting to be sent on that subscription's stream. Obtained from
+/// ObservablePropertyManager::subscribe(); a Feature implementation's `Subscribe_<Prop>` RPC
+/// handler drains it with waitForNext() and writes each value to the client.
 ///
 /// Thread-safe: enqueue() (publisher side) and waitForNext()/cancel()
 /// (consumer side) may run concurrently.
@@ -62,9 +66,12 @@ private:
     std::atomic<bool> cancelled_{false};
 };
 
-/// Manages per-property subscriber sets with bounded queues for backpressure
-/// (architecture.md §3.3). Shared across Feature implementations and the
-/// RecoverableErrorGate.
+/// Manages the @ref gl_property_subscription "Property Subscriptions" for every
+/// @ref gl_observable_property "Observable Property" a Feature implementation exposes, with
+/// bounded per-subscriber queues for backpressure (architecture.md §3.3). A Feature calls
+/// publish() whenever a property's value changes; its `Subscribe_<Prop>` RPC handler calls
+/// subscribe() to register the client and get back the Subscription to stream from. Shared
+/// across Feature implementations and the RecoverableErrorGate.
 ///
 /// Thread-safe: all public methods lock an internal mutex.
 class ObservablePropertyManager {
@@ -101,6 +108,7 @@ public:
     /// Cancel everything. Also called by the destructor.
     void shutdown();
 
+    /// @return Number of active subscribers for propertyId.
     [[nodiscard("caller expects the subscriber count")]]
     std::size_t subscriberCount(const std::string& propertyId) const;
 

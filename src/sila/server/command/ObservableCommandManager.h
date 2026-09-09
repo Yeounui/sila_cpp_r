@@ -15,7 +15,30 @@ namespace sila2 {
 
 class ObservableCommandExecution;
 
-/// Manages the set of active Observable Command executions (architecture.md §3.3).
+/// Tracks every running or recently finished @ref gl_observable_command "Observable Command"
+/// execution on a SiLA Server, keyed by @ref gl_command_execution_uuid "Command Execution UUID".
+/// A Feature implementation calls addCommand() when a client invokes an Observable Command,
+/// then getCommand() to look the execution back up for its `_Info` stream. One instance is
+/// shared by every Feature that has an Observable Command; it is installed on the server via
+/// `SiLAServerBase::Builder::RegisterCommandManager()`.
+///
+/// @code{.cpp}
+/// namespace fw = sila2::org::silastandard;  // SiLAFramework.pb.h
+///
+/// // Inside a Feature's Observable Command handler:
+/// auto exec = cmdManager_.addCommand(std::chrono::seconds{60});  // 60s lifetime
+/// std::thread([exec] {
+///     exec->start();
+///     // ... do the work, calling exec->setProgress(...) as it proceeds ...
+///     exec->finish();
+/// }).detach();
+/// fw::CommandConfirmation confirmation;
+/// confirmation.mutable_commandexecutionuuid()->set_value(exec->uuid());
+///
+/// // Inside the paired `_Info` handler:
+/// auto exec = cmdManager_.getCommand(req.value());
+/// @endcode
+///
 /// Owns the UUID → execution map, generates UUIDs, and provides lifecycle
 /// management (lookup, expiration sweep, bulk cancellation for shutdown).
 ///
@@ -27,8 +50,10 @@ public:
     // before commands_ tears down.
     ~ObservableCommandManager();
 
-    /// Create and register a new command execution with an auto-generated UUID.
-    /// @param lifetime Duration after finish before the execution is eligible for GC.
+    /// Create and register a new command execution with an auto-generated
+    /// @ref gl_command_execution_uuid "Command Execution UUID".
+    /// @param lifetime The @ref gl_lifetime_of_execution "Lifetime of Execution": duration
+    ///                 after finish before the execution is eligible for GC.
     ///                 Zero means never expires.
     /// @return Shared pointer keeping the execution alive for as long as the
     ///         caller holds it, even if a concurrent removeExpired() sweep
@@ -37,7 +62,9 @@ public:
     std::shared_ptr<ObservableCommandExecution> addCommand(
         std::chrono::seconds lifetime = std::chrono::seconds{0});
 
-    /// Look up a command execution by UUID.
+    /// Look up a command execution by its @ref gl_command_execution_uuid "Command Execution UUID",
+    /// typically to serve the `_Info` stream RPC a client opens to poll or subscribe for
+    /// @ref gl_command_execution_info "Command Execution Info".
     /// @return Shared pointer keeping the execution alive for as long as the
     ///         caller holds it, even if a concurrent removeExpired() sweep
     ///         erases it from commands_ in the meantime (architecture.md §4.2d).
@@ -49,6 +76,7 @@ public:
     std::size_t removeExpired();
 
     /// Request interruption on all executions (for server shutdown).
+    /// @see ObservableCommandExecution::requestInterruption
     void interruptAll();
 
     /// Start a background thread that calls removeExpired() every @p interval.
@@ -64,6 +92,9 @@ public:
     [[nodiscard("caller expects the auto-GC status")]]
     bool isAutoGCRunning() const { return gc_.isRunning(); }
 
+    /// Callback signature for addRemovalObserver(): invoked with the
+    /// @ref gl_command_execution_uuid "Command Execution UUID" of each execution
+    /// removeExpired() erases.
     using RemovalCallback = std::function<void(const std::string& uuid)>;
 
     /// Register an observer invoked per-UUID when removeExpired() erases an
