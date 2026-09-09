@@ -65,8 +65,8 @@ public:
     bool hasUserCredentials() const;
 
     /// Store the lock identifier this client chose when calling `LockServer`, so
-    /// SilaClientBase attaches it as @ref gl_sila_client_metadata "SiLA
-    /// Client Metadata" to every call it makes.
+    /// SilaClientBase attaches it as @ref gl_sila_client_metadata "SiLA Client Metadata" to every
+    /// call it makes.
     void setLockIdentifier(std::string lockId);
 
     /// @return The configured @ref gl_lock "lock" identifier, or nullopt if
