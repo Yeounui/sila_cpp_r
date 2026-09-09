@@ -14,13 +14,24 @@ namespace sila2 {
 namespace types { struct AnyValue; }
 namespace dynamic {
 
+/// Converts between a @ref gl_sila_any_type "SiLA Any Type" value (a type XML
+/// string plus a serialized payload, sila2::types::AnyValue) and the
+/// dynamically-built protobuf message DescriptorBuilder::buildFromTypeXml
+/// describes for that type. Used wherever an Any crosses the dynamic
+/// client/server boundary: ValueValidator::validateAllowedTypes and the
+/// binary interceptors read the wire fields via readAnyFields().
 struct AnyCodec {
+    /// Decodes any's payload into a message of the type any.typeXml
+    /// describes, registering that type in pool if not already present.
+    /// @throws std::invalid_argument if factory is null, typeXml fails to
+    /// parse, or payload does not match the decoded type.
     [[nodiscard("caller expects the decoded message")]]
     static std::unique_ptr<google::protobuf::Message> decode(
         const sila2::types::AnyValue& any,
         google::protobuf::DescriptorPool& pool,
         google::protobuf::DynamicMessageFactory* factory);
 
+    /// Serializes msg into an AnyValue carrying the given type XML.
     [[nodiscard("caller expects the encoded AnyValue")]]
     static sila2::types::AnyValue encode(
         const google::protobuf::Message& msg,

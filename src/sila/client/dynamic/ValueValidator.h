@@ -27,10 +27,20 @@ using ConstraintResolver = std::function<std::optional<std::string>(
     const ConstraintValue&, const google::protobuf::Message&,
     const google::protobuf::FieldDescriptor&, int)>;
 
+/// Checks a message field against the @ref gl_constraint "Constraints" its
+/// @ref gl_feature_definition "Feature Definition" declares for it, so a
+/// client or server can reject an invalid value before it reaches an RPC
+/// handler. Used from the dynamic client's DynamicCall path and, via the
+/// per-kind helpers below, from the generated server's
+/// CommandParameterValidator.
 class ValueValidator {
 public:
-    // Returns std::nullopt when the selected field is valid, or a diagnostic
-    // for the first unsupported/mismatching value or constraint.
+    /// Validates message's field against dataType's declared
+    /// @ref gl_constraint "Constraints" (Length, Pattern, Set, Min/Max, and,
+    /// where resolver/constraintResolver are supplied, AllowedTypes,
+    /// ContentType, and Schema).
+    /// @return std::nullopt when the selected field is valid, or a diagnostic
+    /// for the first unsupported/mismatching value or constraint.
     [[nodiscard("caller must inspect the validation result")]]
     static std::optional<std::string> validate(
         const DataType& dataType,
@@ -38,6 +48,10 @@ public:
         const google::protobuf::FieldDescriptor& field,
         DataTypeResolver resolver = {}, ConstraintResolver constraintResolver = {});
 
+    /// Checks that a @ref gl_sila_any_type "SiLA Any Type" value's wire type
+    /// matches one entry of an AllowedTypes @ref gl_constraint "Constraint"
+    /// and that its decoded value satisfies that entry's own Constraints.
+    ///
     // Part A p67 A224 / p69: server-side AllowedTypes decision. The wire Any
     // located by (owner, field, index) must carry a type that structurally
     // matches one entry of constraint.allowedTypes AND whose decoded value
@@ -53,6 +67,10 @@ public:
         const google::protobuf::Message& owner,
         const google::protobuf::FieldDescriptor& field, int index);
 
+    /// Checks that a @ref gl_binary_transfer "Binary" value's bytes are valid
+    /// UTF-8 when a ContentType @ref gl_constraint "Constraint" names a
+    /// textual media type.
+    ///
     // Part A p70/p63: a textual Content Type (text/*, */xml, */*+xml,
     // application/json, */*+json -- matched case-insensitively) on a SiLA
     // Binary requires its bytes to be valid UTF-8. Returns std::nullopt on
@@ -67,6 +85,10 @@ public:
         const google::protobuf::Message& owner,
         const google::protobuf::FieldDescriptor& field, int index);
 
+    /// Checks a String or Binary value against an inline Schema
+    /// @ref gl_constraint "Constraint" (XML via libxml2, JSON via
+    /// JsonSchemaSupport).
+    ///
     // Part A p67 A224 / p70: server-side Schema decision for an inline schema
     // (Source Inline, Type Xml OR Json). The String/Binary value located by
     // (owner, field, index) must comply with the inline schema -- XML compliance

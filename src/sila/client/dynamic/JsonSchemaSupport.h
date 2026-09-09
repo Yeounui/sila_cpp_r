@@ -8,6 +8,9 @@
 namespace sila2 {
 namespace dynamic {
 
+/// Validates a JSON document against an inline JSON Schema, for the JSON half
+/// of ValueValidator::validateSchema.
+///
 // Part A p70 Schema (Type Json, Source Inline): validate documentJson against
 // the inline JSON Schema schemaJson. Both are parsed as JSON before the schema
 // is compiled (draft-7 -- an implementation policy since Part A p70 names no

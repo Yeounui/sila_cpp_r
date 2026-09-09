@@ -12,6 +12,9 @@ namespace dynamic {
 
 struct ConstraintValue;
 
+/// Parses a size-bound @ref gl_constraint "Constraint" (Length, MinLength,
+/// MaxLength, or an ElementCount bound) into a size_t.
+///
 // Constraints.xsd defines Length/MinLength/MaxLength/ElementCount/Min/Max
 // ElementCount bounds as unbounded XSD integer text: xs:nonNegativeInteger for
 // Length, MinimalLength and the ElementCount trio, xs:positiveInteger for
@@ -24,6 +27,10 @@ struct ConstraintValue;
 [[nodiscard("caller must inspect the parse result")]]
 std::optional<std::size_t> parseSizeConstraint(const ConstraintValue& constraint);
 
+/// Validates stringValue as a @ref gl_fully_qualified_identifier "Fully Qualified Identifier" of the kind an FQI @ref gl_constraint "Constraint"
+/// requests.
+/// @return std::nullopt if valid, otherwise the diagnostic message.
+///
 // Checks that stringValue is a well-formed FullyQualifiedIdentifier of the
 // kind the constraint requests (Constraints.xsd enumerates nine kinds).
 // Returns std::nullopt if valid, or the validation error message. A non-FQI
