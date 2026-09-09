@@ -17,7 +17,8 @@
 
 namespace sila2::auth {
 
-/// True when `entry` authorizes `targetFqi`: the same FQI, or `entry` is a
+/// True when `entry` authorizes `targetFqi`: the same
+/// @ref gl_fully_qualified_identifier "Fully Qualified Identifier" (FQI), or `entry` is a
 /// prefix of `targetFqi` that ends on a '/' segment boundary.
 inline bool fqiCovers(std::string_view entry, std::string_view targetFqi) {
     // Part A p87: FQIs "MUST always be checked without taking lower and upper
