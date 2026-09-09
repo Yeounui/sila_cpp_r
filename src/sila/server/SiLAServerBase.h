@@ -75,12 +75,17 @@ class MdnsPublisher;
 // (binary::kBinaryInlineThreshold). One named number so server and client are
 // wrong or right together. Send size is left at gRPC's default (unlimited),
 // which is why the 8.1 MB BinaryValueDownload response already works unset.
+/// The largest gRPC message this server will accept on an inbound RPC.
 inline constexpr int kMaxReceiveMessageSizeBytes = 16 * 1024 * 1024;
 
+/// A SiLA 2 server assembled by Builder: after Run() it serves its registered
+/// @ref gl_feature "Features" over gRPC and is discoverable by @ref gl_sila_client "SiLA Clients".
+///
 /// Assembles a SiLA2 server from registered Features and TLS material via its
 /// nested Builder, then holds the assembled, read-only result.
 class SiLAServerBase {
 public:
+    /// Internal components assembled by Build(); not for direct use by callers.
     struct OwnedComponents {
         std::unique_ptr<BinaryStore> binaryStore;
         std::shared_ptr<BinaryUploadService> uploadService;
@@ -111,9 +116,36 @@ public:
         OwnedComponents& operator=(OwnedComponents&&) noexcept;
     };
 
+    /// Fluent chain that assembles a SiLAServerBase: call the With...() methods to
+    /// configure TLS, identity, and optional capabilities, AddFeature() for each
+    /// @ref gl_feature "Feature" to expose, then Build().
+    ///
+    /// @code{.cpp}
+    /// namespace gen = sila2::generated::temperaturecontroller;  // emitted by codegen
+    ///
+    /// sila2::SiLAServerBase::Builder builder;
+    /// builder.WithSelfSignedCertificate("localhost", "127.0.0.1")
+    ///        .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("BioShakeQX"));
+    ///
+    /// // Your Feature implementation, wrapping the codegen ServiceAdapter:
+    /// TemperatureControllerImpl impl(builder.chain());
+    ///
+    /// auto server = builder
+    ///     .AddFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
+    ///     .RegisterCommandManager(&impl.commandManager())
+    ///     .WithDiscovery(50052)
+    ///     .Build();
+    ///
+    /// server.Run(true);
+    /// @endcode
     class Builder {
     public:
+        /// Adds a @ref gl_feature "Feature" to the server so clients can discover it
+        /// and call its commands and properties. Call once per Feature before Build().
+        ///
         /// Registers fqi/fdlXml with the FeatureRegistry this Builder is assembling.
+        /// @param fqi Fully Qualified Feature Identifier, e.g.
+        /// "org.silastandard/core/SiLAService/v1".
         /// @throws std::invalid_argument, propagated from FeatureRegistry::registerFeature,
         /// if fqi is already registered or if fdlXml's own Feature identity does not spell fqi.
         /*  Return type of the member function is a reference (&) to the class type itself;
@@ -122,12 +154,18 @@ public:
         Builder& AddFeature(std::string fqi, std::string fdlXml,
                            std::shared_ptr<grpc::Service> service = {});
 
+        /// Generates a self-signed TLS certificate for the server, so no separate
+        /// certificate authority is needed to get a server running.
+        ///
         /// Stores hostname/ip for self-signed certificate generation, which is
         /// deferred to Build() so the server UUID (from WithConfig/WithPersistentUuid)
         /// can be embedded as the OID extension (Part B p75 RECOMMENDED).
         /// @throws sila2::CryptoError, propagated from TlsConfig in Build(), on generation failure.
         Builder& WithSelfSignedCertificate(std::string hostname, std::string ip);
 
+        /// Uses a TLS certificate and key the caller already obtained, instead of
+        /// generating a self-signed one.
+        ///
         /// Uses caller-supplied certificate/key PEM material instead of generating one.
         /// Neither string is parsed here — TlsConfig only offers construction,
         /// not loading, so a caller providing its own PEM is trusted to have obtained it validly.
@@ -139,16 +177,29 @@ public:
         Builder& WithCertificate(std::string certificatePem, std::string privateKeyPem,
                                  std::string caCertPemForDiscovery = "");
 
+        /// Requires every connecting client to present a TLS certificate signed
+        /// by this CA, rejecting any client that does not.
+        ///
         /// Enables mutual TLS: the server requires and verifies client
         /// certificates signed by this CA.
+        /// @see WithCertificate
         Builder& WithMutualTls(std::string caCertPem);
 
+        /// Sets the server's @ref gl_sila_server_uuid "Server UUID" and name from
+        /// caller-managed storage, so identity survives a restart the way the caller
+        /// chooses to persist it.
+        ///
         /// Provides a ServerConfig for server identity (UUID, name). This is
         /// the caller-injection path for a UUID the caller persists in its own
         /// storage. If neither this nor WithPersistentUuid is called, Build()
         /// throws -- it will not fabricate a volatile UUID (SiLAService-v1_0.sila.xml:134-137).
+        /// @see WithPersistentUuid
         Builder& WithConfig(std::unique_ptr<ServerConfig> config);
 
+        /// Sets the server's @ref gl_sila_server_uuid "Server UUID" and makes it survive
+        /// a restart, without requiring the caller to manage its own storage: the UUID
+        /// is read from or written to a file at `path`.
+        ///
         /// Makes the server's UUID survive a restart without a caller-supplied
         /// ServerConfig (SiLAService-v1_0.sila.xml:134-137's stability
         /// obligation, audit S30b). An existing file at `path` holding an
@@ -164,10 +215,16 @@ public:
         ///         file is present but malformed or non-conformant.
         /// @throws std::logic_error, from Build(), if WithConfig was also
         ///         called -- WithConfig already supplies its own uuid source.
+        /// @see WithConfig
         Builder& WithPersistentUuid(std::filesystem::path path);
 
+        /// Enables @ref gl_binary_transfer "Binary Transfer", so clients can send and
+        /// receive binary parameter/response values larger than 2 MiB.
         Builder& WithBinaryTransfer();
 
+        /// Restricts the listed Features (by Feature FQI or FQI prefix) to authenticated
+        /// clients: an unauthenticated call into any of them is rejected.
+        ///
         /// Rejects Command, Property, and Metadata FQIs; Feature FQIs,
         /// coarse prefixes, and binary parameter FQIs are valid.
         /// Do not list the SiLAService FQI: rule (a) (MetadataPolicy.h)
@@ -176,6 +233,9 @@ public:
         Builder& WithAuthentication(std::unique_ptr<auth::CredentialVerifier> verifier,
                                     std::unique_ptr<auth::AccessPolicy> policy,
                                     std::vector<std::string> protectedFqis);
+        /// Declares one @ref gl_sila_client_metadata "SiLA Client Metadata" this
+        /// server expects, and which calls require it.
+        ///
         /// Declares one SiLA Client Metadata this server expects, and the
         /// Features / Commands / Properties it affects (Part A's affected
         /// list). One declaration serves both readers: calls covered by
@@ -194,6 +254,10 @@ public:
         Builder& WithMetadata(std::string metadataFqi,
                               std::vector<std::string> affectedCalls);
 
+        /// Enables the @ref gl_lock "Lock" Feature: a client can call LockServer to reserve
+        /// exclusive use of this server, and every affected call then requires the
+        /// matching lock identifier as @ref gl_sila_client_metadata "SiLA Client Metadata".
+        ///
         /// Registers the LockController Feature (§3.10) and its LockIdentifier
         /// metadata, and installs the gate that checks it on every affected
         /// call. Opt-in like every other assembly axis: a locked server refuses
@@ -209,8 +273,14 @@ public:
         /// the lock -- that is what "exclusive use" means (:9-10).
         Builder& WithLock();
 
+        /// Enables the ErrorRecoveryService Feature, letting clients subscribe to
+        /// errors the server considers recoverable.
         Builder& WithErrorRecovery();
 
+        /// Configures the @ref gl_connection_method "Server-Initiated Connection"
+        /// (cloud connectivity) capability, overriding the defaults Build() would
+        /// otherwise derive.
+        ///
         /// Overrides the defaults Build() derives for server-initiated
         /// connections (Part A p32 SHALL support): store file next to the
         /// WithPersistentUuid file or under the temp directory, and TLS
@@ -220,6 +290,9 @@ public:
         Builder& WithConnectionConfiguration(
             std::filesystem::path storePath,
             std::shared_ptr<grpc::ChannelCredentials> outboundCredentials);
+        /// Overrides the TCP port the server listens on and advertises via
+        /// @ref gl_sila_server_discovery "SiLA Server Discovery".
+        ///
         /// SiLA Server Discovery is always enabled (Part B p75 MUST: "the SiLA
         /// Server MUST have SiLA Server Discovery enabled by default. It MUST
         /// NOT be possible to disable any part of SiLA Server Discovery.") —
@@ -227,8 +300,14 @@ public:
         /// regardless of whether this is called. Calling it only overrides
         /// the TCP port the gRPC server listens on and advertises; the
         /// default is 50051. There is no way to opt out.
+        /// @see SiLAServerBase::port
         Builder& WithDiscovery(uint16_t port);
 
+        /// Registers an @ref gl_observable_command "Observable Command" manager so
+        /// its background garbage-collection thread is stopped when the server shuts
+        /// down. Call once per manager, typically one per Feature that has
+        /// Observable Commands.
+        ///
         /// Registers an ObservableCommandManager for shutdown notification.
         /// The manager must outlive the server (typically owned by the Feature
         /// implementation registered via AddFeature). Its periodic GC thread
@@ -237,17 +316,28 @@ public:
         /// background thread running on a caller-owned object.
         Builder& RegisterCommandManager(ObservableCommandManager* mgr);
 
+        /// Receives a log line for every auth rejection and dispatch event, so a
+        /// caller can wire its own logging framework in.
+        ///
         /// Installs a structured-logging callback invoked on auth rejections
         /// and dispatch events.
         Builder& setLogCallback(LogCallback cb);
 
+        /// Exposes the interceptor chain this Builder is assembling, for a Feature
+        /// implementation constructed before Build() (e.g. to wire per-command
+        /// interceptors) to hold onto.
+        ///
         /// @return Pointer to the InterceptorChain this Builder will populate
         /// in Build(). The returned pointer is stable — ownership transfers to
         /// OwnedComponents but the heap address does not change.
         const InterceptorChain* chain() const;
 
+        /// Finishes configuration and returns the assembled server, not yet listening;
+        /// call Run() on it to start serving. Call once, after every AddFeature() and With...() call.
+        ///
         /// @throws std::logic_error if neither WithSelfSignedCertificate nor
         /// WithCertificate was called — SiLA2 requires TLS (architecture.md §3.7).
+        /// @see SiLAServerBase::Run
         SiLAServerBase Build();
 
         Builder();
@@ -255,6 +345,11 @@ public:
 
     private:
     public:
+        /// Picks the TLS credentials this server presents when it connects out to a
+        /// client under the @ref gl_connection_method "Server-Initiated Connection"
+        /// method, for the defaults Build() uses when WithConnectionConfiguration
+        /// is not called.
+        ///
         /// Outbound credential policy for a server built without
         /// WithConnectionConfiguration (Part A p32 SHALL support). Per
         /// target host, mirroring ClientConfig::channelCredentials: with a
@@ -319,13 +414,26 @@ public:
         std::vector<ObservableCommandManager*> commandManagers_;
     };
 
+    /// The registry of every @ref gl_feature "Feature" this server offers,
+    /// as added via Builder::AddFeature.
     const FeatureRegistry& featureRegistry() const;
+    /// This server's TLS certificate, in PEM form.
     const std::string& certificatePem() const;
+    /// This server's TLS private key, in PEM form.
     const std::string& privateKeyPem() const;
+    /// This server's identity (@ref gl_sila_server_uuid "Server UUID" and name),
+    /// mutable so a caller can update the name after Build().
     ServerConfig& serverConfig();
+    /// @overload
     const ServerConfig& serverConfig() const;
+    /// The router for @ref gl_connection_method "Server-Initiated Connection"
+    /// envelopes, or nullptr when the server was built without
+    /// WithConnectionConfiguration().
     CloudEnvelopeRouter* cloudRouter();
 
+    /// Lets a caller observe or drive the RecoverableErrors
+    /// @ref gl_observable_property "Observable Property" subscription directly.
+    ///
     /// The manager behind ErrorRecoveryService's RecoverableErrors
     /// subscription, or nullptr when the server was built without
     /// WithErrorRecovery(). Exposed for the same reason as cloudRouter():
@@ -333,6 +441,9 @@ public:
     /// other way to observe that one is live.
     ObservablePropertyManager* errorRecoveryPropertyManager();
 
+    /// The @ref gl_sila_server_discovery "SiLA Server Discovery" publisher for
+    /// this server, so a caller can inspect what is being advertised.
+    ///
     /// The mDNS publisher — never nullptr after Build(): discovery is always
     /// enabled (Part B p75 MUST) and Build() constructs it unconditionally.
     /// Exposed for the same reason as cloudRouter(): the advertisement is
@@ -341,22 +452,33 @@ public:
     [[nodiscard]]
     const discovery::MdnsPublisher* mdnsPublisher() const;
 
+    /// The TCP port this server listens on and advertises.
+    ///
     /// @return The TCP port the gRPC server listens on. Before Run() this is
     /// the port passed to Builder::WithDiscovery, or 50051 if it was not
     /// called; after a successful Run() it is the port the OS actually
     /// selected, so a caller that built with port 0 can learn where to dial
     /// instead of racing on a fixed number.
+    /// @see Builder::WithDiscovery
     uint16_t port() const;
 
+    /// Starts the server: from this point clients can connect, call Features,
+    /// and discover it. Call once, after Build().
+    ///
     /// Builds the gRPC server with TLS credentials, registers all services
     /// from FeatureRegistry, and starts listening. A failed mDNS publish after
     /// the successful bind is logged (kWarning, "discovery") and does not
     /// throw: the server keeps serving, just undiscoverable.
     /// @param block If true, blocks the calling thread until Shutdown() is called.
     /// After a successful return, port() reports the bound port.
+    /// @see Shutdown
     void Run(bool block = true);
 
+    /// Stops the server, so a caller controlling its own lifecycle (rather than
+    /// waiting on a blocking Run()) can end it cleanly.
+    ///
     /// Initiates graceful shutdown of the gRPC server.
+    /// @see Run
     void Shutdown();
 
     // Destructor defined in .cc where grpc::Server and SiLAServiceImpl are complete.
