@@ -26,8 +26,8 @@ class ExecutionStore;
 /// typed stubs from it with createStub() and call its Features.
 ///
 /// @code{.cpp}
-/// namespace tc = sila2::org::silastandard::examples::temperaturecontroller::v1; // from the
-/// generated .proto
+/// // Namespace generated from the Feature's .proto
+/// namespace tc = sila2::org::silastandard::examples::temperaturecontroller::v1;
 ///
 /// sila2::ClientConfig config;
 /// config.setTlsCredentials({.caCertificatePem = serverCaPem});
