@@ -35,8 +35,14 @@ namespace error {
 // ValidationError
 // ---------------------------------------------------------------------------
 
+/// Throw this from a Feature Command implementation when a Command
+/// Parameter fails validation before the Command runs — the wrong SiLA
+/// Data Type, out of range, or a violated declared @ref gl_constraint "Constraint".
+///
 /// Thrown when a Command parameter fails validation before the Command
-/// executes (architecture.md §3.4).
+/// executes (architecture.md §3.4). The SiLA Client receives this as a
+/// @ref gl_validation_error "Validation Error" on the wire.
+/// @see CommandParameterValidator::validate
 class ValidationError : public SiLAError {
 public:
     /// @param parameter The fully qualified identifier of the parameter that
@@ -97,9 +103,16 @@ protected:
     std::string errorIdentifier_;
 };
 
+/// Throw this from a Feature Command implementation for an execution
+/// failure the Feature Designer anticipated and declared in the FDL under
+/// that Command, identified by its Fully Qualified Defined Execution Error
+/// Identifier.
+///
 /// A SiLA 2 Execution Error declared in the FDL by the Feature designer.
 /// Its errorIdentifier() lets a SiLA Client react to the specific error, since
-/// the error's nature and recovery options are known ahead of time.
+/// the error's nature and recovery options are known ahead of time. The
+/// SiLA Client receives this as a @ref gl_defined_execution_error "Defined Execution Error" on the wire.
+/// @see LockControllerImpl::lockServer
 class DefinedExecutionError : public ExecutionError {
 public:
     /// @param identifier The FQI of the Defined Error declared in the FDL.
@@ -107,8 +120,17 @@ public:
     DefinedExecutionError(std::string identifier, std::string message);
 };
 
+/// Throw this from a Feature Command implementation for an execution
+/// failure that was not declared in the FDL — but a Feature implementation
+/// usually never needs to construct one explicitly: any other exception
+/// that escapes a Command or Property implementation is caught and wrapped
+/// into one automatically (error::guardHandler), so it is enough to
+/// let a std::exception (or any exception) propagate.
+///
 /// A SiLA 2 Execution Error that was not declared in the FDL — unexpected,
 /// implementation-dependent, and not foreseeable by the Feature designer.
+/// The SiLA Client receives this as an @ref gl_undefined_execution_error "Undefined Execution Error" on the wire.
+/// @see error::guardHandler
 class UndefinedExecutionError : public ExecutionError {
 public:
     /// @param message This error's message, or empty for a generic fallback.
@@ -119,9 +141,19 @@ public:
 // FrameworkError
 // ---------------------------------------------------------------------------
 
+/// This library's own interceptors already throw FrameworkError for the
+/// protocol-level violations they can detect (an unlocked required
+/// @ref gl_lock "Lock", missing SiLA Client Metadata, an invalid access
+/// token). A Feature implementation should throw it directly only for a
+/// protocol violation the library cannot see on its own — e.g. metadata the
+/// Feature itself defines and requires but that was not sent.
+///
 /// A Framework Error occurs when a SiLA Client accesses a SiLA Server in a
 /// way that violates the SiLA 2 specification (architecture.md §3.4), e.g. an
-/// invalid Command Execution UUID or unsupported SiLA Client Metadata.
+/// invalid Command Execution UUID or unsupported SiLA Client Metadata. The
+/// SiLA Client receives this as a @ref gl_framework_error "Framework Error"
+/// on the wire.
+/// @see LockControllerImpl::checkLockMetadata
 class FrameworkError : public SiLAError {
 public:
     /// The different types of SiLA 2 Framework Errors.
