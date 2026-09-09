@@ -55,6 +55,13 @@ void fillRecoverableErrorsResponse(
     const std::vector<recovery::RecoverableError>& errors,
     errorrecovery_proto::Subscribe_RecoverableErrors_Responses& out);
 
+/// The gRPC-facing ErrorRecoveryService Feature: gives a client the three
+/// commands and one @ref gl_observable_property "Observable Property" it
+/// needs to resolve a @ref RecoverableErrorGate "recoverable error" a
+/// Feature raised -- select a ContinuationOption, abort error handling, or
+/// change how long the server waits before giving up. Installed
+/// automatically by `SiLAServerBase::Builder::WithErrorRecovery()`; a server
+/// author does not construct it directly.
 class ErrorRecoveryServiceImpl final : public errorrecovery_proto::ErrorRecoveryService::Service {
 public:
     // gate and propMgr must outlive this object.
@@ -86,6 +93,9 @@ public:
         const errorrecovery_proto::Subscribe_RecoverableErrors_Parameters* request,
         grpc::ServerWriter<errorrecovery_proto::Subscribe_RecoverableErrors_Responses>* writer) override;
 
+    /// Transport-neutral handler body shared by the gRPC ExecuteContinuationOption
+    /// override above and the cloud transport path; resolves gate_'s matching
+    /// raiseAndWait() with the client's choice.
     void executeContinuationOption(
         const errorrecovery_proto::ExecuteContinuationOption_Parameters& request,
         CallContext& ctx,

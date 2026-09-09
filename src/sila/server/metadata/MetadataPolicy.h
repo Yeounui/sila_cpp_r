@@ -30,6 +30,12 @@ namespace sila2 {
 inline constexpr std::string_view kSiLAServiceFeatureFqi =
     "org.silastandard/core/SiLAService/v1";
 
+/// Checked automatically before every call reaches a Feature implementation,
+/// for a server assembled with @ref gl_sila_client_metadata "SiLA Client Metadata"
+/// declared through `SiLAServerBase::Builder::WithMetadata`. A server author
+/// never calls this directly; it exists so unit tests can exercise the rules
+/// without a running server.
+///
 /// Runs the SiLA Client Metadata admission rules for one incoming call.
 ///
 /// @param chain     May be null (unit-test wiring, or a server built without
@@ -49,9 +55,13 @@ inline constexpr std::string_view kSiLAServiceFeatureFqi =
 ///                  declaration matches, so an unaffected call allocates
 ///                  nothing.
 /// @throws error::FrameworkError{NoMetadataAllowed} on rule (a);
-///         error::FrameworkError{InvalidMetadata} on rule (c). Both reach the
-///         client as gRPC ABORTED + base64(SiLAError) via SiLAError::toStatus(),
+///         error::FrameworkError{InvalidMetadata} on rule (c). Both are
+///         @ref gl_framework_error "Framework Errors": the client sees the
+///         call fail with that error type and message, not a validation
+///         failure on any individual parameter. They reach the client as
+///         gRPC ABORTED + base64(SiLAError) via SiLAError::toStatus(),
 ///         which Part B requires -- no new transmission code.
+/// @see SiLAServerBase::Builder::WithMetadata
 template <typename HasMetadataFn>
 void enforceMetadataPolicy(const InterceptorChain* chain,
                            std::string_view targetFqi,

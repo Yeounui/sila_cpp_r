@@ -75,10 +75,21 @@ struct RecoverableError {
     sila2::types::Timestamp errorTime{};
 };
 
+/// Lets a Feature implementation raise a recoverable error mid-execution and
+/// wait for the client to choose how to proceed, instead of failing the
+/// command outright. A server enables ErrorRecoveryService by calling
+/// `SiLAServerBase::Builder::WithErrorRecovery()`, which owns one gate
+/// internally; a Feature calls raiseAndWait() with the error and its
+/// ContinuationOptions, the client sees it published on the
+/// ErrorRecoveryService RecoverableErrors @ref gl_observable_property "Observable Property" , and
+/// answers by calling ExecuteContinuationOption
+/// (or AbortErrorHandling), which resolves the blocked raiseAndWait() call.
+///
 /// Blocks a Feature execution thread on a recoverable error until the client
 /// selects a ContinuationOption (or the gate is aborted/shut down).
 ///
 /// Thread-safe: all public methods lock an internal mutex.
+/// @see SiLAServerBase::Builder::WithErrorRecovery
 class RecoverableErrorGate {
 public:
     explicit RecoverableErrorGate(

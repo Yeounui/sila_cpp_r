@@ -13,6 +13,12 @@ namespace sila2 {
 
 class CallContext;
 
+/// Reads @ref gl_sila_client_metadata "SiLA Client Metadata" out of the raw
+/// gRPC headers of one call and stores it on that call's CallContext, so a
+/// Feature implementation and MetadataPolicy can look it up by FQI instead
+/// of parsing headers themselves. Wired in automatically for every server
+/// built with SiLAServerBase::Builder -- a server author never calls it
+/// directly.
 class MetadataExtractingInterceptor {
 public:
     /// Copies every header whose key starts with "sila-", plus the

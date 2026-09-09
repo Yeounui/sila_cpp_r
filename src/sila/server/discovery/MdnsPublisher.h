@@ -14,6 +14,13 @@
 
 namespace sila2::discovery {
 
+/// This library's implementation of @ref gl_sila_server_discovery "SiLA Server Discovery" : lets a
+/// @ref gl_sila_client "SiLA Client" find this
+/// server on the local network with no prior configuration. Installed and
+/// owned by `SiLAServerBase` -- always on (Part B p75 MUST) -- so a server
+/// author never constructs one directly; `SiLAServerBase::mdnsPublisher()`
+/// exposes this one for inspection.
+///
 /// Advertises a SiLA server via mDNS multicast on the well-known _sila._tcp
 /// service type (SiLA 2 §5.4 Discovery). The mDNS Service Instance Name is
 /// the SiLA Server UUID (Part B p76 MUST, RFC 4122 string) -- globally
