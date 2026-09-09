@@ -28,9 +28,19 @@ using ServerConnectedCallback = std::function<void(const std::string& serverUuid
 /// over an established session via call().
 class CloudClientListener final : public cloud::CloudClientEndpoint::Service {
 public:
+    /// Prepares a listener on `listenPort` without starting it (call start()
+    /// to begin accepting connections). When `creds` is left default, a
+    /// self-signed certificate is generated for this listener
+    /// (certificatePem()); passing `clientCaPem` additionally demands and
+    /// verifies a client certificate from every connecting server, enforcing
+    /// the certificate-to-UUID binding (peerBindingEnforced()).
+    /// @throws std::logic_error if `clientCaPem` is non-empty while `creds`
+    /// was also supplied -- build client-certificate verification into
+    /// `creds` itself in that case.
     explicit CloudClientListener(uint16_t listenPort,
                                  std::shared_ptr<grpc::ServerCredentials> creds = {},
                                  std::string clientCaPem = {});
+    /// Stops the listener (see stop()) if still running.
     ~CloudClientListener();
 
     // Not copyable/movable: owns a live grpc::Server and session state
@@ -40,12 +50,20 @@ public:
     CloudClientListener(CloudClientListener&&) = delete;
     CloudClientListener& operator=(CloudClientListener&&) = delete;
 
+    /// Starts the gRPC server and begins accepting connections from SiLA
+    /// Servers on `listenPort`. Call once; a stopped listener is not
+    /// restarted.
     void start();
+    /// Stops accepting new connections and closes every open session,
+    /// waiting briefly for in-flight ConnectSiLAServer streams to end on
+    /// their own before force-cancelling them. Safe to call on a listener
+    /// that was never started, and more than once.
     void stop();
+    /// @return true between a start() call and the matching stop().
     bool isRunning() const;
 
-    // PEM of the server certificate this listener presents to connecting
-    // peers. Empty when the caller supplied pre-built ServerCredentials.
+    /// PEM of the server certificate this listener presents to connecting
+    /// peers. Empty when the caller supplied pre-built ServerCredentials.
     const std::string& certificatePem() const { return certificatePem_; }
 
     // True when this listener demands a verified client certificate and
@@ -61,21 +79,35 @@ public:
     // trigger.
     bool peerBindingEnforced() const { return peerBindingEnforced_; }
 
+    /// Installs a callback invoked with a server's
+    /// @ref gl_sila_server_uuid "UUID" each time that server opens a
+    /// @ref gl_connection_method "Server-Initiated Connection" to this
+    /// listener.
     void setServerConnectedCallback(ServerConnectedCallback cb);
 
-    // ConnectSiLAServer bidi stream — called by gRPC when a server connects
+    /// gRPC handler for the CloudClientEndpoint bidi stream: called once per
+    /// connecting @ref gl_sila_server "SiLA Server", it registers the session
+    /// and blocks routing incoming responses to the matching call() until the
+    /// stream ends. Not called directly by application code.
     grpc::Status ConnectSiLAServer(
         grpc::ServerContext* context,
         grpc::ServerReaderWriter<cloud::SiLAClientMessage, cloud::SiLAServerMessage>* stream) override;
 
-    // Issue a request to a connected server by UUID.
+    /// Issues an unobservable command or property read to a connected
+    /// server over its @ref gl_connection_method "Server-Initiated Connection" , identified by
+    /// `fqi`. Blocks until the response arrives.
+    /// @param metadata @ref gl_sila_client_metadata "SiLA Client Metadata"
+    /// to attach to the request; see below for its exact format.
+    /// @throws std::runtime_error if `serverUuid` has no open session, an
+    /// entry in `metadata` has an empty key, the session closed before the
+    /// request could be sent, or the stream write itself fails.
+    /// @return the response envelope.
     // metadata maps a fully qualified SiLA metadata identifier (e.g.
     // "org.silastandard/core/AuthorizationService/v1/Metadata/AccessToken") to
     // the already-serialized Metadata_<Id> message bytes -- the same value the
     // direct-gRPC path hands to MetadataInjector::set(), NOT the bare token.
     // The cloud transport has no per-request headers, so the repeated Metadata
     // field is the only carrier (SiLACloudConnector.proto:64-72).
-    // Returns the response envelope. Blocks until response arrives.
     cloud::SiLAServerMessage call(
         const std::string& serverUuid,
         const std::string& fqi,

@@ -13,6 +13,12 @@ namespace sila2 {
 
 class MetadataInjector;
 
+/// Client side of @ref gl_binary_transfer "Binary Transfer" uploads: splits a
+/// large parameter value into chunks, sends them to the server, and retries
+/// transient stream breaks, resuming from the last acknowledged chunk. A
+/// caller needs this only when a parameter value exceeds the 2 MiB inline
+/// threshold, in place of embedding the value directly in the command
+/// parameter.
 class BinaryUploader {
 public:
     // channel: gRPC channel to the server
@@ -26,12 +32,16 @@ public:
                    std::chrono::seconds maxBackoff = std::chrono::seconds{60},
                    MetadataInjector* injector = nullptr);
 
-    // Upload data for a given parameter.
-    // parameterFqi: fully qualified identifier of the Binary parameter
-    // data: full binary content
-    // chunkSize: bytes per chunk (default ~2 MiB minus overhead margin)
-    // Returns the BinaryTransferUUID to embed in the command parameter.
-    // Throws std::runtime_error on unrecoverable failure.
+    /// Uploads `data` as the value of the Binary parameter identified by
+    /// `parameterFqi`, in chunks of at most `chunkSize` bytes (clamped to the
+    /// 2 MiB @ref gl_binary_transfer "Binary Transfer" ceiling), retrying up
+    /// to `maxRetries` times (with exponential backoff) on a broken stream --
+    /// resuming from the last chunk the server acknowledged, or starting a
+    /// fresh upload if the server reports the transfer UUID as no longer
+    /// valid.
+    /// @throws std::runtime_error if the retry budget is exhausted.
+    /// @return the BinaryTransferUUID to embed in the command parameter in
+    /// place of the value itself.
     [[nodiscard("caller needs the BinaryTransferUUID")]]
     std::string upload(const std::string& parameterFqi,
                       const std::string& data,

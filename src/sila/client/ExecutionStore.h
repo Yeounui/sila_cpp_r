@@ -37,9 +37,11 @@ struct PersistedExecution {
     std::string lastStatus;
 };
 
-/// File-backed record of Observable Command executions this client has
-/// issued and not yet seen reach a terminal state. Thread-safe: record()/
-/// prune()/list() all take the internal lock.
+/// File-backed record of @ref gl_observable_command "Observable Command"
+/// executions this client has issued and not yet seen reach a terminal
+/// state. Enabled by ClientConfig::setExecutionStorePath() and obtained from
+/// SilaClientBase::executionStore(). Thread-safe: record()/prune()/list()
+/// all take the internal lock.
 class ExecutionStore {
 public:
     /// Loads any existing state at `storePath` immediately. `storePath` must

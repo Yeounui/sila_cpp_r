@@ -17,6 +17,8 @@ namespace sila2 {
 
 class SilaClientBase;
 
+/// Connection status of one registered @ref gl_sila_server "SiLA Server", as
+/// tracked by ServerRegistry.
 enum class ConnectionState {
     kDisconnected,
     kConnecting,
@@ -26,8 +28,22 @@ enum class ConnectionState {
 
 using ConnectionStateCallback = std::function<void(const std::string& serverUuid, ConnectionState state)>;
 
+/// Tracks the @ref gl_sila_server "SiLA Servers" a client knows about (their
+/// @ref gl_sila_server_uuid "UUID", address, and connection state) and,
+/// optionally, persists that identity across process restarts so a client
+/// can reconnect to the same servers automatically.
+///
+/// Constructed by the application, one per client process; SilaClientBase
+/// instances are created and owned by this registry as servers are
+/// registered.
 class ServerRegistry {
 public:
+    /// Creates an empty registry. `defaultConfig` is used for every
+    /// SilaClientBase this registry creates in registerServer(). When
+    /// `storePath` is non-empty, previously persisted entries are loaded
+    /// immediately, each coming back in ConnectionState::kDisconnected with
+    /// no client until re-registered.
+    ///
     // storePath: empty (default) = no persistence, current in-memory-only
     // behaviour. When non-empty, registerServer/removeServer write the
     // identity fields (uuid/host/port/serverName) to that file, and entries
@@ -37,6 +53,7 @@ public:
     explicit ServerRegistry(ClientConfig defaultConfig = {}, std::filesystem::path storePath = {});
     ~ServerRegistry();
 
+    /// One @ref gl_sila_server "SiLA Server" this registry knows about.
     struct ServerEntry {
         std::string uuid;
         std::string host;
@@ -47,21 +64,36 @@ public:
         // FeatureCatalog is populated on first dynamic call (lazy, §4.2)
     };
 
-    // Manual registration
+    /// Registers a server (or re-registers one already known under `uuid`,
+    /// e.g. after it rebooted with a new address), creating a fresh
+    /// SilaClientBase for it and setting its state to
+    /// ConnectionState::kConnecting. Persists the identity fields when this
+    /// registry was constructed with a store path.
+    /// @throws std::invalid_argument if `uuid`, `host`, or `serverName`
+    /// contains a tab or newline (the on-disk store is tab-delimited) and
+    /// persistence is enabled.
     void registerServer(std::string uuid, std::string host, uint16_t port,
                        std::string serverName = {});
 
-    // Remove a server entry
+    /// Drops the entry for `uuid`, if present, and persists the removal when
+    /// this registry was constructed with a store path.
     void removeServer(const std::string& uuid);
 
-    // Lookup
+    /// Looks up a server by @ref gl_sila_server_uuid "UUID" (case-insensitive,
+    /// Part A p90).
+    /// @return std::nullopt when no such server is registered.
     std::optional<ServerEntry> findByUuid(const std::string& uuid) const;
+    /// @return every registered server, in no particular order.
     std::vector<ServerEntry> allServers() const;
 
-    // Connection state callback
+    /// Installs a callback invoked whenever a server's ConnectionState
+    /// changes, from registerServer() or updateState().
     void setConnectionStateCallback(ConnectionStateCallback cb);
 
-    // Update connection state (called by channel state watcher or mDNS goodbye)
+    /// Updates the connection state of a known server, e.g. from a gRPC
+    /// channel state watcher or an mDNS goodbye, and notifies the callback
+    /// installed via setConnectionStateCallback(). No-op if `uuid` is not
+    /// registered.
     void updateState(const std::string& uuid, ConnectionState state);
 
 private:

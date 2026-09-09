@@ -31,8 +31,10 @@ struct ResolveEvent {
     std::string name;
 };
 
-/// Discovers SiLA servers via mDNS by sending a PTR query for _sila._tcp.local
-/// and listening for responses. Runs a receive thread that assembles the
+/// Client side of @ref gl_sila_server_discovery "SiLA Server Discovery":
+/// discovers SiLA servers via mDNS by sending a PTR query for
+/// _sila._tcp.local and listening for responses. Runs a receive thread that
+/// assembles the
 /// PTR/SRV/TXT/A records of each response into a ResolveEvent and
 /// invokes the caller-supplied callbacks.
 ///

@@ -11,6 +11,12 @@ namespace sila2 {
 
 class MetadataInjector;
 
+/// Client side of @ref gl_binary_transfer "Binary Transfer" downloads:
+/// fetches a large parameter or response value from the server in chunks and
+/// reassembles it, retrying transient stream breaks and resuming from the
+/// last successfully received byte. A caller needs this only when a value
+/// crosses the 2 MiB inline threshold and arrived as a Binary Transfer UUID
+/// instead of inline bytes.
 class BinaryDownloader {
 public:
     // channel: gRPC channel to the server
@@ -24,9 +30,14 @@ public:
                      std::chrono::seconds maxBackoff = std::chrono::seconds{60},
                      MetadataInjector* injector = nullptr);
 
-    // Download binary result identified by uuid.
-    // Returns the full binary content.
-    // Throws std::runtime_error on unrecoverable failure.
+    /// Downloads the full content of the binary identified by `uuid`,
+    /// fetching it in chunks and retrying up to `maxRetries` times (with
+    /// exponential backoff) on a broken stream, resuming from the offset
+    /// already received rather than restarting from zero.
+    /// @throws std::runtime_error if the initial GetBinaryInfo call fails, if
+    /// the server reports an unrecoverable Binary Transfer error (an invalid
+    /// UUID or a download failure), or if the retry budget is exhausted.
+    /// @return the full binary content.
     [[nodiscard("caller needs the downloaded binary content")]]
     std::string download(const std::string& uuid);
 
