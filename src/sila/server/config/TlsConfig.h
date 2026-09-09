@@ -29,10 +29,15 @@ using EvpPkeyPtr = std::unique_ptr<EVP_PKEY, void (*)(EVP_PKEY*)>;
 using X509Ptr = std::unique_ptr<X509, void (*)(X509*)>;
 
 /// Generates an RSA private key.
+///
+/// Used together with generateCertificate by SiLAServerBase::Builder::WithSelfSignedCertificate
+/// to produce the key and certificate pair every SiLA Server needs (TLS is mandatory, Part A
+/// p.29) when the caller supplies neither its own certificate nor an external one.
 /// @param bits Key length in bits. Default 2048, matching the reference
 /// implementation sila_java's default
 /// (SelfSignedCertificate.KeySize.SIZE_2048).
 /// @return The generated key
+/// @throws CryptoError on any underlying BoringSSL failure.
 EvpPkeyPtr generateKey(int bits = 2048);
 
 /// Generates a self-signed X.509 certificate.
@@ -44,14 +49,17 @@ EvpPkeyPtr generateKey(int bits = 2048);
 /// @param serverUuid The server UUID embedded as an X.509 extension when
 /// non-empty
 /// @return The generated certificate
+/// @throws CryptoError on any underlying BoringSSL failure.
 X509Ptr generateCertificate(const EvpPkeyPtr& key, const std::string& hostname,
                             const std::string& ip,
                             const std::string& serverUuid = {});
 
 /// Converts the private key to a PEM-formatted string.
+/// @throws CryptoError on any underlying BoringSSL failure.
 std::string keyToPem(const EvpPkeyPtr& key);
 
 /// Converts the certificate to a PEM-formatted string.
+/// @throws CryptoError on any underlying BoringSSL failure.
 std::string certificateToPem(const X509Ptr& certificate);
 
 }  // namespace sila2

@@ -14,11 +14,24 @@
 
 namespace sila2 {
 
-/// Server identity and runtime tuning values (architecture.md §3.7).
+/// Source of a @ref gl_sila_server "SiLA Server" 's identity (name,
+/// @ref gl_sila_server_uuid "Server UUID" , type, description, version, vendor URL) and its runtime
+/// tuning knobs.
+///
+/// Server identity and runtime tuning values (architecture.md §3.7). This is a pure
+/// interface; the only shipped implementation is InMemoryServerConfig, installed via
+/// SiLAServerBase::Builder::WithConfig. A caller that needs the identity to persist across
+/// restarts either supplies its own ServerConfig implementation backed by its own storage,
+/// or uses SiLAServerBase::Builder::WithPersistentUuid instead of WithConfig.
+/// @see SiLAServerBase::Builder::WithConfig, SiLAServerBase::Builder::WithPersistentUuid
 class ServerConfig {
 public:
     virtual ~ServerConfig() = default;
 
+    /// The identity strings InMemoryServerConfig fixes at construction (serverType,
+    /// description, version, vendorUrl) -- passed to its constructor, or left at
+    /// their SiLA-Service-conformant defaults.
+    ///
     /// Build-time identity strings — immutable after construction.
     struct Identity {
         // Compliant placeholder, not a real vendor attribution: makes a
@@ -38,6 +51,9 @@ public:
         std::string vendorUrl = "https://sila-standard.org";
     };
 
+    /// The tuning values InMemoryServerConfig fixes at construction (queue depths,
+    /// timeouts, mDNS intervals) -- passed to its constructor, or left at their defaults.
+    ///
     /// Runtime tuning knobs — all have sensible defaults.
     struct Tuning {
         std::size_t subscriptionQueueDepth = 16;
@@ -51,30 +67,35 @@ public:
         std::chrono::milliseconds mdnsProbeWait{250};
     };
 
-    /// @return The server's UUID, stable across restarts.
+    /// @return The @ref gl_sila_server_uuid "Server UUID", stable across restarts. Backs the
+    ///         SiLA Service ServerUUID property.
     [[nodiscard]]
     virtual std::string uuid() const = 0;
 
-    /// @return The server's human-readable name.
+    /// @return The server's human-readable name. Backs the SiLA Service ServerName property.
     [[nodiscard]]
     virtual std::string name() const = 0;
 
     /// Update the server name at runtime (SiLAService.SetServerName).
     virtual void setName(std::string name) = 0;
 
-    /// @return The server type (e.g. model name), set at construction.
+    /// @return The server type (e.g. model name), set at construction. Backs the SiLA
+    ///         Service ServerType property.
     [[nodiscard]]
     virtual std::string serverType() const = 0;
 
-    /// @return A human-readable description of the server's purpose.
+    /// @return A human-readable description of the server's purpose. Backs the SiLA Service
+    ///         ServerDescription property.
     [[nodiscard]]
     virtual std::string description() const = 0;
 
-    /// @return The server version string (e.g. "1.0").
+    /// @return The server version string (e.g. "1.0"). Backs the SiLA Service ServerVersion
+    ///         property.
     [[nodiscard]]
     virtual std::string version() const = 0;
 
-    /// @return The vendor URL for this server or product.
+    /// @return The vendor URL for this server or product. Backs the SiLA Service
+    ///         ServerVendorURL property.
     [[nodiscard]]
     virtual std::string vendorUrl() const = 0;
 

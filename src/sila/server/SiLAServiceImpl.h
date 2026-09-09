@@ -59,6 +59,13 @@ const std::string& silaServiceFdlXml();
 // Namespace alias shortens the generated proto namespace for readability.
 namespace silaservice_proto = sila2::org::silastandard::core::silaservice::v1;
 
+/// gRPC implementation of the @ref gl_sila_service_feature "SiLA Service Feature", the one
+/// Feature every @ref gl_sila_server "SiLA Server" must implement: server identity (name,
+/// UUID, type, version, vendor URL) and introspection (list implemented Features, fetch a
+/// Feature's Feature Definition).
+///
+/// Installed automatically by SiLAServerBase::Builder::Build() -- a caller never
+/// constructs one directly.
 class SiLAServiceImpl final : public silaservice_proto::SiLAService::Service {
 public:
     // registry, config, and publisher must outlive this object — SiLAServerBase owns all.
@@ -70,11 +77,28 @@ public:
 
     // ---- Commands ----
 
+    /// Retrieves one Feature's Feature Definition, for a client that already knows the
+    /// @ref gl_fully_qualified_identifier "Fully Qualified Identifier" (FQI) it wants (e.g.
+    /// from Get_ImplementedFeatures) but not yet its
+    /// @ref gl_feature_definition "Feature Definition" .
+    ///
+    /// @throws error::ValidationError if the FQI is malformed, error::DefinedExecutionError
+    ///         (UnimplementedFeature) if no Feature with that FQI is registered -- the client
+    ///         receives these as a @ref gl_validation_error "Validation Error" or a
+    ///         @ref gl_defined_execution_error "Defined Execution Error" respectively, not a
+    ///         Feature Definition.
     grpc::Status GetFeatureDefinition(
         grpc::ServerContext* context,
         const silaservice_proto::GetFeatureDefinition_Parameters* request,
         silaservice_proto::GetFeatureDefinition_Responses* response) override;
 
+    /// Sets the server's human-readable name at runtime; an empty name is accepted (SiLA
+    /// Service imposes no minimum length). Also updates the mDNS TXT record if
+    /// @ref gl_sila_server_discovery "SiLA Server Discovery" is enabled -- the mDNS instance name
+    /// itself stays the @ref gl_sila_server_uuid "Server UUID" and does not change.
+    ///
+    /// @throws error::ValidationError if name exceeds 255 Unicode code points -- the client
+    ///         receives this as a @ref gl_validation_error "Validation Error".
     grpc::Status SetServerName(
         grpc::ServerContext* context,
         const silaservice_proto::SetServerName_Parameters* request,
@@ -82,36 +106,46 @@ public:
 
     // ---- Properties ----
 
+    /// @return The server's current human-readable name (ServerConfig::name, changeable
+    ///         at runtime by SetServerName).
     grpc::Status Get_ServerName(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ServerName_Parameters* request,
         silaservice_proto::Get_ServerName_Responses* response) override;
 
+    /// @return The server's type, e.g. its model name (ServerConfig::serverType, fixed at
+    ///         construction).
     grpc::Status Get_ServerType(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ServerType_Parameters* request,
         silaservice_proto::Get_ServerType_Responses* response) override;
 
+    /// @return The @ref gl_sila_server_uuid "Server UUID" (ServerConfig::uuid).
     grpc::Status Get_ServerUUID(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ServerUUID_Parameters* request,
         silaservice_proto::Get_ServerUUID_Responses* response) override;
 
+    /// @return A human-readable description of the server's purpose (ServerConfig::description).
     grpc::Status Get_ServerDescription(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ServerDescription_Parameters* request,
         silaservice_proto::Get_ServerDescription_Responses* response) override;
 
+    /// @return The server's version string (ServerConfig::version).
     grpc::Status Get_ServerVersion(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ServerVersion_Parameters* request,
         silaservice_proto::Get_ServerVersion_Responses* response) override;
 
+    /// @return The vendor's URL for this server or product (ServerConfig::vendorUrl).
     grpc::Status Get_ServerVendorURL(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ServerVendorURL_Parameters* request,
         silaservice_proto::Get_ServerVendorURL_Responses* response) override;
 
+    /// @return The @ref gl_fully_qualified_identifier "FQI" of every @ref gl_feature "Feature"
+    ///         registered on this server (FeatureRegistry::registeredFeatureIdentifiers).
     grpc::Status Get_ImplementedFeatures(
         grpc::ServerContext* context,
         const silaservice_proto::Get_ImplementedFeatures_Parameters* request,
