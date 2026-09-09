@@ -26,6 +26,8 @@ struct JsonCodec {
     static std::string toJson(const google::protobuf::Message& msg);
 
     /// Parses json into a new message of the type desc describes.
+    /// @param json The JSON text to parse.
+    /// @param factory The factory that instantiates messages of desc's type.
     /// @param desc The message type to instantiate, e.g. a request descriptor
     /// obtained from FeatureCatalog.
     /// @throws std::invalid_argument if json does not parse as desc's type.

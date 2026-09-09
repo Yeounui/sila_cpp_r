@@ -33,8 +33,8 @@ public:
     /// The FQI already encodes the Feature version,
     /// so registering multiple versions of the same Feature needs no separate version axis.
     /// @throws std::invalid_argument if fqi is already registered, or if the
-    /// identity the FDL itself carries (root <Feature> Originator/Category/
-    /// FeatureVersion plus its own <Identifier>) does not spell fqi. Only the
+    /// identity the FDL itself carries (root `<Feature>` Originator/Category/
+    /// FeatureVersion plus its own `<Identifier>`) does not spell fqi. Only the
     /// root identity is read -- the FDL is otherwise still stored verbatim and
     /// never parsed.
     /// A standard exception is enough here since the message has no extra context to append

@@ -57,7 +57,7 @@ void fillRecoverableErrorsResponse(
 
 /// The gRPC-facing ErrorRecoveryService Feature: gives a client the three
 /// commands and one @ref gl_observable_property "Observable Property" it
-/// needs to resolve a @ref RecoverableErrorGate "recoverable error" a
+/// needs to resolve a @ref sila2::recovery::RecoverableErrorGate "recoverable error" a
 /// Feature raised -- select a ContinuationOption, abort error handling, or
 /// change how long the server waits before giving up. Installed
 /// automatically by `SiLAServerBase::Builder::WithErrorRecovery()`; a server

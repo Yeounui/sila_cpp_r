@@ -93,6 +93,9 @@ public:
     ///        Feature must have somewhere to persist it.
     /// @throws std::invalid_argument if storePath is empty — see the .cc
     ///         constructor.
+    /// @param router The cloud envelope router every managed connection dispatches through.
+    /// @param chain The server's interceptor chain, applied to calls arriving over the cloud path.
+    /// @param storePath File the connection mode and persisted clients are written to.
     explicit ConnectionConfigurationServiceImpl(
         CloudEnvelopeRouter& router,
         std::shared_ptr<grpc::ChannelCredentials> defaultCreds,

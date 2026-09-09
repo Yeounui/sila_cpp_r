@@ -78,8 +78,8 @@ public:
         const std::string& fqi, const std::string& messageName) const;
 
     /// The gRPC method path ("/<package>.<Service>/<rpcId>") for one RPC of a
-    /// registered Feature, as needed by @ref sila2::dynamic::callUnary and
-    /// callServerStream.
+    /// registered Feature, as needed by sila2::dynamic::callUnary() and
+    /// callServerStream().
     [[nodiscard("caller expects the gRPC method path")]]
     std::string grpcMethodName(const std::string& fqi, const std::string& rpcId) const;
 

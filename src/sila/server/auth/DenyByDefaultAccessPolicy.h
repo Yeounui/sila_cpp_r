@@ -16,7 +16,7 @@
 
 namespace sila2::auth {
 
-/// Default @ref AccessPolicy: any authenticated caller may invoke any FQI on the
+/// Default AccessPolicy: any authenticated caller may invoke any FQI on the
 /// protected list; an anonymous caller may invoke only what the list does not cover.
 ///
 /// The policy to pass to SiLAServerBase::Builder::WithAuthentication() when no

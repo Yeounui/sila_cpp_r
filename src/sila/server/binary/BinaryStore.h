@@ -28,6 +28,8 @@ public:
     virtual ~BinaryStore();
 
     /// Create a slot for incoming chunks and return its generated UUID.
+    /// @param binarySize Total size of the binary, in bytes.
+    /// @param chunkCount Number of chunks the transfer is split into.
     /// @param lifetime Time until the slot expires and becomes eligible for GC.
     ///                 Zero means no automatic expiry.
     /// @throws std::invalid_argument if an implementation cannot guarantee

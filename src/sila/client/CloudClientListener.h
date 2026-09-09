@@ -96,6 +96,10 @@ public:
     /// Issues an unobservable command or property read to a connected
     /// server over its @ref gl_connection_method "Server-Initiated Connection" , identified by
     /// `fqi`. Blocks until the response arrives.
+    /// @param serverUuid The connected server's @ref gl_sila_server_uuid "Server UUID".
+    /// @param fqi The Command or Property FQI to invoke.
+    /// @param parameterBytes The serialized parameter message.
+    /// @param isCommand True for a command execution, false for a property read.
     /// @param metadata @ref gl_sila_client_metadata "SiLA Client Metadata"
     /// to attach to the request; see below for its exact format.
     /// @throws std::runtime_error if `serverUuid` has no open session, an

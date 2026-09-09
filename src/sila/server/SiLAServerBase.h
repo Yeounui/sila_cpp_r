@@ -146,6 +146,8 @@ public:
         /// Registers fqi/fdlXml with the FeatureRegistry this Builder is assembling.
         /// @param fqi Fully Qualified Feature Identifier, e.g.
         /// "org.silastandard/core/SiLAService/v1".
+        /// @param fdlXml The Feature's @ref gl_feature_definition "Feature Definition" as XML text.
+        /// @param service The gRPC service that serves the Feature's RPCs; must outlive the server.
         /// @throws std::invalid_argument, propagated from FeatureRegistry::registerFeature,
         /// if fqi is already registered or if fdlXml's own Feature identity does not spell fqi.
         /*  Return type of the member function is a reference (&) to the class type itself;
@@ -169,6 +171,8 @@ public:
         /// Uses caller-supplied certificate/key PEM material instead of generating one.
         /// Neither string is parsed here — TlsConfig only offers construction,
         /// not loading, so a caller providing its own PEM is trusted to have obtained it validly.
+        /// @param certificatePem The server certificate, PEM-encoded.
+        /// @param privateKeyPem Its private key, PEM-encoded.
         /// @param caCertPemForDiscovery Non-empty when certificatePem is untrusted (e.g.
         /// self-signed or signed by a private CA): its PEM is published as ca<l>= mDNS TXT
         /// records so clients can pre-validate it (Part B p75-76 MUST). Empty (default) means

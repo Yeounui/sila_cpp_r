@@ -36,7 +36,7 @@ public:
                        std::chrono::seconds lifetime);
 
     /// Checks `token` exists, has not expired, and covers `targetFqi`
-    /// (@ref anyFqiCovers). A successful validation renews the token's sliding expiry.
+    /// (anyFqiCovers()). A successful validation renews the token's sliding expiry.
     /// @return the token's entry on success, `nullopt` if the token is unknown,
     ///         expired, or not scoped to `targetFqi`.
     // Validate + sliding expiry renewal
