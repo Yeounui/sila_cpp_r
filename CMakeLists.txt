@@ -106,3 +106,18 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/sila_cpp_rConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sila_cpp_r
 )
+
+
+# --- API docs (Doxygen) -----------------------------------------------------
+find_package(Doxygen QUIET OPTIONAL_COMPONENTS dot)
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_JAVADOC_AUTOBRIEF YES)
+    set(DOXYGEN_WARN_IF_UNDOCUMENTED YES)
+    set(DOXYGEN_QUIET YES)
+    set(DOXYGEN_EXCLUDE_SYMBOLS "*::detail" "*::detail::*")
+    set(DOXYGEN_FILE_PATTERNS "*.h" "*.md")
+    set(DOXYGEN_STRIP_FROM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+    set(DOXYGEN_GENERATE_TREEVIEW YES)
+    doxygen_add_docs(docs src/sila README.md COMMENT "Generating API documentation")
+endif()

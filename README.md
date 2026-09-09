@@ -175,6 +175,8 @@ cmake --build build/gcc
 | `otel` | `build/otel` | OpenTelemetry tracing enabled |
 | `fuzz` | `build/fuzz` | libFuzzer targets |
 
+API reference: `cmake --build build/gcc --target docs` (requires `doxygen` on PATH; output at `build/gcc/html/index.html`).
+
 ## Testing
 
 ```bash
