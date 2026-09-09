@@ -16,7 +16,7 @@ namespace sila2 {
 /// @ref InMemoryBinaryStore speed for the common small case and
 /// @ref FileSpoolBinaryStore's bounded memory use for large ones without
 /// choosing between them. This is the store
-/// sila2::SiLAServerBase::Builder::WithBinaryTransfer() installs.
+/// sila2::SilaServerBase::Builder::withBinaryTransfer() installs.
 ///
 /// Routes binary slots to InMemoryBinaryStore or FileSpoolBinaryStore
 /// based on binarySize vs spoolThreshold (architecture.md §3.5).

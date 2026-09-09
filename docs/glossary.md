@@ -4,7 +4,7 @@ Terms as the SiLA 2 specification defines them, in the order a server or client 
 
 ## SiLA Server {#gl_sila_server}
 A system, software or a physical instrument, that offers Features to a SiLA Client. Every SiLA Server must implement the SiLA Service Feature.
-In this library: sila2::SiLAServerBase. (Part A p.28)
+In this library: sila2::SilaServerBase. (Part A p.28)
 
 ## SiLA Client {#gl_sila_client}
 A system, software or a physical instrument, that uses Features offered by a SiLA Server.
@@ -15,7 +15,7 @@ A UUID a SiLA Server generates once to uniquely identify itself. It stays the sa
 
 ## Feature {#gl_feature}
 A Feature describes one specific behavior of a SiLA Server, such as measuring a spectrum or controlling heating. A SiLA Server implements Features; a SiLA Client uses them. The set of Features a server offers is fixed for its whole lifetime.
-In this library: sila2::SiLAServerBase::Builder::AddFeature, sila2::FeatureRegistry. (Part A p.31)
+In this library: sila2::SilaServerBase::Builder::addFeature, sila2::FeatureRegistry. (Part A p.31)
 
 ## Feature Definition / Feature Definition Language {#gl_feature_definition}
 The Feature Definition describes a Feature's behavior exactly and completely: its identifier, commands, properties, data types, client metadata, and execution errors. It is written in the Feature Definition Language (FDL), an XML format validated against FeatureDefinition.xsd. (Part A p.38, p.80)
@@ -102,4 +102,4 @@ In this library: sila2::LockControllerImpl. (sila_base LockController-v2_0 Descr
 
 ## SiLA Service Feature / core Features {#gl_sila_service_feature}
 The SiLA Service Feature is the one Feature every SiLA Server must implement; it is the entry point for discovering which other Features a server offers and for reading server identification details. Core Features such as SiLAService are standardized by the SiLA organization under the "org.silastandard" Originator and stored in the Online Feature Repository (sila_base).
-In this library: sila2::SiLAServiceImpl, sila2::dynamic::FeatureCatalog. (Part A p.80, p.36)
+In this library: sila2::SilaServiceImpl, sila2::dynamic::FeatureCatalog. (Part A p.80, p.36)

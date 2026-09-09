@@ -3,7 +3,7 @@
 
 #include <sila/client/dynamic/FdlRuntimeParser.h>
 #include <sila/client/dynamic/ValueValidator.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include <algorithm>
 #include <optional>

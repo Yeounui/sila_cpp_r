@@ -19,7 +19,7 @@ namespace sila2 {
 /// FileSpoolBinaryStore, HybridBinaryStore) hold the actual storage; this
 /// base class owns only the periodic GC thread, which all implementations
 /// reuse identically. Installed by
-/// sila2::SiLAServerBase::Builder::WithBinaryTransfer().
+/// sila2::SilaServerBase::Builder::withBinaryTransfer().
 ///
 /// Thread safety: implementations must synchronise their own state.
 /// @see BinaryUploadService, BinaryDownloadService

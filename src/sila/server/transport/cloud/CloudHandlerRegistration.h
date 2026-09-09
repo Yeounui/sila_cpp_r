@@ -1,7 +1,7 @@
 // CloudHandlerRegistration.h — Helpers to register gRPC methods as cloud dispatch handlers (architecture.md §3.9)
 #pragma once
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/error/ErrorTransmitInterceptor.h>
 #include <sila/server/transport/CallContext.h>
 #include <sila/server/transport/ResponseSink.h>
@@ -27,7 +27,7 @@ class CloudUnaryResponseSink final : public ResponseSink<Resp> {
 public:
     void send(const Resp& response) override { response_ = response; }
     void finish() override {}
-    void fail(const error::SiLAError& error) override { status_ = error.toStatus(); }
+    void fail(const error::SilaError& error) override { status_ = error.toStatus(); }
 
     const Resp& response() const { return response_; }
     const grpc::Status& status() const { return status_; }
@@ -57,7 +57,7 @@ inline void setCloudError(cloud::SiLAServerMessage& msg,
     bool parsed = !status.error_details().empty() &&
                   silaErr.ParseFromString(status.error_details());
     if (!parsed) {
-        // A gRPC status whose details hold no parsable SiLAError did not come out of
+        // A gRPC status whose details hold no parsable SilaError did not come out of
         // guardHandler. The gRPC sibling reports exactly this as an
         // UndefinedExecutionError (ErrorTransmitInterceptor.h:28-32).
         error::UndefinedExecutionError err{status.error_message()};
@@ -73,7 +73,7 @@ inline void setCloudError(cloud::SiLAServerMessage& msg,
 /// direct gRPC rejected the identical bytes at protobuf framing -- the two
 /// transports diverged at a trust boundary.
 /// FrameworkError, not ValidationError: ValidationError's first argument is the
-/// FQI of the parameter that failed (SiLAErrorSubtypes.h), and a framing failure
+/// FQI of the parameter that failed (SilaErrorSubtypes.h), and a framing failure
 /// has no single parameter to name. CommandExecutionNotAccepted is the only one
 /// of SiLAFramework.proto's five values that means "the server will not run
 /// this call".
@@ -246,9 +246,9 @@ public:
     // half-close on the multiplexed cloud stream to signal here.
     void finish() override {}
 
-    void fail(const error::SiLAError& error) override {
+    void fail(const error::SilaError& error) override {
         // Straight to the proto, not through grpc::Status + setCloudError:
-        // that round-trip only exists to recover a SiLAError that a gRPC
+        // that round-trip only exists to recover a SilaError that a gRPC
         // handler had already serialized into error_details. guardHandler
         // wraps every non-SiLA exception in UndefinedExecutionError, so this
         // covers every failure the handler can produce.
@@ -431,7 +431,7 @@ void regObsCmd(CloudEnvelopeRouter& r, const std::string& fqi, const char* name,
 // adapter owns neither an ObservablePropertyManager nor a CloudValueSerializer
 // -- both live inside the application's handler -- so registerObservableProperty's
 // manager-based path is unreachable from codegen and stays for hand-wired
-// callers (SiLAServerBase.cc's RecoverableErrors).
+// callers (SilaServerBase.cc's RecoverableErrors).
 template <typename Req, typename Resp, typename Service, typename Handler>
 CloudDispatchFn wrapObsProp(std::shared_ptr<Service> svc, Handler method) {
     return [svc = std::move(svc), method](

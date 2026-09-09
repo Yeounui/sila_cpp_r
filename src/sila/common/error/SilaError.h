@@ -1,9 +1,9 @@
-// SiLAError.h
+// SilaError.h
 //
 // Ported from sila_cpp v0.3.11
-// src/include/sila_cpp/framework/error_handling/SiLAError.h (MIT License,
+// src/include/sila_cpp/framework/error_handling/SilaError.h (MIT License,
 // Copyright 2020 SiLA2). The original derives from QException and keeps its
-// state behind a polymorphic_value PIMPL (SiLAError_p.h) for Qt shared-library
+// state behind a polymorphic_value PIMPL (SilaError_p.h) for Qt shared-library
 // ABI stability and QtConcurrent's cross-thread exception propagation, neither
 // of which this project uses. This port derives from std::runtime_error
 // instead (this repo's existing convention — see CryptoError in
@@ -60,7 +60,7 @@ namespace error {
             e.code();  // 42
         }
 */
-class SiLAError : public std::runtime_error {
+class SilaError : public std::runtime_error {
 public:
     /// Defines all the different SiLA 2 error types.
     enum class ErrorType : uint8_t {
@@ -76,7 +76,7 @@ public:
     ErrorType errorType() const;
 
     /// Convenience method, equivalent to
-    /// SiLAError::errorTypeToString(someError.errorType()).
+    /// SilaError::errorTypeToString(someError.errorType()).
     /// @return This error's type's human-readable string representation.
     [[nodiscard("caller expects the type name string")]] \
     std::string errorTypeName() const;
@@ -108,7 +108,7 @@ protected:
     /// C'tor for derived classes. Falls back to a generic message when msg is empty.
     /// @param type This error's type.
     /// @param msg This error's message, or empty for a generic fallback.
-    SiLAError(ErrorType type, std::string msg);
+    SilaError(ErrorType type, std::string msg);
 
     /// Builds this error's SiLA Error protobuf message.
     /// The caller takes ownership of the returned message.

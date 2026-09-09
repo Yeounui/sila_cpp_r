@@ -54,7 +54,7 @@ bool anyFqiCovers(const Range& entries, std::string_view targetFqi) {
 /// A Binary-typed Metadata FQI IS a real gate target on CreateBinary
 /// (isKnownParameterFqi accepts "/Metadata/"), but UploadChunk/DeleteBinary gate
 /// on the coarser BinaryUpload FQI, so a Metadata entry in protectedFqis would
-/// enforce only partially and inconsistently. WithAuthentication uses this to
+/// enforce only partially and inconsistently. withAuthentication uses this to
 /// refuse Metadata entries until that lifecycle is defined, while accepting
 /// Command/Property.
 inline bool isMetadataFqi(std::string_view entry) {

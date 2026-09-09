@@ -3,7 +3,7 @@
 #include <sila/server/auth/AuthorizationInterceptor.h>
 
 #include <sila/server/auth/AuthTokenStore.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/transport/CallContext.h>
 
 #include <gtest/gtest.h>

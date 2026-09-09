@@ -1,6 +1,6 @@
 // SilaClientBase.h
 //
-// Client-side counterpart to SiLAServerBase: owns the gRPC channel built
+// Client-side counterpart to SilaServerBase: owns the gRPC channel built
 // from ClientConfig's mTLS credentials, and hands out typed stubs for
 // generated services (§4.4).
 #pragma once
@@ -50,7 +50,7 @@ public:
     SilaClientBase(std::string host, uint16_t port, ClientConfig config);
 
     // Defined in .cc where grpc::Channel is a complete type, same pattern
-    // as SiLAServerBase's destructor.
+    // as SilaServerBase's destructor.
     ~SilaClientBase();
 
     /// @return The gRPC channel, for static stubs and dynamic calls.
@@ -108,7 +108,7 @@ public:
     SilaClientBase(const SilaClientBase&) = delete;
     SilaClientBase& operator=(const SilaClientBase&) = delete;
 
-    // Non-movable, matching SiLAServerBase's pattern for objects that hold
+    // Non-movable, matching SilaServerBase's pattern for objects that hold
     // credential-bound gRPC state.
     SilaClientBase(SilaClientBase&&) = delete;
     SilaClientBase& operator=(SilaClientBase&&) = delete;

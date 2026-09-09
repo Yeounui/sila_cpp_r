@@ -3,10 +3,10 @@
 //
 // Extracted from client/ClientConfig.cc's anonymous-namespace
 // untrustedTlsCredentials() (Part B p75 private-IP zero-config path) once a
-// second caller needed the identical shape: SiLAServerBase's default
+// second caller needed the identical shape: SilaServerBase's default
 // server-initiated outbound credentials (Part A p32 SHALL support), used
 // when the Builder was not given an explicit outbound credential via
-// WithConnectionConfiguration.
+// withConnectionConfiguration.
 #pragma once
 
 #include <functional>
@@ -35,7 +35,7 @@ std::shared_ptr<grpc::ChannelCredentials> untrustedTlsChannelCredentials(
 /// 192.168/16, also when IPv4-mapped in IPv6) or an RFC4193 ULA (fc00::/7),
 /// optionally bracketed. Loopback, link-local and hostnames are NOT private
 /// and no DNS resolution is done. Shared by ClientConfig (client-initiated
-/// connections) and SiLAServerBase's default outbound credentials
+/// connections) and SilaServerBase's default outbound credentials
 /// (server-initiated connections): both legs accept an untrusted peer
 /// certificate only inside a private-range network.
 bool isPrivateAddress(std::string_view host);

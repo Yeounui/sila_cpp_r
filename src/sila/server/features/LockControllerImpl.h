@@ -21,7 +21,7 @@ namespace sila2 {
 
 struct InterceptorChain;
 
-// FQI constant for LockController — used by Builder::WithLock()/Build() to
+// FQI constant for LockController — used by Builder::withLock()/build() to
 // register the Feature (opt-in since audit S32; nothing auto-registers).
 inline constexpr std::string_view kLockControllerFqi =
     "org.silastandard/core/LockController/v1";
@@ -54,15 +54,15 @@ namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller:
 /// letting a @ref gl_sila_client "SiLA Client" take exclusive @ref gl_lock "lock"
 /// of the server so other clients' calls are refused until it unlocks.
 ///
-/// Installed by @ref SiLAServerBase::Builder::WithLock().
+/// Installed by @ref SilaServerBase::Builder::withLock().
 class LockControllerImpl final : public lockcontroller_proto::LockController::Service {
 public:
     /// Constructs the service with no lock held.
     ///
     /// @param chain The server's interceptor chain, consulted for which
     ///        calls are affected by the LockIdentifier metadata.
-    // chain outlives this object (owned by SiLAServerBase, which constructs
-    // LockControllerImpl during Builder::Build()). Dropped the FeatureRegistry
+    // chain outlives this object (owned by SilaServerBase, which constructs
+    // LockControllerImpl during Builder::build()). Dropped the FeatureRegistry
     // parameter this constructor used to take: the FCP property below now
     // reads chain->metadataAffectedCalls instead of the registry (S32), so
     // registry_ has no reader left.

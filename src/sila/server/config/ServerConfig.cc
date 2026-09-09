@@ -47,9 +47,9 @@ InMemoryServerConfig::InMemoryServerConfig(
     // becomes an advertised property that violates SiLAService-v1_0.sila.xml:144-147
     // (audit S30). Checked at construction, not at the RPC: the RPC has no way to
     // fail usefully, and the caller's stack is where the mistake is.
-    // std::invalid_argument, not a SiLAError -- this is an assembly-time programming
-    // error, not a wire call; it matches Builder::WithAuthentication's null-argument
-    // rejection (SiLAServerBase.h) rather than the ValidationError sites in the
+    // std::invalid_argument, not a SilaError -- this is an assembly-time programming
+    // error, not a wire call; it matches Builder::withAuthentication's null-argument
+    // rejection (SilaServerBase.h) rather than the ValidationError sites in the
     // Feature implementations.
     // uuid_ (the member), not uuid (the parameter): the parameter was moved from above.
     if (auto lengthError = types::checkLength(uuid_, 36)) {
@@ -74,7 +74,7 @@ void InMemoryServerConfig::setName(std::string name) {
     name_ = std::move(name);
 }
 
-// Build-time identity — immutable after construction, no lock needed.
+// build-time identity — immutable after construction, no lock needed.
 std::string InMemoryServerConfig::serverType() const { return identity_.serverType; }
 std::string InMemoryServerConfig::description() const { return identity_.description; }
 std::string InMemoryServerConfig::version() const { return identity_.version; }

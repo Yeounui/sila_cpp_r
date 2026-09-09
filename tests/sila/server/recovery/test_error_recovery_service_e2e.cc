@@ -9,10 +9,10 @@
 #include <sila/server/recovery/ErrorRecoveryServiceImpl.h>
 #include <sila/server/recovery/RecoverableErrorGate.h>
 #include <sila/server/property/ObservablePropertyManager.h>
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
-#include <sila/server/SiLAServerBase.h>
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
+#include <sila/server/SilaServerBase.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/features/ConnectionConfigurationServiceImpl.h>
 
 #include "ConnectionConfigurationService.grpc.pb.h"
@@ -37,7 +37,7 @@ using sila2::recovery::RecoverableErrorGate;
 using sila2::recovery::RecoveryChoice;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::error::ValidationError;
 
 namespace errorrecovery_proto = sila2::errorrecovery_proto;
@@ -511,7 +511,7 @@ TEST(ErrorRecoveryServiceE2E, ExecuteContinuationOptionMalformedUuidReturnsValid
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(),
@@ -534,7 +534,7 @@ TEST(ErrorRecoveryServiceE2E, AbortErrorHandlingMalformedUuidReturnsValidationEr
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(),
@@ -559,7 +559,7 @@ TEST(ErrorRecoveryServiceE2E, SetErrorHandlingTimeoutNegativeReturnsValidationEr
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(),
@@ -569,7 +569,7 @@ TEST(ErrorRecoveryServiceE2E, SetErrorHandlingTimeoutNegativeReturnsValidationEr
 
 // ---------------------------------------------------------------------------
 // Regression guard: advertised features must actually be served
-// (architecture-v2.md §3.12, S8b). This drives a real SiLAServerBase rather
+// (architecture-v2.md §3.12, S8b). This drives a real SilaServerBase rather
 // than the bare ErrorRecoveryServiceImpl fixture above, since the invariant
 // is about what Get_ImplementedFeatures reports versus what gRPC actually
 // serves on the wire. Note gRPC returns UNIMPLEMENTED for an unknown METHOD
@@ -579,13 +579,13 @@ TEST(ErrorRecoveryServiceE2E, SetErrorHandlingTimeoutNegativeReturnsValidationEr
 
 TEST(ErrorRecoveryServiceE2E, EveryAdvertisedFeatureIsActuallyServedNotUnimplemented) {
     constexpr uint16_t kPort = 50264;
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPort)
-                      .WithErrorRecovery()
-                      .Build();
-    server.Run(false);
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPort)
+                      .withErrorRecovery()
+                      .build();
+    server.run(false);
 
     grpc::SslCredentialsOptions opts;
     opts.pem_root_certs = server.certificatePem();
@@ -602,9 +602,9 @@ TEST(ErrorRecoveryServiceE2E, EveryAdvertisedFeatureIsActuallyServedNotUnimpleme
         fqis.push_back(feature.value());
     }
     // This test server enables SiLAService + ErrorRecoveryService, plus
-    // ConnectionConfigurationService which Build() now registers
+    // ConnectionConfigurationService which build() now registers
     // unconditionally (S75, Part A p80 SHALL) — fail loudly rather than
-    // silently under-covering if Build() ever starts advertising something
+    // silently under-covering if build() ever starts advertising something
     // else by default.
     ASSERT_EQ(fqis.size(), 3u);
 
@@ -630,8 +630,8 @@ TEST(ErrorRecoveryServiceE2E, EveryAdvertisedFeatureIsActuallyServedNotUnimpleme
                 << "advertised FQI " << fqi << " is not actually served";
         } else if (fqi == std::string{sila2::kConnectionConfigurationServiceFqi}) {
             // Real RPC on ConnectionConfigurationService: this server never
-            // called WithConnectionConfiguration, but Part A p32 (SHALL
-            // support) means Build() derived working defaults, so Enable
+            // called withConnectionConfiguration, but Part A p32 (SHALL
+            // support) means build() derived working defaults, so Enable
             // succeeds -- the check here is still just "not UNIMPLEMENTED".
             auto connConfigStub = connconfig_proto::ConnectionConfigurationService::NewStub(channel);
             grpc::ClientContext ctx;
@@ -646,10 +646,10 @@ TEST(ErrorRecoveryServiceE2E, EveryAdvertisedFeatureIsActuallyServedNotUnimpleme
         }
     }
 
-    server.Shutdown();
+    server.shutdown();
     // Enable above wrote the default store file this server derived (no
-    // WithPersistentUuid was given, so Build() keys it by the server's UUID
-    // under the temp directory -- SiLAServerBase.cc's default derivation).
+    // withPersistentUuid was given, so build() keys it by the server's UUID
+    // under the temp directory -- SilaServerBase.cc's default derivation).
     std::filesystem::remove(std::filesystem::temp_directory_path() /
         ("sila2-connections-" + server.serverConfig().uuid()));
 }

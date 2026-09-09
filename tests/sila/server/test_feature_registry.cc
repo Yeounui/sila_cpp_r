@@ -5,7 +5,7 @@
 // root <Feature> identity disagrees with the FQI it is registered under.
 #include <sila/server/FeatureRegistry.h>
 
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/features/AuthenticationServiceImpl.h>
 #include <sila/server/features/AuthorizationConfigurationServiceImpl.h>
 #include <sila/server/features/AuthorizationServiceImpl.h>

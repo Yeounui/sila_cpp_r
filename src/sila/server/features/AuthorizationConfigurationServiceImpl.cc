@@ -1,7 +1,7 @@
 // AuthorizationConfigurationServiceImpl.cc — authorization provider configuration (architecture.md §3.11)
 #include "AuthorizationConfigurationServiceImpl.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/server/auth/AuthTokenStore.h>
 #include <sila/server/config/ServerConfig.h>

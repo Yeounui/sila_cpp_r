@@ -5,8 +5,8 @@
 
 #include <functional>
 
-#include <sila/common/error/SiLAError.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaError.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/transport/ResponseSink.h>
 
 namespace sila2 {
@@ -34,7 +34,7 @@ template <typename Resp>
 void guardHandler(std::function<void()> handler, ResponseSink<Resp>& sink) {
     try {
         handler();
-    } catch (const SiLAError& e) {
+    } catch (const SilaError& e) {
         sink.fail(e);
     } catch (const std::exception& e) {
         sink.fail(UndefinedExecutionError{e.what()});

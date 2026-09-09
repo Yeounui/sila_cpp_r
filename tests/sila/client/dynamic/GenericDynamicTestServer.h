@@ -9,7 +9,7 @@
 // (unary, server-streaming) uniformly as "read N requests, write M
 // responses, finish" — this harness exposes that as a per-method-path
 // script so tests can inject exact response sequences and error timing
-// without standing up a real generated service or full SiLAServerBase.
+// without standing up a real generated service or full SilaServerBase.
 #pragma once
 
 #include <grpcpp/grpcpp.h>

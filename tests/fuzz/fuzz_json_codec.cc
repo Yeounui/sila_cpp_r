@@ -6,7 +6,7 @@
 // to maximize parse-path coverage.  Successful parses are round-tripped
 // through toJson to exercise serialization as well.
 //
-// Build:
+// build:
 //   conda run -n sica clang++ -std=c++20 -fsanitize=fuzzer,address \
 //       -I src -I build/vcpkg_installed/x64-linux/include \
 //       tests/fuzz/fuzz_json_codec.cc \

@@ -2,7 +2,7 @@
 
 #include "ObservableCommandExecution.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/AsciiCase.h>
 #include <sila/common/util/uuid.h>
 

@@ -1,7 +1,7 @@
 // ExecutionInfoSubscriber.cc
 #include "ExecutionInfoSubscriber.h"
 
-#include <sila/common/error/SiLAErrorException.h>
+#include <sila/common/error/SilaErrorException.h>
 
 #include <utility>
 

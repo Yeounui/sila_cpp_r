@@ -1,13 +1,13 @@
 // Integration tests for CloudHandlerRegistration.h (architecture.md §3.9):
 // wrapGrpc's dispatch of a transport-neutral service method into a SiLAServerMessage,
 // regCmd/regProp's FQI wiring into CloudEnvelopeRouter, and
-// detail::setCloudError's status-to-SiLAError translation. Each test drives
+// detail::setCloudError's status-to-SilaError translation. Each test drives
 // the full path: register via regCmd/regProp -> route() a SiLAClientMessage
 // through a real gRPC stream (via CloudRouterFixture) -> inspect the written
 // SiLAServerMessage.
 #include "CloudRouterTestHarness.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>
@@ -150,7 +150,7 @@ TEST_F(CloudHandlerRegistration, RegPropWithOkStatusWritesUnobservablePropertyVa
     EXPECT_EQ(decoded.value(), "");
 }
 
-// P3: SiLAError from a transport-neutral handler is preserved on the cloud wire.
+// P3: SilaError from a transport-neutral handler is preserved on the cloud wire.
 TEST_F(CloudHandlerRegistration, WrapGrpcWithParsableErrorDetailsPreservesOriginalError) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
@@ -406,13 +406,13 @@ TEST_F(CloudHandlerRegistration, ObsInitWithMalformedParameterBytesDoesNotRegist
               "no command FQI registered for execution: " + exec->uuid());
 }
 
-// --- setCloudError's status-to-SiLAError fallback (S2) ----------------------
+// --- setCloudError's status-to-SilaError fallback (S2) ----------------------
 // Called directly, not through a handler: CloudUnaryResponseSink::fail()
-// always builds status via SiLAError::toStatus(), which always populates
+// always builds status via SilaError::toStatus(), which always populates
 // error_details, so the !parsed branch is unreachable end to end through
 // route(). Direct is the only way to exercise it.
 
-// N7 (REJECTION): a gRPC status with no parsable SiLAError in error_details
+// N7 (REJECTION): a gRPC status with no parsable SilaError in error_details
 // falls back to UndefinedExecutionError, matching the gRPC sibling's identical
 // escape (ErrorTransmitInterceptor.h:28-32) rather than the deleted `Invalid`
 // FrameworkError sentinel.
@@ -427,7 +427,7 @@ TEST_F(CloudHandlerRegistration, UnparsableStatusDetailsBecomeUndefinedExecution
     EXPECT_FALSE(msg.commanderror().has_frameworkerror());
 }
 
-// P6 (POSITIVE): a gRPC status whose error_details IS a parsable SiLAError is
+// P6 (POSITIVE): a gRPC status whose error_details IS a parsable SilaError is
 // passed through unchanged -- the fallback above must not fire when there is a
 // real error to recover.
 TEST_F(CloudHandlerRegistration, ParsableStatusDetailsArePassedThroughUnchanged) {

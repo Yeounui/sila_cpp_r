@@ -20,10 +20,10 @@ namespace sila2 {
 ///
 /// Server identity and runtime tuning values (architecture.md §3.7). This is a pure
 /// interface; the only shipped implementation is InMemoryServerConfig, installed via
-/// SiLAServerBase::Builder::WithConfig. A caller that needs the identity to persist across
+/// SilaServerBase::Builder::withConfig. A caller that needs the identity to persist across
 /// restarts either supplies its own ServerConfig implementation backed by its own storage,
-/// or uses SiLAServerBase::Builder::WithPersistentUuid instead of WithConfig.
-/// @see SiLAServerBase::Builder::WithConfig, SiLAServerBase::Builder::WithPersistentUuid
+/// or uses SilaServerBase::Builder::withPersistentUuid instead of withConfig.
+/// @see SilaServerBase::Builder::withConfig, SilaServerBase::Builder::withPersistentUuid
 class ServerConfig {
 public:
     virtual ~ServerConfig() = default;
@@ -32,13 +32,13 @@ public:
     /// description, version, vendorUrl) -- passed to its constructor, or left at
     /// their SiLA-Service-conformant defaults.
     ///
-    /// Build-time identity strings — immutable after construction.
+    /// build-time identity strings — immutable after construction.
     struct Identity {
         // Compliant placeholder, not a real vendor attribution: makes a
         // default-assembled Identity{} satisfy SiLAService-v1_0.sila.xml:126's
         // ServerType Pattern ([A-Z][a-zA-Z0-9]*) out of the box. Callers are
-        // expected to override it; Builder::Build() rejects a non-conformant
-        // explicit value (SiLAServerBase.cc).
+        // expected to override it; Builder::build() rejects a non-conformant
+        // explicit value (SilaServerBase.cc).
         std::string serverType = "SiLAServer"; ///< Server type or model name; must match [A-Z][a-zA-Z0-9]*.
         // SiLAService-v1_0.sila.xml:152-160 -- ServerDescription carries no
         // <Constrained> wrapper, so it gets no compliance-driven default.

@@ -1,9 +1,9 @@
-// SiLAServiceImpl.cc — SiLA2 core feature (architecture.md §3.2, §3.10)
-#include "SiLAServiceImpl.h"
+// SilaServiceImpl.cc — SiLA2 core feature (architecture.md §3.2, §3.10)
+#include "SilaServiceImpl.h"
 
 #include <sila/server/config/ServerConfig.h>
 #include <sila/server/discovery/MdnsPublisher.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/SiLAServiceFdl.h>
@@ -30,12 +30,12 @@ const std::string kGetFeatureDefinitionParamFqi =
 
 const std::string& silaServiceFdlXml() { return kFdlXml; }
 
-SiLAServiceImpl::SiLAServiceImpl(const FeatureRegistry& registry, ServerConfig& config,
+SilaServiceImpl::SilaServiceImpl(const FeatureRegistry& registry, ServerConfig& config,
                                    discovery::MdnsPublisher* publisher,
                                    const InterceptorChain* chain)
     : registry_{registry}, config_{config}, publisher_{publisher}, chain_{chain} {}
 
-grpc::Status SiLAServiceImpl::GetFeatureDefinition(
+grpc::Status SilaServiceImpl::GetFeatureDefinition(
     grpc::ServerContext* context,
     const silaservice_proto::GetFeatureDefinition_Parameters* request,
     silaservice_proto::GetFeatureDefinition_Responses* response) {
@@ -46,7 +46,7 @@ grpc::Status SiLAServiceImpl::GetFeatureDefinition(
     return sink.status();
 }
 
-void SiLAServiceImpl::getFeatureDefinition(
+void SilaServiceImpl::getFeatureDefinition(
     const silaservice_proto::GetFeatureDefinition_Parameters& request, CallContext&,
     ResponseSink<silaservice_proto::GetFeatureDefinition_Responses>& sink) {
     const auto& fqi = request.featureidentifier().value();
@@ -69,7 +69,7 @@ void SiLAServiceImpl::getFeatureDefinition(
     }
 }
 
-grpc::Status SiLAServiceImpl::SetServerName(
+grpc::Status SilaServiceImpl::SetServerName(
     grpc::ServerContext* context,
     const silaservice_proto::SetServerName_Parameters* request,
     silaservice_proto::SetServerName_Responses* /*response*/) {
@@ -81,13 +81,13 @@ grpc::Status SiLAServiceImpl::SetServerName(
     return sink.status();
 }
 
-void SiLAServiceImpl::setServerName(
+void SilaServiceImpl::setServerName(
     const silaservice_proto::SetServerName_Parameters& request, CallContext&,
     ResponseSink<silaservice_proto::SetServerName_Responses>& sink) {
     const auto& name = request.servername().value();
     // FDL constrains ServerName by MaximalLength=255 only (SiLAService-v1_0
     // .sila.xml:81), counted in Unicode code points; there is no lower bound
-    // (Part A p29), so an empty name is accepted, matching Build().
+    // (Part A p29), so an empty name is accepted, matching build().
     static constexpr auto kParamFqi =
         "org.silastandard/core/SiLAService/v1/Command/SetServerName/Parameter/ServerName";
     if (auto lengthError = types::checkMaximalLength(name, 255)) {
@@ -103,7 +103,7 @@ void SiLAServiceImpl::setServerName(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ServerName(
+grpc::Status SilaServiceImpl::Get_ServerName(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ServerName_Parameters* request,
     silaservice_proto::Get_ServerName_Responses* response) {
@@ -114,7 +114,7 @@ grpc::Status SiLAServiceImpl::Get_ServerName(
     return sink.status();
 }
 
-void SiLAServiceImpl::getServerName(
+void SilaServiceImpl::getServerName(
     const silaservice_proto::Get_ServerName_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ServerName_Responses>& sink) {
     silaservice_proto::Get_ServerName_Responses response;
@@ -123,7 +123,7 @@ void SiLAServiceImpl::getServerName(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ServerType(
+grpc::Status SilaServiceImpl::Get_ServerType(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ServerType_Parameters* request,
     silaservice_proto::Get_ServerType_Responses* response) {
@@ -134,7 +134,7 @@ grpc::Status SiLAServiceImpl::Get_ServerType(
     return sink.status();
 }
 
-void SiLAServiceImpl::getServerType(
+void SilaServiceImpl::getServerType(
     const silaservice_proto::Get_ServerType_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ServerType_Responses>& sink) {
     silaservice_proto::Get_ServerType_Responses response;
@@ -143,7 +143,7 @@ void SiLAServiceImpl::getServerType(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ServerUUID(
+grpc::Status SilaServiceImpl::Get_ServerUUID(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ServerUUID_Parameters* request,
     silaservice_proto::Get_ServerUUID_Responses* response) {
@@ -154,7 +154,7 @@ grpc::Status SiLAServiceImpl::Get_ServerUUID(
     return sink.status();
 }
 
-void SiLAServiceImpl::getServerUuid(
+void SilaServiceImpl::getServerUuid(
     const silaservice_proto::Get_ServerUUID_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ServerUUID_Responses>& sink) {
     silaservice_proto::Get_ServerUUID_Responses response;
@@ -163,7 +163,7 @@ void SiLAServiceImpl::getServerUuid(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ServerDescription(
+grpc::Status SilaServiceImpl::Get_ServerDescription(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ServerDescription_Parameters* request,
     silaservice_proto::Get_ServerDescription_Responses* response) {
@@ -174,7 +174,7 @@ grpc::Status SiLAServiceImpl::Get_ServerDescription(
     return sink.status();
 }
 
-void SiLAServiceImpl::getServerDescription(
+void SilaServiceImpl::getServerDescription(
     const silaservice_proto::Get_ServerDescription_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ServerDescription_Responses>& sink) {
     silaservice_proto::Get_ServerDescription_Responses response;
@@ -183,7 +183,7 @@ void SiLAServiceImpl::getServerDescription(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ServerVersion(
+grpc::Status SilaServiceImpl::Get_ServerVersion(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ServerVersion_Parameters* request,
     silaservice_proto::Get_ServerVersion_Responses* response) {
@@ -194,7 +194,7 @@ grpc::Status SiLAServiceImpl::Get_ServerVersion(
     return sink.status();
 }
 
-void SiLAServiceImpl::getServerVersion(
+void SilaServiceImpl::getServerVersion(
     const silaservice_proto::Get_ServerVersion_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ServerVersion_Responses>& sink) {
     silaservice_proto::Get_ServerVersion_Responses response;
@@ -203,7 +203,7 @@ void SiLAServiceImpl::getServerVersion(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ServerVendorURL(
+grpc::Status SilaServiceImpl::Get_ServerVendorURL(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ServerVendorURL_Parameters* request,
     silaservice_proto::Get_ServerVendorURL_Responses* response) {
@@ -214,7 +214,7 @@ grpc::Status SiLAServiceImpl::Get_ServerVendorURL(
     return sink.status();
 }
 
-void SiLAServiceImpl::getServerVendorUrl(
+void SilaServiceImpl::getServerVendorUrl(
     const silaservice_proto::Get_ServerVendorURL_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ServerVendorURL_Responses>& sink) {
     silaservice_proto::Get_ServerVendorURL_Responses response;
@@ -223,7 +223,7 @@ void SiLAServiceImpl::getServerVendorUrl(
     sink.finish();
 }
 
-grpc::Status SiLAServiceImpl::Get_ImplementedFeatures(
+grpc::Status SilaServiceImpl::Get_ImplementedFeatures(
     grpc::ServerContext* context,
     const silaservice_proto::Get_ImplementedFeatures_Parameters* request,
     silaservice_proto::Get_ImplementedFeatures_Responses* response) {
@@ -234,7 +234,7 @@ grpc::Status SiLAServiceImpl::Get_ImplementedFeatures(
     return sink.status();
 }
 
-void SiLAServiceImpl::getImplementedFeatures(
+void SilaServiceImpl::getImplementedFeatures(
     const silaservice_proto::Get_ImplementedFeatures_Parameters&, CallContext&,
     ResponseSink<silaservice_proto::Get_ImplementedFeatures_Responses>& sink) {
     silaservice_proto::Get_ImplementedFeatures_Responses response;

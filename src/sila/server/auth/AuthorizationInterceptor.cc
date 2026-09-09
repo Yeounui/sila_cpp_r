@@ -1,7 +1,7 @@
 // AuthorizationInterceptor.cc
 #include "AuthorizationInterceptor.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/transport/CallContext.h>
 
 #include <utility>

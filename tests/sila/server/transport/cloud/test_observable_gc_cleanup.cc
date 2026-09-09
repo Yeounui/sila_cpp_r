@@ -13,7 +13,7 @@
 // no callback set, non-expired commands, and still-running commands.
 #include "CloudRouterTestHarness.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>

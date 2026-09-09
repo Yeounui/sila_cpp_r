@@ -1,11 +1,11 @@
-// Checks for SiLAServerBase::Builder: Feature registration delegates to
-// FeatureRegistry (including its duplicate-FQI throw), WithSelfSignedCertificate
-// produces PEM material while WithCertificate stores caller-supplied PEM
-// verbatim without parsing it, Build() refuses to run without either, Build()
-// refuses to fabricate a volatile UUID when neither WithConfig nor
-// WithPersistentUuid supplies an identity, and WithAuthentication rejects
+// Checks for SilaServerBase::Builder: Feature registration delegates to
+// FeatureRegistry (including its duplicate-FQI throw), withSelfSignedCertificate
+// produces PEM material while withCertificate stores caller-supplied PEM
+// verbatim without parsing it, build() refuses to run without either, build()
+// refuses to fabricate a volatile UUID when neither withConfig nor
+// withPersistentUuid supplies an identity, and withAuthentication rejects
 // null or asymmetric protected FQIs.
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/auth/AccessPolicy.h>
@@ -45,7 +45,7 @@ const std::string kTestFeatureFdl =
     R"(<Feature Originator="org.example" Category="test" FeatureVersion="1.0">)"
     R"(<Identifier>TestFeature</Identifier></Feature>)";
 
-// Minimal stubs: only WithAuthentication's null-guard behavior is under
+// Minimal stubs: only withAuthentication's null-guard behavior is under
 // test here, not verify()/isAllowed() decision logic.
 struct StubVerifier : sila2::auth::CredentialVerifier {
     std::optional<std::string> verify(const std::string&, const std::string&) override {
@@ -81,7 +81,7 @@ struct ScopedFileRemover {
 };
 
 // A self-signed certificate can serve as its own trust anchor when handed to
-// WithMutualTls -- the same substitution test_mtls_switch_e2e.cc's
+// withMutualTls -- the same substitution test_mtls_switch_e2e.cc's
 // generateSelfSigned() relies on, since this codebase has no separate
 // "sign this with a CA key" API (TlsConfig.h only offers self-signed leaves).
 std::string generateCaCertPem() {
@@ -94,32 +94,32 @@ namespace connconfig_proto = sila2::org::silastandard::core::connectionconfigura
 
 }  // namespace
 
-TEST(SiLAServerBaseBuilder, RegistersFeaturesIntoTheAssembledRegistry)
+TEST(SilaServerBaseBuilder, RegistersFeaturesIntoTheAssembledRegistry)
 {
-    const auto server = sila2::SiLAServerBase::Builder()
-                             .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                             .AddFeature(kTestFeatureFqi, kTestFeatureFdl)
-                             .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                             .Build();
+    const auto server = sila2::SilaServerBase::Builder()
+                             .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                             .addFeature(kTestFeatureFqi, kTestFeatureFdl)
+                             .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                             .build();
 
     EXPECT_EQ(server.featureRegistry().featureDefinition(kTestFeatureFqi), kTestFeatureFdl);
 }
 
-TEST(SiLAServerBaseBuilder, RejectsDuplicateFeatureRegistration)
+TEST(SilaServerBaseBuilder, RejectsDuplicateFeatureRegistration)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.AddFeature(kTestFeatureFqi, kTestFeatureFdl);
+    sila2::SilaServerBase::Builder builder;
+    builder.addFeature(kTestFeatureFqi, kTestFeatureFdl);
 
-    EXPECT_THROW(builder.AddFeature(kTestFeatureFqi, kTestFeatureFdl),
+    EXPECT_THROW(builder.addFeature(kTestFeatureFqi, kTestFeatureFdl),
                  std::invalid_argument);
 }
 
-TEST(SiLAServerBaseBuilder, GeneratesASelfSignedCertificate)
+TEST(SilaServerBaseBuilder, GeneratesASelfSignedCertificate)
 {
-    const auto server = sila2::SiLAServerBase::Builder()
-                             .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                             .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                             .Build();
+    const auto server = sila2::SilaServerBase::Builder()
+                             .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                             .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                             .build();
 
     // The certificate/key content itself is TlsConfig's responsibility and is
     // already covered by test_tls_config.cc; this only checks that the
@@ -128,52 +128,52 @@ TEST(SiLAServerBaseBuilder, GeneratesASelfSignedCertificate)
     EXPECT_EQ(server.privateKeyPem().rfind("-----BEGIN PRIVATE KEY-----", 0), 0u);
 }
 
-TEST(SiLAServerBaseBuilder, UsesSuppliedCertificateVerbatim)
+TEST(SilaServerBaseBuilder, UsesSuppliedCertificateVerbatim)
 {
-    const auto server = sila2::SiLAServerBase::Builder()
-                             .WithCertificate("fake-cert-pem", "fake-key-pem")
-                             .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                             .Build();
+    const auto server = sila2::SilaServerBase::Builder()
+                             .withCertificate("fake-cert-pem", "fake-key-pem")
+                             .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                             .build();
 
     EXPECT_EQ(server.certificatePem(), "fake-cert-pem");
     EXPECT_EQ(server.privateKeyPem(), "fake-key-pem");
 }
 
-TEST(SiLAServerBaseBuilder, RequiresTlsBeforeBuild)
+TEST(SilaServerBaseBuilder, RequiresTlsBeforeBuild)
 {
-    sila2::SiLAServerBase::Builder builder;
+    sila2::SilaServerBase::Builder builder;
 
-    EXPECT_THROW(builder.Build(), std::logic_error);
+    EXPECT_THROW(builder.build(), std::logic_error);
 }
 
-TEST(SiLAServerBaseBuilder, BuildWithoutIdentitySourceThrows)
+TEST(SilaServerBaseBuilder, BuildWithoutIdentitySourceThrows)
 {
-    // TLS is satisfied, but neither WithConfig nor WithPersistentUuid supplies a
-    // UUID. Build() must refuse rather than mint a volatile one that changes on
+    // TLS is satisfied, but neither withConfig nor withPersistentUuid supplies a
+    // UUID. build() must refuse rather than mint a volatile one that changes on
     // the next boot (SiLAService-v1_0.sila.xml:134-137).
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1");
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1");
 
-    EXPECT_THROW(builder.Build(), std::logic_error);
+    EXPECT_THROW(builder.build(), std::logic_error);
 }
 
 // S29 end to end: an InMemoryServerConfig built from just a name takes the
 // default Identity, which must already satisfy the three FDL Patterns, not
 // just be a non-empty string.
 // S66: Part B p77 SHOULD -- "By default this name SHOULD be equal to the SiLA
-// Server Type". WithPersistentUuid (not WithConfig) is the path that lets the
+// Server Type". withPersistentUuid (not withConfig) is the path that lets the
 // name default rather than being supplied explicitly, so it is used here to
-// exercise the literal Build() actually assigns.
-TEST(SiLAServerBaseBuilder, DefaultServerNameEqualsDefaultServerType)
+// exercise the literal build() actually assigns.
+TEST(SilaServerBaseBuilder, DefaultServerNameEqualsDefaultServerType)
 {
     const auto path = std::filesystem::temp_directory_path() /
                        "sila2-test-persistent-uuid-default-name.txt";
     std::filesystem::remove(path);
 
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithPersistentUuid(path)
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withPersistentUuid(path)
+                      .build();
 
     // The rejection half: this must no longer read "SiLA Server" (the old
     // literal), which also does not equal ServerType ("SiLAServer").
@@ -183,12 +183,12 @@ TEST(SiLAServerBaseBuilder, DefaultServerNameEqualsDefaultServerType)
     std::filesystem::remove(path);
 }
 
-TEST(SiLAServerBaseBuilder, DefaultIdentityIsFdlCompliant)
+TEST(SilaServerBaseBuilder, DefaultIdentityIsFdlCompliant)
 {
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
     const auto& cfg = server.serverConfig();
 
     EXPECT_TRUE(std::regex_match(cfg.serverType(), std::regex{"^[A-Z][a-zA-Z0-9]*$"}));
@@ -197,58 +197,58 @@ TEST(SiLAServerBaseBuilder, DefaultIdentityIsFdlCompliant)
     EXPECT_TRUE(std::regex_match(cfg.vendorUrl(), std::regex{"^https?://.+$"}));
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsLowercaseServerType)
+TEST(SilaServerBaseBuilder, BuildRejectsLowercaseServerType)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
             sila2::ServerConfig::Identity{"shaker", "", "0.1.0", "https://vendor.example"}));
 
-    // Caught, not uncaught: Build() is the declared rejection point for a
+    // Caught, not uncaught: build() is the declared rejection point for a
     // non-conformant Identity, per S29's chosen option (A+C).
-    EXPECT_THROW(builder.Build(), std::logic_error);
+    EXPECT_THROW(builder.build(), std::logic_error);
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsEmptyServerType)
+TEST(SilaServerBaseBuilder, BuildRejectsEmptyServerType)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
             sila2::ServerConfig::Identity{"", "", "0.1.0", "https://vendor.example"}));
 
     // Pins that the NSDMI default only applies to a defaulted field: an
     // explicitly emptied serverType is still refused, so the defect cannot
     // be re-introduced by a caller that overrides it with "".
-    EXPECT_THROW(builder.Build(), std::logic_error);
+    EXPECT_THROW(builder.build(), std::logic_error);
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsOverlongServerType)
+TEST(SilaServerBaseBuilder, BuildRejectsOverlongServerType)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
             sila2::ServerConfig::Identity{std::string(256, 'A'), "", "0.1.0",
                                            "https://vendor.example"}));
 
-    EXPECT_THROW(builder.Build(), std::logic_error);
+    EXPECT_THROW(builder.build(), std::logic_error);
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsNonconformantCustomConfigUuid)
+TEST(SilaServerBaseBuilder, BuildRejectsNonconformantCustomConfigUuid)
 {
     for (const std::string& uuid : {
              std::string{"not-a-uuid"},
              std::string{"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"}}) {
-        sila2::SiLAServerBase::Builder builder;
-        builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-            .WithConfig(std::make_unique<ConfigWithOverriddenUuid>(uuid));
+        sila2::SilaServerBase::Builder builder;
+        builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+            .withConfig(std::make_unique<ConfigWithOverriddenUuid>(uuid));
 
-        EXPECT_THROW(builder.Build(), std::logic_error);
+        EXPECT_THROW(builder.build(), std::logic_error);
     }
 }
 
 // Audit #6: ServerName's MaximalLength 255 (SiLAService-v1_0.sila.xml:107) was
 // enforced only on the SetServerName command, so an initial name injected via
-// WithConfig bypassed it. The Identity is kept FDL-conformant here so the name
+// withConfig bypassed it. The Identity is kept FDL-conformant here so the name
 // length is the only variable under test.
 const sila2::ServerConfig::Identity kValidIdentity{
     "Shaker", "", "0.1.0", "https://vendor.example"};
@@ -257,49 +257,49 @@ const sila2::ServerConfig::Identity kValidIdentity{
 // (SHALL implement the Feature): every SiLA Server declaring SiLA 2 Version
 // >= "1.1" (MdnsPublisher kSilaVersion is unconditionally "1.1") registers
 // this Feature, and server-initiated support is on by default even when
-// WithConnectionConfiguration was never called -- Build() derives working
+// withConnectionConfiguration was never called -- build() derives working
 // defaults (see the Default* tests below).
-TEST(SiLAServerBaseBuilder, RegistersConnectionConfigurationServiceUnconditionally)
+TEST(SilaServerBaseBuilder, RegistersConnectionConfigurationServiceUnconditionally)
 {
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
     EXPECT_FALSE(server.featureRegistry().featureDefinition(
         std::string{sila2::kConnectionConfigurationServiceFqi}).empty());
 }
 
-TEST(SiLAServerBaseBuilder, RegistersConnectionConfigurationService)
+TEST(SilaServerBaseBuilder, RegistersConnectionConfigurationService)
 {
     const auto storePath = std::filesystem::temp_directory_path() /
                            "sila-connection-configuration-builder-test.state";
     std::filesystem::remove(storePath);
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithConnectionConfiguration(
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withConnectionConfiguration(
                           storePath, grpc::InsecureChannelCredentials())
-                      .Build();
+                      .build();
 
     EXPECT_FALSE(server.featureRegistry().featureDefinition(
         std::string{sila2::kConnectionConfigurationServiceFqi}).empty());
 }
 
-// Rejection half of WithConnectionConfiguration: an explicit override still
-// requires both arguments, even though Build() now derives its own defaults
-// when the call is skipped entirely (SiLAServerBase.cc:593-604 unchanged).
-TEST(SiLAServerBaseBuilder, WithConnectionConfigurationRejectsEmptyPathAndNullCredentials)
+// Rejection half of withConnectionConfiguration: an explicit override still
+// requires both arguments, even though build() now derives its own defaults
+// when the call is skipped entirely (SilaServerBase.cc:593-604 unchanged).
+TEST(SilaServerBaseBuilder, WithConnectionConfigurationRejectsEmptyPathAndNullCredentials)
 {
     {
-        sila2::SiLAServerBase::Builder builder;
-        EXPECT_THROW(builder.WithConnectionConfiguration(
+        sila2::SilaServerBase::Builder builder;
+        EXPECT_THROW(builder.withConnectionConfiguration(
                          std::filesystem::path{}, grpc::InsecureChannelCredentials()),
                      std::invalid_argument);
     }
     {
-        sila2::SiLAServerBase::Builder builder;
-        EXPECT_THROW(builder.WithConnectionConfiguration(
+        sila2::SilaServerBase::Builder builder;
+        EXPECT_THROW(builder.withConnectionConfiguration(
                          std::filesystem::temp_directory_path() /
                              "sila-connection-configuration-rejects-null-creds.state",
                          nullptr),
@@ -307,172 +307,172 @@ TEST(SiLAServerBaseBuilder, WithConnectionConfigurationRejectsEmptyPathAndNullCr
     }
 }
 
-TEST(SiLAServerBaseBuilder, BuildAcceptsMaximalLengthServerName)
+TEST(SilaServerBaseBuilder, BuildAcceptsMaximalLengthServerName)
 {
     // Exactly 255 code points -- the boundary the constraint admits.
     const std::string name(255, 'a');
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>(name, kValidIdentity))
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>(name, kValidIdentity))
+                      .build();
     EXPECT_EQ(server.serverConfig().name(), name);
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsOverlongServerName)
+TEST(SilaServerBaseBuilder, BuildRejectsOverlongServerName)
 {
-    // One over the boundary. Rejected at Build(), the initial name's only seam.
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithConfig(std::make_unique<sila2::InMemoryServerConfig>(
+    // One over the boundary. Rejected at build(), the initial name's only seam.
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withConfig(std::make_unique<sila2::InMemoryServerConfig>(
             std::string(256, 'a'), kValidIdentity));
 
-    EXPECT_THROW(builder.Build(), std::logic_error);
+    EXPECT_THROW(builder.build(), std::logic_error);
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsMalformedServerVersion)
+TEST(SilaServerBaseBuilder, BuildRejectsMalformedServerVersion)
 {
     {
         // Major with no minor -- SiLAService-v1_0.sila.xml:177 requires both.
-        sila2::SiLAServerBase::Builder builder;
-        builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-            .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+        sila2::SilaServerBase::Builder builder;
+        builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+            .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
                 sila2::ServerConfig::Identity{"Shaker", "", "1", "https://vendor.example"}));
-        EXPECT_THROW(builder.Build(), std::logic_error);
+        EXPECT_THROW(builder.build(), std::logic_error);
     }
     {
         // Leading zero: the FDL alternation (0|[1-9][0-9]*) rejects "01", a
         // naive \d+\.\d+ pattern would wrongly accept it.
-        sila2::SiLAServerBase::Builder builder;
-        builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-            .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+        sila2::SilaServerBase::Builder builder;
+        builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+            .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
                 sila2::ServerConfig::Identity{"Shaker", "", "01.0", "https://vendor.example"}));
-        EXPECT_THROW(builder.Build(), std::logic_error);
+        EXPECT_THROW(builder.build(), std::logic_error);
     }
 }
 
-TEST(SiLAServerBaseBuilder, BuildRejectsNonHttpVendorUrl)
+TEST(SilaServerBaseBuilder, BuildRejectsNonHttpVendorUrl)
 {
     {
-        sila2::SiLAServerBase::Builder builder;
-        builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-            .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+        sila2::SilaServerBase::Builder builder;
+        builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+            .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
                 sila2::ServerConfig::Identity{"Shaker", "", "0.1.0", "ftp://vendor.example"}));
-        EXPECT_THROW(builder.Build(), std::logic_error);
+        EXPECT_THROW(builder.build(), std::logic_error);
     }
     {
         // Scheme present but empty authority: the FDL's trailing .+ rejects it.
-        sila2::SiLAServerBase::Builder builder;
-        builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-            .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
+        sila2::SilaServerBase::Builder builder;
+        builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+            .withConfig(std::make_unique<sila2::InMemoryServerConfig>("S",
                 sila2::ServerConfig::Identity{"Shaker", "", "0.1.0", "https://"}));
-        EXPECT_THROW(builder.Build(), std::logic_error);
+        EXPECT_THROW(builder.build(), std::logic_error);
     }
 }
 
-TEST(SiLAServerBaseBuilder, RejectsAuthenticationWithNullVerifier)
+TEST(SilaServerBaseBuilder, RejectsAuthenticationWithNullVerifier)
 {
-    sila2::SiLAServerBase::Builder builder;
+    sila2::SilaServerBase::Builder builder;
 
-    EXPECT_THROW(builder.WithAuthentication(nullptr, std::make_unique<StubPolicy>(), {}),
+    EXPECT_THROW(builder.withAuthentication(nullptr, std::make_unique<StubPolicy>(), {}),
                  std::invalid_argument);
 }
 
-TEST(SiLAServerBaseBuilder, RejectsAuthenticationWithNullPolicy)
+TEST(SilaServerBaseBuilder, RejectsAuthenticationWithNullPolicy)
 {
-    sila2::SiLAServerBase::Builder builder;
+    sila2::SilaServerBase::Builder builder;
 
-    EXPECT_THROW(builder.WithAuthentication(std::make_unique<StubVerifier>(), nullptr, {}),
+    EXPECT_THROW(builder.withAuthentication(std::make_unique<StubVerifier>(), nullptr, {}),
                  std::invalid_argument);
 }
 
-TEST(SiLAServerBaseBuilder, AcceptsCommandAndPropertyProtectedFqis)
+TEST(SilaServerBaseBuilder, AcceptsCommandAndPropertyProtectedFqis)
 {
     // The codegen granularity upgrade makes the gRPC path gate at Command/Property
     // granularity, symmetric with cloud, so a sub-feature entry now enforces
     // correctly instead of under-enforcing -- the builder accepts it.
     for (const auto& fqi : {"org.example/TestFeature/v1/Command/DoThing",
                             "org.example/TestFeature/v1/Property/Status"}) {
-        sila2::SiLAServerBase::Builder builder;
-        EXPECT_NO_THROW(builder.WithAuthentication(std::make_unique<StubVerifier>(),
+        sila2::SilaServerBase::Builder builder;
+        EXPECT_NO_THROW(builder.withAuthentication(std::make_unique<StubVerifier>(),
                                                     std::make_unique<StubPolicy>(), {fqi}));
     }
 }
 
-TEST(SiLAServerBaseBuilder, RejectsMetadataProtectedFqis)
+TEST(SilaServerBaseBuilder, RejectsMetadataProtectedFqis)
 {
     // A Metadata FQI gates only CreateBinary while chunk upload/delete fall back
     // to the coarser BinaryUpload FQI, so it would enforce only partially --
     // refused until the binary-metadata lifecycle is defined.
-    sila2::SiLAServerBase::Builder builder;
-    EXPECT_THROW(builder.WithAuthentication(
+    sila2::SilaServerBase::Builder builder;
+    EXPECT_THROW(builder.withAuthentication(
                      std::make_unique<StubVerifier>(), std::make_unique<StubPolicy>(),
                      {"org.example/TestFeature/v1/Metadata/AccessToken"}),
                  std::invalid_argument);
 }
 
-TEST(SiLAServerBaseBuilder, AcceptsSymmetricProtectedFqis)
+TEST(SilaServerBaseBuilder, AcceptsSymmetricProtectedFqis)
 {
     for (const auto& fqi : {"org.example/TestFeature/v1", "org.example",
                             "org.example/TestFeature/v1/Command/Upload/Parameter/Payload"}) {
-        sila2::SiLAServerBase::Builder builder;
-        EXPECT_NO_THROW(builder.WithAuthentication(std::make_unique<StubVerifier>(),
+        sila2::SilaServerBase::Builder builder;
+        EXPECT_NO_THROW(builder.withAuthentication(std::make_unique<StubVerifier>(),
                                                     std::make_unique<StubPolicy>(), {fqi}));
     }
 }
 
 // Part A permits Command and Property granularity in an affected list, so
-// WithMetadata accepts feature- and item-level entries alike.
-TEST(SiLAServerBaseBuilder, WithMetadataAcceptsFeatureAndItemLevelAffectedCalls)
+// withMetadata accepts feature- and item-level entries alike.
+TEST(SilaServerBaseBuilder, WithMetadataAcceptsFeatureAndItemLevelAffectedCalls)
 {
-    sila2::SiLAServerBase::Builder builder;
-    EXPECT_NO_THROW(builder.WithMetadata(
+    sila2::SilaServerBase::Builder builder;
+    EXPECT_NO_THROW(builder.withMetadata(
         "org.test/Gate/v1/Metadata/Thing",
         {"org.test/Gate/v1", "org.test/Gate/v1/Command/A", "org.test/Gate/v1/Property/P"}));
 }
 
-TEST(SiLAServerBaseBuilder, WithMetadataRejectsSiLAServiceAffectedCalls)
+TEST(SilaServerBaseBuilder, WithMetadataRejectsSiLAServiceAffectedCalls)
 {
     {
-        sila2::SiLAServerBase::Builder builder;
-        EXPECT_THROW(builder.WithMetadata("org.test/Gate/v1/Metadata/Thing",
+        sila2::SilaServerBase::Builder builder;
+        EXPECT_THROW(builder.withMetadata("org.test/Gate/v1/Metadata/Thing",
                                           {"org.silastandard/core/SiLAService/v1"}),
                      std::invalid_argument);
     }
     {
         // The Command-granularity form too, proving fqiCovers (not ==) is
         // behind the check.
-        sila2::SiLAServerBase::Builder builder;
+        sila2::SilaServerBase::Builder builder;
         EXPECT_THROW(
-            builder.WithMetadata(
+            builder.withMetadata(
                 "org.test/Gate/v1/Metadata/Thing",
                 {"org.silastandard/core/SiLAService/v1/Command/SetServerName"}),
             std::invalid_argument);
     }
     {
         // A lookalike Feature FQI must NOT be caught by the same check.
-        sila2::SiLAServerBase::Builder builder;
-        EXPECT_NO_THROW(builder.WithMetadata("org.test/Gate/v1/Metadata/Thing",
+        sila2::SilaServerBase::Builder builder;
+        EXPECT_NO_THROW(builder.withMetadata("org.test/Gate/v1/Metadata/Thing",
                                              {"org.silastandard/core/SiLAServiceExtra/v1"}));
     }
 }
 
 // ---------------------------------------------------------------------------
-// S32: Builder::WithLock() -- opt-in per the owner ruling (Q1). Positive
-// cases model themselves on the WithMetadata cases above (builder.chain()
-// inspected before Build(), stable across the move -- SiLAServerBase.h's
+// S32: Builder::withLock() -- opt-in per the owner ruling (Q1). Positive
+// cases model themselves on the withMetadata cases above (builder.chain()
+// inspected before build(), stable across the move -- SilaServerBase.h's
 // doc comment on chain()); the cloud case needs a real gRPC round trip, so
 // it alone uses the CloudRouterTestHarness fixture.
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServerBaseBuilder, WithLockRegistersTheLockControllerFeatureAndService)
+TEST(SilaServerBaseBuilder, WithLockRegistersTheLockControllerFeatureAndService)
 {
     const std::string lockFqi = "org.silastandard/core/LockController/v1";
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithLock()
-                      .AddFeature(kTestFeatureFqi, kTestFeatureFdl)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withLock()
+                      .addFeature(kTestFeatureFqi, kTestFeatureFdl)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
     const auto ids = server.featureRegistry().registeredFeatureIdentifiers();
     EXPECT_NE(std::find(ids.begin(), ids.end(), lockFqi), ids.end());
@@ -481,15 +481,15 @@ TEST(SiLAServerBaseBuilder, WithLockRegistersTheLockControllerFeatureAndService)
     EXPECT_FALSE(server.featureRegistry().featureDefinition(lockFqi).empty());
 }
 
-TEST(SiLAServerBaseBuilder, WithLockDeclaresTheLockIdentifierMetadataAffectingOtherFeatures)
+TEST(SilaServerBaseBuilder, WithLockDeclaresTheLockIdentifierMetadataAffectingOtherFeatures)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithLock()
-        .AddFeature(kTestFeatureFqi, kTestFeatureFdl);
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withLock()
+        .addFeature(kTestFeatureFqi, kTestFeatureFdl);
     const auto* chain = builder.chain();
-    builder.WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
-    auto server = builder.Build();
+    builder.withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
+    auto server = builder.build();
 
     const auto it = chain->metadataAffectedCalls.find(sila2::kLockIdentifierMetadataFqi);
     ASSERT_NE(it, chain->metadataAffectedCalls.end());
@@ -498,16 +498,16 @@ TEST(SiLAServerBaseBuilder, WithLockDeclaresTheLockIdentifierMetadataAffectingOt
     EXPECT_TRUE(static_cast<bool>(chain->lockGate));
 }
 
-class SiLAServerBaseLockCloudRegistration : public cloud_test::CloudRouterFixture {};
+class SilaServerBaseLockCloudRegistration : public cloud_test::CloudRouterFixture {};
 
-TEST_F(SiLAServerBaseLockCloudRegistration, WithLockRegistersCloudHandlersForLockServer)
+TEST_F(SilaServerBaseLockCloudRegistration, WithLockRegistersCloudHandlersForLockServer)
 {
     namespace cloud = sila2::org::silastandard;
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithLock()
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withLock()
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
     cloud::SiLAClientMessage msg;
     msg.set_requestuuid("req-lock-cloud-1");
@@ -524,19 +524,19 @@ TEST_F(SiLAServerBaseLockCloudRegistration, WithLockRegistersCloudHandlersForLoc
     ASSERT_TRUE(resp.has_unobservablecommandresponse());
 }
 
-TEST_F(SiLAServerBaseLockCloudRegistration,
+TEST_F(SilaServerBaseLockCloudRegistration,
        ConnectionConfigurationRegistersCloudHandlersAfterRouterConstruction)
 {
     namespace cloud = sila2::org::silastandard;
     const auto storePath = std::filesystem::temp_directory_path() /
                            "sila-connection-configuration-cloud-test.state";
     std::filesystem::remove(storePath);
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithConnectionConfiguration(
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withConnectionConfiguration(
                           storePath, grpc::InsecureChannelCredentials())
-                      .Build();
+                      .build();
 
     cloud::SiLAClientMessage msg;
     msg.set_requestuuid("req-connection-configuration-cloud-1");
@@ -550,11 +550,11 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
 }
 
 // Companion to the configured cloud test above: Part A p32 (SHALL support)
-// means a server built without WithConnectionConfiguration must still enable
+// means a server built without withConnectionConfiguration must still enable
 // server-initiated mode, not merely advertise the Feature. Enable succeeds,
-// the property reads back true, and Build() has written the default store
-// file next to the WithPersistentUuid path (owner ruling 2026-09-04).
-TEST_F(SiLAServerBaseLockCloudRegistration,
+// the property reads back true, and build() has written the default store
+// file next to the withPersistentUuid path (owner ruling 2026-09-04).
+TEST_F(SilaServerBaseLockCloudRegistration,
        DefaultBuildEnablesServerInitiatedModeOverCloud)
 {
     namespace cloud = sila2::org::silastandard;
@@ -566,10 +566,10 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
     std::filesystem::remove(connectionsPath);
     ScopedFileRemover remover{{uuidPath, connectionsPath}};
 
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithPersistentUuid(uuidPath)
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withPersistentUuid(uuidPath)
+                      .build();
 
     cloud::SiLAClientMessage enableMsg;
     enableMsg.set_requestuuid("req-connection-configuration-default-enable-1");
@@ -592,20 +592,20 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
     ASSERT_TRUE(statusValue.ParseFromString(statusResp.unobservablepropertyvalue().value()));
     EXPECT_TRUE(statusValue.serverinitiatedconnectionmodestatus().value());
 
-    // Owner default (1): store = next to the WithPersistentUuid file.
+    // Owner default (1): store = next to the withPersistentUuid file.
     EXPECT_TRUE(std::filesystem::exists(connectionsPath));
 }
 
-// Without a WithPersistentUuid path, Build() falls back to the temp
+// Without a withPersistentUuid path, build() falls back to the temp
 // directory keyed by the server's own UUID (owner default (1), second half).
-TEST_F(SiLAServerBaseLockCloudRegistration,
+TEST_F(SilaServerBaseLockCloudRegistration,
        DefaultStoreFallsBackToTempDirWithoutPersistentUuid)
 {
     namespace cloud = sila2::org::silastandard;
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
     const auto connectionsPath = std::filesystem::temp_directory_path() /
         ("sila2-connections-" + server.serverConfig().uuid());
     std::filesystem::remove(connectionsPath);
@@ -625,13 +625,13 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
 // Owner default (2): outbound credentials present the server's own identity.
 // A real outbound stream is out of scope here (that needs a live
 // CloudClientListener, see notes_for_reviewer on the run/shutdown e2e file);
-// the observable part of credential construction is that Build() and Enable
-// both succeed, with and without WithMutualTls supplying a peer CA.
-TEST_F(SiLAServerBaseLockCloudRegistration,
+// the observable part of credential construction is that build() and Enable
+// both succeed, with and without withMutualTls supplying a peer CA.
+TEST_F(SilaServerBaseLockCloudRegistration,
        DefaultOutboundCredentialsPresentServerIdentity)
 {
     namespace cloud = sila2::org::silastandard;
-    const auto enableOverCloud = [this](sila2::SiLAServerBase& server, const char* requestUuid) {
+    const auto enableOverCloud = [this](sila2::SilaServerBase& server, const char* requestUuid) {
         cloud::SiLAClientMessage msg;
         msg.set_requestuuid(requestUuid);
         msg.mutable_unobservablecommandexecution()->set_fullyqualifiedcommandid(
@@ -641,7 +641,7 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
         return popResponse().has_unobservablecommandresponse();
     };
 
-    // No WithMutualTls -- defaultOutboundCredentials() accepts an untrusted
+    // No withMutualTls -- defaultOutboundCredentials() accepts an untrusted
     // peer certificate for private-range targets only (Part B p75); see
     // DefaultOutboundCredentialsFollowPartBPrivateIpRule for the policy.
     {
@@ -653,13 +653,13 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
         std::filesystem::remove(connectionsPath);
         ScopedFileRemover remover{{uuidPath, connectionsPath}};
 
-        auto server = sila2::SiLAServerBase::Builder()
-                          .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                          .WithPersistentUuid(uuidPath)
-                          .Build();
+        auto server = sila2::SilaServerBase::Builder()
+                          .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                          .withPersistentUuid(uuidPath)
+                          .build();
         EXPECT_TRUE(enableOverCloud(server, "req-default-creds-notls-1"));
     }
-    // WithMutualTls set -- defaultOutboundCredentials() takes the
+    // withMutualTls set -- defaultOutboundCredentials() takes the
     // grpc::SslCredentials branch, verifying the peer against caCertPem_.
     {
         const auto uuidPath = std::filesystem::temp_directory_path() /
@@ -670,11 +670,11 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
         std::filesystem::remove(connectionsPath);
         ScopedFileRemover remover{{uuidPath, connectionsPath}};
 
-        auto server = sila2::SiLAServerBase::Builder()
-                          .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                          .WithMutualTls(generateCaCertPem())
-                          .WithPersistentUuid(uuidPath)
-                          .Build();
+        auto server = sila2::SilaServerBase::Builder()
+                          .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                          .withMutualTls(generateCaCertPem())
+                          .withPersistentUuid(uuidPath)
+                          .build();
         EXPECT_TRUE(enableOverCloud(server, "req-default-creds-mtls-1"));
     }
 }
@@ -683,27 +683,27 @@ TEST_F(SiLAServerBaseLockCloudRegistration,
 // default provider hands out credentials for a private-range target without a
 // CA, for any target with a CA, and refuses everything else so
 // ConnectSiLAClient cannot make the server dial an arbitrary endpoint.
-TEST(SiLAServerBaseBuilder, DefaultOutboundCredentialsFollowPartBPrivateIpRule)
+TEST(SilaServerBaseBuilder, DefaultOutboundCredentialsFollowPartBPrivateIpRule)
 {
     const auto key = sila2::generateKey();
     const auto cert = sila2::certificateToPem(sila2::generateCertificate(key, "SiLA2", "127.0.0.1"));
     const auto keyPem = sila2::keyToPem(key);
 
-    const auto zeroConfig = sila2::SiLAServerBase::Builder::defaultOutboundCredentials(cert, keyPem, "");
+    const auto zeroConfig = sila2::SilaServerBase::Builder::defaultOutboundCredentials(cert, keyPem, "");
     EXPECT_NE(zeroConfig("10.0.0.1"), nullptr);
     EXPECT_NE(zeroConfig("[fd00::1]"), nullptr);
     EXPECT_EQ(zeroConfig("203.0.113.5"), nullptr);
     EXPECT_EQ(zeroConfig("127.0.0.1"), nullptr);   // loopback is not private (S69)
     EXPECT_EQ(zeroConfig("client.local."), nullptr);
 
-    const auto trusted = sila2::SiLAServerBase::Builder::defaultOutboundCredentials(cert, keyPem, cert);
+    const auto trusted = sila2::SilaServerBase::Builder::defaultOutboundCredentials(cert, keyPem, cert);
     EXPECT_NE(trusted("203.0.113.5"), nullptr);
     EXPECT_NE(trusted("client.local."), nullptr);
 }
 
 // End to end over the cloud router: a default server refuses ConnectSiLAClient
 // to a public host with InvalidSiLAClient and persists nothing.
-TEST_F(SiLAServerBaseLockCloudRegistration, DefaultServerRefusesConnectToPublicHost)
+TEST_F(SilaServerBaseLockCloudRegistration, DefaultServerRefusesConnectToPublicHost)
 {
     namespace cloud = sila2::org::silastandard;
     const auto uuidPath = std::filesystem::temp_directory_path() /
@@ -713,10 +713,10 @@ TEST_F(SiLAServerBaseLockCloudRegistration, DefaultServerRefusesConnectToPublicH
     std::filesystem::remove(connectionsPath);
     ScopedFileRemover remover{{uuidPath, connectionsPath}};
 
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-                      .WithPersistentUuid(uuidPath)
-                      .Build();
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("SiLA2", "127.0.0.1")
+                      .withPersistentUuid(uuidPath)
+                      .build();
 
     connconfig_proto::ConnectSiLAClient_Parameters params;
     params.mutable_clientname()->set_value("pub");
@@ -739,13 +739,13 @@ TEST_F(SiLAServerBaseLockCloudRegistration, DefaultServerRefusesConnectToPublicH
     EXPECT_FALSE(std::filesystem::exists(connectionsPath));
 }
 
-TEST(SiLAServerBaseBuilder, DefaultBuildDoesNotRegisterLockController)
+TEST(SilaServerBaseBuilder, DefaultBuildDoesNotRegisterLockController)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1");
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1");
     const auto* chain = builder.chain();
-    builder.WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
-    auto server = builder.Build();
+    builder.withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
+    auto server = builder.build();
 
     const std::string lockFqi = "org.silastandard/core/LockController/v1";
     const auto ids = server.featureRegistry().registeredFeatureIdentifiers();
@@ -755,15 +755,15 @@ TEST(SiLAServerBaseBuilder, DefaultBuildDoesNotRegisterLockController)
     EXPECT_FALSE(static_cast<bool>(chain->lockGate));
 }
 
-TEST(SiLAServerBaseBuilder, LockAffectedCallsExcludeSiLAServiceAndLockControllerItself)
+TEST(SilaServerBaseBuilder, LockAffectedCallsExcludeSiLAServiceAndLockControllerItself)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithLock()
-        .WithAuthentication(std::make_unique<StubVerifier>(), std::make_unique<StubPolicy>(), {});
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withLock()
+        .withAuthentication(std::make_unique<StubVerifier>(), std::make_unique<StubPolicy>(), {});
     const auto* chain = builder.chain();
-    builder.WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
-    auto server = builder.Build();
+    builder.withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
+    auto server = builder.build();
 
     const auto it = chain->metadataAffectedCalls.find(sila2::kLockIdentifierMetadataFqi);
     ASSERT_NE(it, chain->metadataAffectedCalls.end());
@@ -779,15 +779,15 @@ TEST(SiLAServerBaseBuilder, LockAffectedCallsExcludeSiLAServiceAndLockController
                         "org.silastandard/core/AuthenticationService/v1"), affected.end());
 }
 
-TEST(SiLAServerBaseBuilder, LockAffectedCallsExcludeBinaryTransferServices)
+TEST(SilaServerBaseBuilder, LockAffectedCallsExcludeBinaryTransferServices)
 {
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("SiLA2", "127.0.0.1")
-        .WithLock()
-        .WithBinaryTransfer();
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("SiLA2", "127.0.0.1")
+        .withLock()
+        .withBinaryTransfer();
     const auto* chain = builder.chain();
-    builder.WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
-    auto server = builder.Build();
+    builder.withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
+    auto server = builder.build();
 
     // Documents the deliberate consequence of FeatureRegistry.cc's "Allow
     // transport-level services ... without a Feature definition": BinaryUpload

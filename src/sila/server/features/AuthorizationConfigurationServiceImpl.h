@@ -40,7 +40,7 @@ namespace authzconfig_proto = sila2::org::silastandard::core::authorizationconfi
 /// @ref gl_sila_client "SiLA Client" set or read the server's external
 /// authorization provider UUID.
 ///
-/// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
+/// Installed by @ref SilaServerBase::Builder::withAuthentication().
 class AuthorizationConfigurationServiceImpl final
     : public authzconfig_proto::AuthorizationConfigurationService::Service {
 public:

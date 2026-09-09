@@ -86,7 +86,7 @@ add_executable(test_sila
     sila/integration/test_sila_client_base.cc
     sila/integration/test_sila_client_base_auth_e2e.cc
 )
-target_link_libraries(test_sila PRIVATE sila2::core GTest::gtest_main OpenSSL::Crypto)
+target_link_libraries(test_sila PRIVATE sila_cpp_r::core GTest::gtest_main OpenSSL::Crypto)
 target_compile_definitions(test_sila PRIVATE SILA2_SOURCE_ROOT="${CMAKE_SOURCE_DIR}")
 gtest_discover_tests(test_sila)
 
@@ -112,7 +112,7 @@ add_executable(test_sila_dynamic
     sila/client/test_command_execution_status_e2e.cc
     sila/client/test_server_registry.cc
     sila/client/dynamic/test_dynamic_call_silaservice_metadata.cc)
-target_link_libraries(test_sila_dynamic PRIVATE sila2::dynamic GTest::gtest_main)
+target_link_libraries(test_sila_dynamic PRIVATE sila_cpp_r::dynamic GTest::gtest_main)
 target_compile_definitions(test_sila_dynamic PRIVATE SILA2_SOURCE_ROOT="${CMAKE_SOURCE_DIR}")
 gtest_discover_tests(test_sila_dynamic)
 

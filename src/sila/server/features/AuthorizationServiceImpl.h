@@ -23,17 +23,17 @@ namespace authz_proto = sila2::org::silastandard::core::authorizationservice::v1
 /// Implements the @ref gl_feature "Feature" `org.silastandard/core/AuthorizationService/v1`,
 /// letting a @ref gl_sila_client "SiLA Client" discover which Commands and
 /// Properties require the AccessToken @ref gl_sila_client_metadata "SiLA Client Metadata"
-/// (i.e. which ones @ref SiLAServerBase::Builder::WithAuthentication() protected).
+/// (i.e. which ones @ref SilaServerBase::Builder::withAuthentication() protected).
 ///
-/// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
+/// Installed by @ref SilaServerBase::Builder::withAuthentication().
 class AuthorizationServiceImpl final : public authz_proto::AuthorizationService::Service {
 public:
     /// Constructs the service reporting the given protected list.
     ///
     /// protectedFqis: the same explicit list passed to
-    /// SiLAServerBase::Builder::WithAuthentication.
+    /// SilaServerBase::Builder::withAuthentication.
     // Taken by value: the caller's list lives in Builder::authConfig_, and the
-    // Builder dies when Build() returns by value — a reference into it would
+    // Builder dies when build() returns by value — a reference into it would
     // outlive its owner.
     explicit AuthorizationServiceImpl(std::vector<std::string> protectedFqis,
                                       const InterceptorChain* chain = nullptr);
@@ -56,8 +56,8 @@ public:
 
     /// @return The protected FQI list given to the constructor.
     // Builder::authConfig_ (the source of protectedFqis_) dies with the
-    // Builder when Build() returns, so initCloudRouter() — which runs after
-    // Build() — reaches the same list through this instance instead.
+    // Builder when build() returns, so initCloudRouter() — which runs after
+    // build() — reaches the same list through this instance instead.
     const std::vector<std::string>& protectedFqis() const { return protectedFqis_; }
 
 private:

@@ -17,7 +17,7 @@ inline constexpr std::string_view kBinaryDownloadFqi = "org.silastandard/core/Bi
 
 /// Lets a SiLA Client fetch a binary result too large to fit inline, in
 /// chunks, by its Binary Transfer UUID (@ref gl_binary_transfer). Installed
-/// automatically by sila2::SiLAServerBase::Builder::WithBinaryTransfer(); a
+/// automatically by sila2::SilaServerBase::Builder::withBinaryTransfer(); a
 /// Feature implementer never constructs or calls this class directly.
 ///
 /// gRPC service implementation for SiLA 2 Binary Download (architecture.md §3.5).

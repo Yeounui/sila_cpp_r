@@ -11,7 +11,7 @@ namespace sila2::auth {
 ///
 /// A server author implements this against their own credential backend (e.g. an
 /// htpasswd file, LDAP); pass an instance to
-/// SiLAServerBase::Builder::WithAuthentication(). The library ships no default
+/// SilaServerBase::Builder::withAuthentication(). The library ships no default
 /// implementation -- verification always requires site-specific credentials.
 ///
 // Pure interface: verification backend (e.g. htpasswd file, LDAP) is an implementation detail

@@ -29,7 +29,7 @@
 #include <sila/client/dynamic/DescriptorBuilder.h>
 #include <sila/common/types/BasicTypes.h>
 #include <sila/server/binary/InMemoryBinaryStore.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 namespace
 {

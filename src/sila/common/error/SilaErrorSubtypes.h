@@ -1,10 +1,10 @@
-// SiLAErrorSubtypes.h — concrete SiLA 2 error types (architecture.md §3.4)
+// SilaErrorSubtypes.h — concrete SiLA 2 error types (architecture.md §3.4)
 //
 // Ported from sila_cpp v0.3.11
 // src/include/sila_cpp/framework/error_handling/ (MIT License,
 // Copyright 2020 SiLA2). The originals keep state behind a
 // polymorphic_value PIMPL; this port stores members directly, matching
-// SiLAError.h's PIMPL-free convention. raise()/clone() (QException)
+// SilaError.h's PIMPL-free convention. raise()/clone() (QException)
 // and fromErrorMessage() (protobuf-dependent) are dropped across the
 // board.
 #pragma once
@@ -15,7 +15,7 @@
 
 #include <grpcpp/support/status.h>
 
-#include "SiLAError.h"
+#include "SilaError.h"
 
 namespace sila2
 {
@@ -43,7 +43,7 @@ namespace error {
 /// executes (architecture.md §3.4). The SiLA Client receives this as a
 /// @ref gl_validation_error "Validation Error" on the wire.
 /// @see CommandParameterValidator::validate
-class ValidationError : public SiLAError {
+class ValidationError : public SilaError {
 public:
     /// @param parameter The fully qualified identifier of the parameter that
     /// failed validation.
@@ -77,7 +77,7 @@ private:
 /// errorIdentifier) or an UndefinedExecutionError (unexpected, identifier
 /// stays empty). Never constructed directly — always through one of those
 /// two subclasses.
-class ExecutionError : public SiLAError {
+class ExecutionError : public SilaError {
 public:
     /// @return The FQI of the Defined Error this instance represents, or
     /// empty for an Undefined Execution Error.
@@ -156,7 +156,7 @@ public:
 /// SiLA Client receives this as a @ref gl_framework_error "Framework Error"
 /// on the wire.
 /// @see LockControllerImpl::checkLockMetadata
-class FrameworkError : public SiLAError {
+class FrameworkError : public SilaError {
 public:
     /// The different types of SiLA 2 Framework Errors.
     // Exactly the five values of SiLAFramework.proto:110-116. No "unset"
@@ -199,7 +199,7 @@ private:
 /// A Connection Error represents an infrastructure-level failure between a
 /// SiLA Client and a SiLA Server (architecture.md §3.4) — not issued by
 /// either side's SiLA code, but by the underlying gRPC transport.
-class ConnectionError : public SiLAError {
+class ConnectionError : public SilaError {
 public:
     /// @param status The grpc::Status that indicates a Connection Error.
     explicit ConnectionError(grpc::Status status);
@@ -210,7 +210,7 @@ public:
 
 protected:
     /// Connection Errors are infrastructure-level gRPC failures, not SiLA
-    /// protocol errors — the SiLAError oneof has no ConnectionError variant.
+    /// protocol errors — the SilaError oneof has no ConnectionError variant.
     /// Always throws std::logic_error; callers should use status_ directly.
     [[nodiscard("the protobuf message owns the serialized error — dropping it leaks the allocation")]] \
     std::unique_ptr<sila2::org::silastandard::SiLAError>

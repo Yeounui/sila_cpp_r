@@ -14,7 +14,7 @@
 // added back.
 #pragma once
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/auth/FqiMatch.h>
 #include <sila/server/transport/InterceptorChain.h>
@@ -24,7 +24,7 @@
 
 namespace sila2 {
 
-// Spelled here rather than included from SiLAServiceImpl.h:26-27: that header
+// Spelled here rather than included from SilaServiceImpl.h:26-27: that header
 // pulls in SiLAService.grpc.pb.h, and this one is included by GrpcTransport.h,
 // i.e. by every generated service adapter in the build.
 inline constexpr std::string_view kSiLAServiceFeatureFqi =
@@ -32,14 +32,14 @@ inline constexpr std::string_view kSiLAServiceFeatureFqi =
 
 /// Checked automatically before every call reaches a Feature implementation,
 /// for a server assembled with @ref gl_sila_client_metadata "SiLA Client Metadata"
-/// declared through `SiLAServerBase::Builder::WithMetadata`. A server author
+/// declared through `SilaServerBase::Builder::withMetadata`. A server author
 /// never calls this directly; it exists so unit tests can exercise the rules
 /// without a running server.
 ///
 /// Runs the SiLA Client Metadata admission rules for one incoming call.
 ///
 /// @param chain     May be null (unit-test wiring, or a server built without
-///                  SiLAServerBase::Builder). The declared table is then empty
+///                  SilaServerBase::Builder). The declared table is then empty
 ///                  and only rule (a) applies -- (a) is a property of the
 ///                  SiLAService Feature, not of the server's configuration.
 /// @param targetFqi The call being dispatched. gRPC names it at Feature
@@ -59,9 +59,9 @@ inline constexpr std::string_view kSiLAServiceFeatureFqi =
 ///         @ref gl_framework_error "Framework Errors": the client sees the
 ///         call fail with that error type and message, not a validation
 ///         failure on any individual parameter. They reach the client as
-///         gRPC ABORTED + base64(SiLAError) via SiLAError::toStatus(),
+///         gRPC ABORTED + base64(SilaError) via SilaError::toStatus(),
 ///         which Part B requires -- no new transmission code.
-/// @see SiLAServerBase::Builder::WithMetadata
+/// @see SilaServerBase::Builder::withMetadata
 template <typename HasMetadataFn>
 void enforceMetadataPolicy(const InterceptorChain* chain,
                            std::string_view targetFqi,

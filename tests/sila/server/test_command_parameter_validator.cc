@@ -31,7 +31,7 @@
 #include <string>
 
 #include <sila/client/dynamic/DescriptorBuilder.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include "SiLAFramework.pb.h"
 

@@ -19,7 +19,7 @@ namespace sila2::auth {
 /// Default AccessPolicy: any authenticated caller may invoke any FQI on the
 /// protected list; an anonymous caller may invoke only what the list does not cover.
 ///
-/// The policy to pass to SiLAServerBase::Builder::WithAuthentication() when no
+/// The policy to pass to SilaServerBase::Builder::withAuthentication() when no
 /// site-specific rule is needed. Has no notion of per-user restriction -- a site that needs
 /// one implements AccessPolicy directly instead.
 /// @see AccessPolicy
@@ -27,7 +27,7 @@ class DenyByDefaultAccessPolicy final : public AccessPolicy {
 public:
     /// @param protectedFqis FQIs that require an access token. A feature FQI entry
     ///        also covers every command/property/parameter FQI under it (FqiMatch.h)
-    ///        — the same coverage rule the gate in SiLAServerBase::Build() uses, so
+    ///        — the same coverage rule the gate in SilaServerBase::build() uses, so
     ///        both transports agree on what is protected regardless of which FQI
     ///        granularity they hand in.
     ///        Any FQI this list does not cover is pre-auth (accessible without a

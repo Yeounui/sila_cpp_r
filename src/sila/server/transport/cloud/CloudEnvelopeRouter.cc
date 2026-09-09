@@ -48,10 +48,10 @@ const std::string kAccessTokenRawKey = "access-token";
 
 /// Serializes err and sends it on the oneof field the calling branch owns —
 /// the one shared shape under sendFrameworkError and sendExecutionError.
-void sendSiLAErrorEnvelope(StreamWriteSerializer& writer,
+void sendSilaErrorEnvelope(StreamWriteSerializer& writer,
                            const std::string& requestUUID,
                            CloudErrorField errorField,
-                           const error::SiLAError& err) {
+                           const error::SilaError& err) {
     cloud::SiLAServerMessage errMsg;
     errMsg.set_requestuuid(requestUUID);
     auto silaError = err.toProto();
@@ -76,7 +76,7 @@ void sendFrameworkError(StreamWriteSerializer& writer,
                         const std::string& requestUUID,
                         CloudErrorField errorField,
                         const std::string& message) {
-    sendSiLAErrorEnvelope(writer, requestUUID, errorField,
+    sendSilaErrorEnvelope(writer, requestUUID, errorField,
         error::FrameworkError{error::FrameworkError::FrameworkErrorType::CommandExecutionNotAccepted,
                               message});
 }
@@ -85,7 +85,7 @@ void sendExecutionError(StreamWriteSerializer& writer,
                         const std::string& requestUUID,
                         CloudErrorField errorField,
                         const std::string& message) {
-    sendSiLAErrorEnvelope(writer, requestUUID, errorField, error::UndefinedExecutionError{message});
+    sendSilaErrorEnvelope(writer, requestUUID, errorField, error::UndefinedExecutionError{message});
 }
 
 /// Builds and sends the FrameworkError envelope for an FQI with no
@@ -382,7 +382,7 @@ std::shared_ptr<ObservableCommandExecution> CloudEnvelopeRouter::findExecution(
     for (auto* mgr : observableCommands_) {
         try {
             return mgr->getCommand(uuid);
-        } catch (const error::SiLAError&) {
+        } catch (const error::SilaError&) {
         }
     }
     throw error::FrameworkError{
@@ -433,7 +433,7 @@ void CloudEnvelopeRouter::dispatchObservableByUuid(
 
     try {
         findExecution(executionUuid);
-    } catch (const error::SiLAError& e) {
+    } catch (const error::SilaError& e) {
         cloud::SiLAServerMessage errMsg;
         errMsg.set_requestuuid(requestUUID);
         *errMsg.mutable_commanderror() = *e.toProto();
@@ -521,7 +521,7 @@ std::shared_ptr<CallContext> CloudEnvelopeRouter::makeFollowupContext(
     // silently stay open for that operator's list (§S15).
     try {
         chain_->auth->intercept(*ctx, fqi);
-    } catch (const error::SiLAError& e) {
+    } catch (const error::SilaError& e) {
         // Same event dispatchTo's auth gate emits below, so a follow-up
         // denial is visible in the same log stream as an initiation denial.
         logEvent(chain_->logCallback, LogLevel::kWarning, "auth", "access denied: " + fqi);
@@ -567,13 +567,13 @@ bool CloudEnvelopeRouter::admitMetadata(
             }
             chain_->lockGate(fqi, lockValue);
         }
-    } catch (const error::SiLAError& e) {
+    } catch (const error::SilaError& e) {
         // Tag "metadata", not "auth": a metadata refusal and an access denial
         // are different verdicts and an operator reading the log must not have
         // to guess which gate fired.
         logEvent(chain_ ? chain_->logCallback : LogCallback{}, LogLevel::kWarning,
                  "metadata", "rejected: " + fqi);
-        sendSiLAErrorEnvelope(writer, requestUUID, errorField, e);
+        sendSilaErrorEnvelope(writer, requestUUID, errorField, e);
         return false;
     }
     return true;
@@ -620,7 +620,7 @@ void CloudEnvelopeRouter::dispatchTo(
     if (chain_ && chain_->auth && !isLoginCommand) {
         try {
             chain_->auth->intercept(*ctx, fqi);
-        } catch (const error::SiLAError& e) {
+        } catch (const error::SilaError& e) {
             // Same event the gRPC auth gate emits (GrpcTransport.h:161), so an
             // access denial is visible whichever transport carried the call (§3.4f).
             logEvent(chain_->logCallback, LogLevel::kWarning, "auth",
@@ -785,7 +785,7 @@ void CloudEnvelopeRouter::route(
             if (chain_ && chain_->auth) {
                 try {
                     chain_->auth->intercept(*ctx, fqi);
-                } catch (const error::SiLAError& e) {
+                } catch (const error::SilaError& e) {
                     logEvent(chain_->logCallback, LogLevel::kWarning, "auth",
                              "access denied: " + fqi);
                     cloud::SiLAServerMessage errMsg;
@@ -941,7 +941,7 @@ void CloudEnvelopeRouter::route(
                 // ObservableCommandManager::removeExpired() sweep may erase the
                 // map entry while the pump still holds this (§4.2d).
                 exec = findExecution(uuid);
-            } catch (const error::SiLAError& e) {
+            } catch (const error::SilaError& e) {
                 cloud::SiLAServerMessage errMsg;
                 errMsg.set_requestuuid(reqUuid);
                 *errMsg.mutable_commanderror() = *e.toProto();
@@ -1030,7 +1030,7 @@ void CloudEnvelopeRouter::route(
             // declared metadata whose affected list covers that parameter FQI
             // is enforced there; without this call the two transports disagree
             // the moment anything is declared at feature granularity. Not
-            // admitMetadata(): this branch's oneof cannot carry a SiLAError
+            // admitMetadata(): this branch's oneof cannot carry a SilaError
             // envelope, so the refusal is degraded to a BinaryTransferError,
             // like the auth gate below.
             {
@@ -1045,7 +1045,7 @@ void CloudEnvelopeRouter::route(
                                                    return entry.fullyqualifiedmetadataid() == metadataFqi;
                                                });
                         });
-                } catch (const error::SiLAError& e) {
+                } catch (const error::SilaError& e) {
                     logEvent(chain_ ? chain_->logCallback : LogCallback{},
                              LogLevel::kWarning, "metadata",
                              "rejected: " + uploadReq.createbinaryrequest().parameteridentifier());
@@ -1058,7 +1058,7 @@ void CloudEnvelopeRouter::route(
                 auto ctx = makeCloudCallContext(uploadReq.metadata());
                 try {
                     chain_->auth->intercept(*ctx, uploadReq.createbinaryrequest().parameteridentifier());
-                } catch (const error::SiLAError& e) {
+                } catch (const error::SilaError& e) {
                     // Second auth gate in this file — logged identically so the
                     // binary-upload path is not the one hole in the audit trail.
                     logEvent(chain_->logCallback, LogLevel::kWarning, "auth",
@@ -1253,7 +1253,7 @@ void CloudEnvelopeRouter::route(
             // The gate's table, verbatim: Part A requires the client to send
             // exactly what this list names, so discovery answering from a
             // second source would let the server demand something it never
-            // advertised. No lock: the chain is immutable after Build().
+            // advertised. No lock: the chain is immutable after build().
             if (chain_) {
                 auto it = chain_->metadataAffectedCalls.find(metadataFQI);
                 if (it != chain_->metadataAffectedCalls.end()) {

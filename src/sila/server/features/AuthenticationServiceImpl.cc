@@ -6,7 +6,7 @@
 #include <sila/server/auth/CredentialVerifier.h>
 #include <sila/server/auth/FqiMatch.h>
 #include <sila/server/config/ServerConfig.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/server/features/AuthenticationServiceFdl.h>
 #include <sila/server/transport/GrpcTransport.h>

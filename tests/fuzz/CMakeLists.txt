@@ -9,7 +9,7 @@ if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 # A libFuzzer target is only worth building where the library under test is
-# instrumented too. With sila2_core/sila2_dynamic compiled as plain archives,
+# instrumented too. With sila_cpp_r_core/sila_cpp_r_dynamic compiled as plain archives,
 # libFuzzer sees only this harness TU's own edges: coverage never grows and
 # the mutator degenerates to blind random input (audit 4.1l). The 'fuzz'
 # preset puts -fsanitize=fuzzer-no-link into CMAKE_CXX_FLAGS, which is
@@ -33,10 +33,10 @@ set(_sila2_fuzz_harnesses
 
 foreach(_harness ${_sila2_fuzz_harnesses})
     add_executable(${_harness} ${_harness}.cc)
-    # sila2::dynamic pulls in sila2::core (PUBLIC), which covers all four
+    # sila_cpp_r::dynamic pulls in sila_cpp_r::core (PUBLIC), which covers all four
     # harnesses' needs: the cloud .pb.h types and mdns.h from core, plus
     # JsonCodec.h/FdlRuntimeParser.h from dynamic itself.
-    target_link_libraries(${_harness} PRIVATE sila2::dynamic)
+    target_link_libraries(${_harness} PRIVATE sila_cpp_r::dynamic)
     target_compile_options(${_harness} PRIVATE -fsanitize=fuzzer,address)
     target_link_options(${_harness} PRIVATE -fsanitize=fuzzer,address)
     # No add_test: these are exploratory fuzzers with no fixed pass/fail

@@ -5,7 +5,7 @@
 #include <sila/server/binary/BinaryDownloadService.h>
 #include <sila/server/binary/BinaryUploadService.h>
 #include <sila/server/binary/InMemoryBinaryStore.h>
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 #include <sila/server/transport/InterceptorChain.h>
 #include <sila/client/binary/BinaryDownloader.h>
 #include <sila/client/binary/BinaryUploader.h>
@@ -35,7 +35,7 @@ using namespace std::chrono_literals;
 // Real local server+channel with both services registered, so the ABORTED
 // status + serialized BinaryTransferError details actually cross the wire
 // (a mock service can't exercise grpc's status/error_details encoding).
-class BinaryTransferServiceTest : public ::testing::Test {
+class BinaryTransferService : public ::testing::Test {
 protected:
     void SetUp() override {
         grpc::ServerBuilder builder;
@@ -95,7 +95,7 @@ protected:
 // True (positive) paths
 // ---------------------------------------------------------------------------
 
-TEST_F(BinaryTransferServiceTest, CreateBinaryReturnsUuidAndLifetime) {
+TEST_F(BinaryTransferService, CreateBinaryReturnsUuidAndLifetime) {
     bt::CreateBinaryRequest request;
     request.set_binarysize(5);
     request.set_chunkcount(1);
@@ -110,7 +110,7 @@ TEST_F(BinaryTransferServiceTest, CreateBinaryReturnsUuidAndLifetime) {
     EXPECT_EQ(response.lifetimeofbinary().seconds(), 300);
 }
 
-TEST_F(BinaryTransferServiceTest, CreateBinaryAcceptsChunkCountAtAbsoluteCeiling) {
+TEST_F(BinaryTransferService, CreateBinaryAcceptsChunkCountAtAbsoluteCeiling) {
     // Both bounds InMemoryBinaryStore::createSlot enforces (binarySize-proportional
     // and the absolute kMaxChunkCount ceiling) are satisfied simultaneously here:
     // chunkCount == binarySize == kMaxChunkCount.
@@ -127,7 +127,7 @@ TEST_F(BinaryTransferServiceTest, CreateBinaryAcceptsChunkCountAtAbsoluteCeiling
     EXPECT_FALSE(response.binarytransferuuid().empty());
 }
 
-TEST_F(BinaryTransferServiceTest, FullUploadViaChunkStream) {
+TEST_F(BinaryTransferService, FullUploadViaChunkStream) {
     bt::CreateBinaryRequest createRequest;
     createRequest.set_binarysize(5);
     createRequest.set_chunkcount(1);
@@ -155,7 +155,7 @@ TEST_F(BinaryTransferServiceTest, FullUploadViaChunkStream) {
     EXPECT_EQ(chunkResponse.chunkindex(), 0u);
 }
 
-TEST_F(BinaryTransferServiceTest, StoreChunkRefreshesLifetimeSoSlowUploadSurvivesGcSweep) {
+TEST_F(BinaryTransferService, StoreChunkRefreshesLifetimeSoSlowUploadSurvivesGcSweep) {
     // A 3s lifetime instead of the fixture's 300s default keeps this test's
     // real sleeps bounded, while the 2s gaps below leave a wide margin
     // against scheduling jitter on either side of the pass/fail line. Set
@@ -177,7 +177,7 @@ TEST_F(BinaryTransferServiceTest, StoreChunkRefreshesLifetimeSoSlowUploadSurvive
     ASSERT_TRUE(stream->Read(&resp0));
 
     std::this_thread::sleep_for(2s);
-    // Simulates SiLAServerBase's periodic GC sweep firing mid-upload. Both
+    // Simulates SilaServerBase's periodic GC sweep firing mid-upload. Both
     // the fixed and the buggy behavior are still under the original 3s
     // deadline here, so this is a sanity check, not yet a discriminator.
     EXPECT_EQ(store_.removeExpired(), 0u);
@@ -204,7 +204,7 @@ TEST_F(BinaryTransferServiceTest, StoreChunkRefreshesLifetimeSoSlowUploadSurvive
     EXPECT_EQ(std::string(assembled.begin(), assembled.end()), payload0 + payload1);
 }
 
-TEST_F(BinaryTransferServiceTest, ConcurrentLargeUploadsRemainComplete) {
+TEST_F(BinaryTransferService, ConcurrentLargeUploadsRemainComplete) {
     constexpr int kUploadCount = 8;
     constexpr std::size_t kPayloadSize = 256 * 1024;
     std::vector<std::string> uuids(kUploadCount);
@@ -256,7 +256,7 @@ TEST_F(BinaryTransferServiceTest, ConcurrentLargeUploadsRemainComplete) {
     }
 }
 
-TEST_F(BinaryTransferServiceTest, FullUploadThenGetBinaryInfoReturnsCorrectSize) {
+TEST_F(BinaryTransferService, FullUploadThenGetBinaryInfoReturnsCorrectSize) {
     const std::string uuid = uploadWholeBinary("hello");
 
     bt::GetBinaryInfoRequest request;
@@ -269,7 +269,7 @@ TEST_F(BinaryTransferServiceTest, FullUploadThenGetBinaryInfoReturnsCorrectSize)
     EXPECT_EQ(response.binarysize(), 5u);
 }
 
-TEST_F(BinaryTransferServiceTest, FullUploadThenGetChunkReturnsCorrectPayload) {
+TEST_F(BinaryTransferService, FullUploadThenGetChunkReturnsCorrectPayload) {
     const std::string uuid = uploadWholeBinary("hello");
 
     grpc::ClientContext ctx;
@@ -289,7 +289,7 @@ TEST_F(BinaryTransferServiceTest, FullUploadThenGetChunkReturnsCorrectPayload) {
     EXPECT_EQ(response.payload(), "hello");
 }
 
-TEST_F(BinaryTransferServiceTest, UploadChunkStreamClosedAfterAllChunksReturnsOk) {
+TEST_F(BinaryTransferService, UploadChunkStreamClosedAfterAllChunksReturnsOk) {
     bt::CreateBinaryRequest createRequest;
     createRequest.set_binarysize(4);
     createRequest.set_chunkcount(2);
@@ -327,7 +327,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkStreamClosedAfterAllChunksReturnsOk
 // Pins that the post-loop completeness guard walks only the UUIDs the stream
 // actually touched, not every slot in the store -- a stream that writes
 // nothing must not fail merely because some unrelated slot elsewhere is short.
-TEST_F(BinaryTransferServiceTest, UploadChunkStreamWithNoChunksAtAllReturnsOk) {
+TEST_F(BinaryTransferService, UploadChunkStreamWithNoChunksAtAllReturnsOk) {
     grpc::ClientContext uploadCtx;
     auto stream = uploadStub_->UploadChunk(&uploadCtx);
     stream->WritesDone();
@@ -337,7 +337,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkStreamWithNoChunksAtAllReturnsOk) {
     EXPECT_TRUE(status.ok()) << status.error_message();
 }
 
-TEST_F(BinaryTransferServiceTest, FullUploadThenDeleteRemovesSlot) {
+TEST_F(BinaryTransferService, FullUploadThenDeleteRemovesSlot) {
     const std::string uuid = uploadWholeBinary("hello");
     ASSERT_TRUE(store_.contains(uuid));
 
@@ -351,7 +351,7 @@ TEST_F(BinaryTransferServiceTest, FullUploadThenDeleteRemovesSlot) {
     EXPECT_FALSE(store_.contains(uuid));
 }
 
-TEST_F(BinaryTransferServiceTest, GetChunkAtExactTailReturnsRemainingBytes) {
+TEST_F(BinaryTransferService, GetChunkAtExactTailReturnsRemainingBytes) {
     const std::string uuid = uploadWholeBinary("hello");
 
     grpc::ClientContext ctx;
@@ -372,13 +372,13 @@ TEST_F(BinaryTransferServiceTest, GetChunkAtExactTailReturnsRemainingBytes) {
 }
 
 TEST(BinaryTransferServerBaseE2E, LargeAndConcurrentClientRoundTrips) {
-    auto server = sila2::SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(0)
-                      .WithBinaryTransfer()
-                      .Build();
-    server.Run(false);
+    auto server = sila2::SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(0)
+                      .withBinaryTransfer()
+                      .build();
+    server.run(false);
 
     auto dial = [&server] {
         grpc::SslCredentialsOptions options;
@@ -394,7 +394,7 @@ TEST(BinaryTransferServerBaseE2E, LargeAndConcurrentClientRoundTrips) {
         return data;
     };
 
-    // S13: a real SiLAServerBase always registerFeature()s SiLAService/v1, so
+    // S13: a real SilaServerBase always registerFeature()s SiLAService/v1, so
     // its FQI gate (BinaryUploadService.cc) is active here — a bare
     // "org.test/Large" placeholder (no registered Feature, no /Parameter/
     // segment) is now rejected. The Synthetic* Command/Parameter segments
@@ -402,7 +402,7 @@ TEST(BinaryTransferServerBaseE2E, LargeAndConcurrentClientRoundTrips) {
     // /Parameter/ segment, not item existence, and a made-up name cannot be
     // mistaken for a real SiLAService parameter. This test exercises
     // large/concurrent transfer, not gate rejection (that's
-    // BinaryTransferServiceFqiGateTest below).
+    // BinaryTransferServiceFqiGate below).
     const std::string large = pattern(6 * 1024 * 1024, 17);
     sila2::BinaryUploader uploader{dial()};
     const std::string uuid = uploader.upload(
@@ -439,12 +439,12 @@ TEST(BinaryTransferServerBaseE2E, LargeAndConcurrentClientRoundTrips) {
         EXPECT_TRUE(errors[i].empty()) << errors[i];
         EXPECT_EQ(results[i], payloads[i]);
     }
-    server.Shutdown();
+    server.shutdown();
 }
 
 // Part B p56: exactly kMaxBinaryChunkSize is still a legal chunk -- the
 // ceiling is an upper bound ("MUST not be larger than"), not an exclusive one.
-TEST_F(BinaryTransferServiceTest, UploadChunkAcceptsChunkAtCeiling) {
+TEST_F(BinaryTransferService, UploadChunkAcceptsChunkAtCeiling) {
     const std::string payload(sila2::binary::kMaxBinaryChunkSize, 'x');
     const std::string uuid = store_.createSlot(payload.size(), 1, 300s);
 
@@ -471,7 +471,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkAcceptsChunkAtCeiling) {
 // INVALID_BINARY_TRANSFER_UUID via BinaryUtil::makeBinaryTransferStatus())
 // ---------------------------------------------------------------------------
 
-TEST_F(BinaryTransferServiceTest, UploadChunkWithUnknownUuidReturnsAborted) {
+TEST_F(BinaryTransferService, UploadChunkWithUnknownUuidReturnsAborted) {
     grpc::ClientContext ctx;
     auto stream = uploadStub_->UploadChunk(&ctx);
     bt::UploadChunkRequest request;
@@ -492,7 +492,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkWithUnknownUuidReturnsAborted) {
 // S52 / Part B p65: the gRPC status *message* MUST carry the serialized
 // BinaryTransferError Base64-encoded, not plaintext -- error_details keeps
 // the raw serialized bytes so both fields must decode to the same proto.
-TEST_F(BinaryTransferServiceTest, UploadChunkUnknownUuidStatusMessageIsBase64OfDetails) {
+TEST_F(BinaryTransferService, UploadChunkUnknownUuidStatusMessageIsBase64OfDetails) {
     grpc::ClientContext ctx;
     auto stream = uploadStub_->UploadChunk(&ctx);
     bt::UploadChunkRequest request;
@@ -514,7 +514,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkUnknownUuidStatusMessageIsBase64OfD
 // S11: a stream that WritesDone/Finish's before all chunkCount chunks arrive
 // must fail with BINARY_UPLOAD_FAILED instead of OK -- the uploader is the
 // only party that can retry, and it must be told.
-TEST_F(BinaryTransferServiceTest, UploadChunkStreamClosedShortReturnsBinaryUploadFailed) {
+TEST_F(BinaryTransferService, UploadChunkStreamClosedShortReturnsBinaryUploadFailed) {
     bt::CreateBinaryRequest createRequest;
     createRequest.set_binarysize(4);
     createRequest.set_chunkcount(2);
@@ -549,7 +549,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkStreamClosedShortReturnsBinaryUploa
 // makeBinaryTransferStatus, so its message must be Base64 too, not the raw
 // proto bytes -- pins that the encoding applies to every ErrorType, not just
 // INVALID_BINARY_TRANSFER_UUID.
-TEST_F(BinaryTransferServiceTest, UploadChunkStreamClosedShortStatusMessageIsBase64OfDetails) {
+TEST_F(BinaryTransferService, UploadChunkStreamClosedShortStatusMessageIsBase64OfDetails) {
     bt::CreateBinaryRequest createRequest;
     createRequest.set_binarysize(4);
     createRequest.set_chunkcount(2);
@@ -578,7 +578,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkStreamClosedShortStatusMessageIsBas
     EXPECT_NE(status.error_message(), status.error_details());
 }
 
-TEST_F(BinaryTransferServiceTest, GetBinaryInfoWithUnknownUuidReturnsAborted) {
+TEST_F(BinaryTransferService, GetBinaryInfoWithUnknownUuidReturnsAborted) {
     bt::GetBinaryInfoRequest request;
     request.set_binarytransferuuid("not-a-known-uuid");
     bt::GetBinaryInfoResponse response;
@@ -592,7 +592,7 @@ TEST_F(BinaryTransferServiceTest, GetBinaryInfoWithUnknownUuidReturnsAborted) {
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::INVALID_BINARY_TRANSFER_UUID);
 }
 
-TEST_F(BinaryTransferServiceTest, GetChunkWithUnknownUuidReturnsAborted) {
+TEST_F(BinaryTransferService, GetChunkWithUnknownUuidReturnsAborted) {
     grpc::ClientContext ctx;
     auto stream = downloadStub_->GetChunk(&ctx);
     bt::GetChunkRequest request;
@@ -610,7 +610,7 @@ TEST_F(BinaryTransferServiceTest, GetChunkWithUnknownUuidReturnsAborted) {
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::INVALID_BINARY_TRANSFER_UUID);
 }
 
-TEST_F(BinaryTransferServiceTest, GetChunkPastEndReturnsDownloadFailed) {
+TEST_F(BinaryTransferService, GetChunkPastEndReturnsDownloadFailed) {
     const std::string uuid = uploadWholeBinary("hello");
 
     grpc::ClientContext ctx;
@@ -635,7 +635,7 @@ TEST_F(BinaryTransferServiceTest, GetChunkPastEndReturnsDownloadFailed) {
 }
 
 // Part B p56: a chunk one byte over the 2 MiB ceiling MUST be rejected.
-TEST_F(BinaryTransferServiceTest, UploadChunkRejectsChunkAboveCeiling) {
+TEST_F(BinaryTransferService, UploadChunkRejectsChunkAboveCeiling) {
     const std::string payload(sila2::binary::kMaxBinaryChunkSize + 1, 'x');
     const std::string uuid = store_.createSlot(payload.size(), 1, 300s);
 
@@ -659,7 +659,7 @@ TEST_F(BinaryTransferServiceTest, UploadChunkRejectsChunkAboveCeiling) {
 // Part B p56: the ceiling binds a requested GetChunk length too, not just an
 // UploadChunk payload -- a length above 2 MiB would ask the store for a
 // non-conformant chunk.
-TEST_F(BinaryTransferServiceTest, GetChunkRejectsLengthAboveCeiling) {
+TEST_F(BinaryTransferService, GetChunkRejectsLengthAboveCeiling) {
     const std::string uuid = uploadWholeBinary("hello");
 
     grpc::ClientContext ctx;
@@ -679,7 +679,7 @@ TEST_F(BinaryTransferServiceTest, GetChunkRejectsLengthAboveCeiling) {
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::BINARY_DOWNLOAD_FAILED);
 }
 
-TEST_F(BinaryTransferServiceTest, DeleteBinaryUploadWithUnknownUuidReturnsAborted) {
+TEST_F(BinaryTransferService, DeleteBinaryUploadWithUnknownUuidReturnsAborted) {
     bt::DeleteBinaryRequest request;
     request.set_binarytransferuuid("not-a-known-uuid");
     bt::DeleteBinaryResponse response;
@@ -693,7 +693,7 @@ TEST_F(BinaryTransferServiceTest, DeleteBinaryUploadWithUnknownUuidReturnsAborte
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::INVALID_BINARY_TRANSFER_UUID);
 }
 
-TEST_F(BinaryTransferServiceTest, CreateBinaryRejectsChunkCountExceedingBinarySize) {
+TEST_F(BinaryTransferService, CreateBinaryRejectsChunkCountExceedingBinarySize) {
     // chunkCount > binarySize: no chunk can carry less than one byte.
     bt::CreateBinaryRequest request;
     request.set_binarysize(5);
@@ -710,7 +710,7 @@ TEST_F(BinaryTransferServiceTest, CreateBinaryRejectsChunkCountExceedingBinarySi
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::BINARY_UPLOAD_FAILED);
 }
 
-TEST_F(BinaryTransferServiceTest, CreateBinaryRejectsChunkCountPastAbsoluteCeiling) {
+TEST_F(BinaryTransferService, CreateBinaryRejectsChunkCountPastAbsoluteCeiling) {
     // Past InMemoryBinaryStore::kMaxChunkCount even though the
     // binarySize-proportional bound alone would still allow it.
     bt::CreateBinaryRequest request;
@@ -735,7 +735,7 @@ TEST_F(BinaryTransferServiceTest, CreateBinaryRejectsChunkCountPastAbsoluteCeili
 // is itself the proof the gate is opt-in.
 // ---------------------------------------------------------------------------
 
-class BinaryTransferServiceFqiGateTest : public ::testing::Test {
+class BinaryTransferServiceFqiGate : public ::testing::Test {
 protected:
     void SetUp() override {
         grpc::ServerBuilder builder;
@@ -763,7 +763,7 @@ protected:
     std::unique_ptr<bt::BinaryUpload::Stub> uploadStub_;
 };
 
-TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryAcceptsRegisteredCommandParameterFqi) {
+TEST_F(BinaryTransferServiceFqiGate, CreateBinaryAcceptsRegisteredCommandParameterFqi) {
     bt::CreateBinaryRequest request;
     request.set_binarysize(5);
     request.set_chunkcount(1);
@@ -777,7 +777,7 @@ TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryAcceptsRegisteredCommandPar
     EXPECT_FALSE(response.binarytransferuuid().empty());
 }
 
-TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryAcceptsRegisteredMetadataFqi) {
+TEST_F(BinaryTransferServiceFqiGate, CreateBinaryAcceptsRegisteredMetadataFqi) {
     bt::CreateBinaryRequest request;
     request.set_binarysize(5);
     request.set_chunkcount(1);
@@ -790,7 +790,7 @@ TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryAcceptsRegisteredMetadataFq
     ASSERT_TRUE(status.ok()) << status.error_message();
 }
 
-TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsNonFqiParameterIdentifier) {
+TEST_F(BinaryTransferServiceFqiGate, CreateBinaryRejectsNonFqiParameterIdentifier) {
     bt::CreateBinaryRequest request;
     request.set_binarysize(5);
     request.set_chunkcount(1);
@@ -806,7 +806,7 @@ TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsNonFqiParameterIdent
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::BINARY_UPLOAD_FAILED);
 }
 
-TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsParameterFqiOfUnregisteredFeature) {
+TEST_F(BinaryTransferServiceFqiGate, CreateBinaryRejectsParameterFqiOfUnregisteredFeature) {
     bt::CreateBinaryRequest request;
     request.set_binarysize(5);
     request.set_chunkcount(1);
@@ -822,7 +822,7 @@ TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsParameterFqiOfUnregi
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::BINARY_UPLOAD_FAILED);
 }
 
-TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsBareFeatureFqi) {
+TEST_F(BinaryTransferServiceFqiGate, CreateBinaryRejectsBareFeatureFqi) {
     // No Command/Parameter or Metadata segment -- a Feature FQI names the
     // Feature, not one of its items.
     bt::CreateBinaryRequest request;
@@ -840,7 +840,7 @@ TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsBareFeatureFqi) {
     EXPECT_EQ(error.errortype(), bt::BinaryTransferError::BINARY_UPLOAD_FAILED);
 }
 
-TEST_F(BinaryTransferServiceFqiGateTest, CreateBinaryRejectsNeighbouringVersionFqi) {
+TEST_F(BinaryTransferServiceFqiGate, CreateBinaryRejectsNeighbouringVersionFqi) {
     // Pins that the gate reuses fqiCovers' segment-boundary rule: v10 is a
     // different Feature version from the registered v1, not a suffix match.
     bt::CreateBinaryRequest request;

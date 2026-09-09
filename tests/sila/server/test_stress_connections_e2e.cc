@@ -2,8 +2,8 @@
 // connections (audit 2.1b) and fd/memory stability under sustained
 // connect/disconnect churn (audit 2.1c, 2.1e, 2.1k) over the real SiLA TLS
 // stack (audit 2.1f-b) rather than a bare insecure gRPC service.
-#include <sila/server/SiLAServerBase.h>
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServerBase.h>
+#include <sila/server/SilaServiceImpl.h>
 
 #include <gtest/gtest.h>
 #include <grpcpp/grpcpp.h>
@@ -20,7 +20,7 @@
 
 namespace {
 
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 using sila2::silaservice_proto::SiLAService;
 
 constexpr uint16_t kPortManyParallelChannels = 50290;
@@ -28,16 +28,16 @@ constexpr uint16_t kPortRapidConnectDisconnect = 50291;
 constexpr uint16_t kPortFdStableUnderLoad = 50292;
 
 // Same dial pattern as test_multi_client_concurrent_e2e.cc's dialChannel():
-// SiLAServerBase only ever serves TLS, so every stub in this file dials
+// SilaServerBase only ever serves TLS, so every stub in this file dials
 // against the server's own self-signed certificate.
-std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server, uint16_t port) {
+std::shared_ptr<grpc::Channel> dialChannel(const SilaServerBase& server, uint16_t port) {
     grpc::SslCredentialsOptions opts;
     opts.pem_root_certs = server.certificatePem();
     return grpc::CreateChannel("localhost:" + std::to_string(port), grpc::SslCredentials(opts));
 }
 
 // Runs one connect/RPC/disconnect cycle; channel and stub are destroyed on return.
-bool runOneConnectRpcDisconnectCycle(const SiLAServerBase& server, uint16_t port) {
+bool runOneConnectRpcDisconnectCycle(const SilaServerBase& server, uint16_t port) {
     auto stub = SiLAService::NewStub(dialChannel(server, port));
     grpc::ClientContext ctx;
     sila2::silaservice_proto::Get_ServerUUID_Parameters req;
@@ -70,12 +70,12 @@ long readVmRssKb() {
 }  // namespace
 
 TEST(StressConnections, ManyParallelChannels) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortManyParallelChannels)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortManyParallelChannels)
+                      .build();
+    server.run(false);
 
     constexpr int kThreadCount = 64;
     constexpr int kRpcsPerThread = 100;
@@ -105,16 +105,16 @@ TEST(StressConnections, ManyParallelChannels) {
 
     for (int t = 0; t < kThreadCount; ++t) EXPECT_TRUE(threadAllOk[t]);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST(StressConnections, RapidConnectDisconnect) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortRapidConnectDisconnect)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortRapidConnectDisconnect)
+                      .build();
+    server.run(false);
 
     constexpr int kIterations = 200;
     int okCount = 0;
@@ -125,16 +125,16 @@ TEST(StressConnections, RapidConnectDisconnect) {
 
     EXPECT_EQ(okCount, kIterations);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST(StressConnections, FdStableUnderLoad) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortFdStableUnderLoad)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortFdStableUnderLoad)
+                      .build();
+    server.run(false);
 
     for (int i = 0; i < 50; ++i) runOneConnectRpcDisconnectCycle(server, kPortFdStableUnderLoad);
 
@@ -157,5 +157,5 @@ TEST(StressConnections, FdStableUnderLoad) {
     EXPECT_LE(rssAfterKb - rssBeforeKb, 4096);
 #endif
 
-    server.Shutdown();
+    server.shutdown();
 }

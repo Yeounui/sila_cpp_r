@@ -7,7 +7,7 @@
 // this file follows the data all the way to the subscriber.
 #include <sila/server/recovery/RecoverableErrorGate.h>
 #include <sila/server/property/ObservablePropertyManager.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include <gtest/gtest.h>
 

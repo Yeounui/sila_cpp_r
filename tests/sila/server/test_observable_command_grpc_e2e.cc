@@ -1,7 +1,7 @@
 // End-to-end tests for the Observable Command 4-RPC quartet (Initiate /
 // _Info / _Intermediate / _Result, architecture.md §3.3) driven over a real
-// gRPC connection to a SiLAServerBase, exactly as a SiLA client would talk
-// to it: Builder::AddFeature() registers a feature's grpc::Service, Run()
+// gRPC connection to a SilaServerBase, exactly as a SiLA client would talk
+// to it: Builder::addFeature() registers a feature's grpc::Service, run()
 // starts a TLS-secured listener, and the test dials it with a real
 // grpc::Channel.
 //
@@ -17,10 +17,10 @@
 // file needs no new .proto/codegen step and CMakeLists.txt stays untouched.
 // LongRunningTestClient is the client-side mirror, built from the same
 // BlockingUnaryCall/ClientReaderFactory primitives a generated Stub uses.
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>
 #include <sila/server/transport/GrpcTransport.h>
@@ -54,7 +54,7 @@ using sila2::GrpcUnaryResponseSink;
 using sila2::ObservableCommandExecution;
 using sila2::ObservableCommandManager;
 using sila2::ResponseSink;
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 using sila2::SilaHandler;
 using sila2::error::fromGrpcStatus;
 using sila2::error::ExecutionError;
@@ -387,21 +387,21 @@ private:
     grpc::internal::RpcMethod result_;
 };
 
-// Boots a real SiLAServerBase hosting LongRunningTestService on an ephemeral
-// TLS port (WithDiscovery(0): the only port control Run() exposes, per
+// Boots a real SilaServerBase hosting LongRunningTestService on an ephemeral
+// TLS port (withDiscovery(0): the only port control run() exposes, per
 // test_sila_server_base_run_shutdown_e2e.cc) and dials it with a real
 // grpc::Channel over the server's own self-signed certificate.
 struct LongRunningTestServer {
     LongRunningTestServer()
         : service{std::make_shared<LongRunningTestService>(cmdManager)},
-          server{SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                     .WithDiscovery(0)
-                     .AddFeature(kFqi, kFdl, service)
-                     .RegisterCommandManager(&cmdManager)
-                     .Build()} {
-        server.Run(false);
+          server{SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                     .withDiscovery(0)
+                     .addFeature(kFqi, kFdl, service)
+                     .registerCommandManager(&cmdManager)
+                     .build()} {
+        server.run(false);
 
         grpc::SslCredentialsOptions opts;
         opts.pem_root_certs = server.certificatePem();
@@ -410,11 +410,11 @@ struct LongRunningTestServer {
         client = std::make_unique<LongRunningTestClient>(channel);
     }
 
-    ~LongRunningTestServer() { server.Shutdown(); }
+    ~LongRunningTestServer() { server.shutdown(); }
 
     ObservableCommandManager cmdManager;
     std::shared_ptr<LongRunningTestService> service;
-    SiLAServerBase server;
+    SilaServerBase server;
     std::unique_ptr<LongRunningTestClient> client;
 };
 

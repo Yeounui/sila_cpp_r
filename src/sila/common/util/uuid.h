@@ -1,4 +1,4 @@
-// uuid.h — RFC 4122 v4 UUID generation (config·command·binary·recovery 공용)
+// uuid.h — RFC 4122 v4 UUID generation, shared by the config, command, binary and recovery paths.
 #pragma once
 
 #include <string>

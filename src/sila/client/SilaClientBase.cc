@@ -55,7 +55,7 @@ SilaClientBase::SilaClientBase(std::string host, uint16_t port, ClientConfig con
 }
 
 // Defined here (not in the header) so that grpc::Channel is a complete type
-// at the point its destructor runs, matching SiLAServerBase's pattern.
+// at the point its destructor runs, matching SilaServerBase's pattern.
 SilaClientBase::~SilaClientBase() = default;
 
 std::shared_ptr<grpc::Channel> SilaClientBase::channel() const { return channel_; }

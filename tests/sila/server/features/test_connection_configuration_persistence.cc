@@ -9,8 +9,8 @@
 // the network.
 #include <sila/server/features/ConnectionConfigurationServiceImpl.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/transport/cloud/CloudEnvelopeRouter.h>
 
@@ -33,7 +33,7 @@ using sila2::ConnectionConfigurationServiceImpl;
 using sila2::FeatureRegistry;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 
 namespace connconfig_proto = sila2::org::silastandard::core::connectionconfigurationservice::v1;
 
@@ -391,7 +391,7 @@ TEST(ConnectionConfigurationPersistence, ConnectWithControlCharacterInNameReturn
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidSiLAClientErrorId);
@@ -451,7 +451,7 @@ TEST(ConnectionConfigurationPersistence, GroupOrWorldWritableStoreIsRefused) {
     std::filesystem::remove(storePath);
 }
 
-// The per-host credential provider (SiLAServerBase's Part A p32 default)
+// The per-host credential provider (SilaServerBase's Part A p32 default)
 // vetoes a target before anything is persisted, and vetoes a persisted
 // target on restore when the trust configuration no longer allows it.
 TEST(ConnectionConfigurationPersistence, ProviderVetoRejectsConnectBeforePersistAndFailsRestore) {

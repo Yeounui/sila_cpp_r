@@ -3,7 +3,7 @@
 #include "BinaryRetry.h"
 
 #include <sila/client/MetadataInjector.h>
-#include <sila/common/error/SiLAErrorException.h>
+#include <sila/common/error/SilaErrorException.h>
 
 #include <SiLABinaryTransfer.grpc.pb.h>
 

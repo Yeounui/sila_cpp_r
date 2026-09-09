@@ -5,15 +5,15 @@
 //
 // KNOWN UNCAUGHT GAP: the lock is not enforced on the BinaryUpload/
 // BinaryDownload RPCs, because those are registerService'd without a
-// registerFeature (SiLAServerBase.cc), so they never appear in
+// registerFeature (SilaServerBase.cc), so they never appear in
 // registeredFeatureFqis and cannot enter the affected list. Deliberate --
 // putting them in would collide with open S26 (the fork's own
 // BinaryUploader/BinaryDownloader build bare grpc::ClientContexts and cannot
 // attach metadata at all).
 #include <sila/server/features/LockControllerImpl.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/transport/InterceptorChain.h>
 
@@ -38,7 +38,7 @@ using sila2::kLockIdentifierMetadataFqi;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
 using sila2::error::FrameworkError;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 
 namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller::v1;
 
@@ -208,7 +208,7 @@ TEST(LockController, FCPAffectedByMetadataExcludesSelfAndSiLAService) {
     // protected" -- a Feature-granular LockController entry would cover it,
     // so LockController itself must never appear here. SiLAService is
     // excluded separately because it rejects all client metadata outright.
-    // Both exclusions are Build()'s job now (S32); this case documents the
+    // Both exclusions are build()'s job now (S32); this case documents the
     // contract the property must never violate: a correctly-built row never
     // names either FQI.
     InterceptorChain chain = chainWithLockAffecting({kFeatureFqi});
@@ -239,7 +239,7 @@ TEST(LockController, LockServerWhenAlreadyLockedReturnsServerAlreadyLocked) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(),
@@ -255,7 +255,7 @@ TEST(LockController, UnlockServerWhenNotLockedReturnsServerNotLocked) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(),
@@ -272,7 +272,7 @@ TEST(LockController, UnlockServerWithWrongIdReturnsInvalidLockIdentifier) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(),

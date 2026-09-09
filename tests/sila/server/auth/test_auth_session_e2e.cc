@@ -13,8 +13,8 @@
 #include <sila/server/auth/AuthorizationInterceptor.h>
 #include <sila/server/auth/CredentialVerifier.h>
 #include <sila/server/config/ServerConfig.h>
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/transport/CallContext.h>
 
 #include <gtest/gtest.h>
@@ -36,7 +36,7 @@ using sila2::auth::AuthTokenStore;
 using sila2::auth::CredentialVerifier;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 
 namespace auth_proto = sila2::org::silastandard::core::authenticationservice::v1;
 namespace authzconfig_proto = sila2::org::silastandard::core::authorizationconfigurationservice::v1;
@@ -403,7 +403,7 @@ TEST(AuthSessionE2E, LoginThenSetProviderThenLogoutOldTokenFails) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* definedError = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(definedError, nullptr);
     EXPECT_EQ(definedError->errorIdentifier(),

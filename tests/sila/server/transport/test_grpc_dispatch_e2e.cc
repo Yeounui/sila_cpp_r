@@ -25,8 +25,8 @@
 // has anything to do with locking or error-recovery semantics here.
 #include <sila/server/transport/GrpcTransport.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/auth/AuthTokenStore.h>
 #include <sila/server/auth/AuthorizationInterceptor.h>
 #include <sila/server/transport/InterceptorChain.h>
@@ -59,7 +59,7 @@ using sila2::auth::AuthTokenStore;
 using sila2::error::DefinedExecutionError;
 using sila2::error::FrameworkError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::error::UndefinedExecutionError;
 using sila2::error::ValidationError;
 using namespace std::chrono_literals;
@@ -132,7 +132,7 @@ public:
                 }
                 if (id == kTriggerFramework) {
                     // InvalidMetadata, not the Invalid sentinel: Invalid is
-                    // documented (SiLAErrorSubtypes.cc) as never meant to
+                    // documented (SilaErrorSubtypes.cc) as never meant to
                     // reach serialization, so it wouldn't round-trip here.
                     throw FrameworkError{FrameworkError::FrameworkErrorType::InvalidMetadata,
                                           "sentinel-triggered framework failure"};
@@ -372,7 +372,7 @@ TEST(GrpcDispatchE2E, ProtectedFqiWithValidTokenAndSilaMetadataBothReachHandler)
 
 // ---------------------------------------------------------------------------
 // False (negative/rejection) paths
-// All nine are CAUGHT: guardHandler's three catch clauses (SiLAError,
+// All nine are CAUGHT: guardHandler's three catch clauses (SilaError,
 // std::exception, ...) and AuthorizationInterceptor detect and convert every
 // one of these into a well-formed ABORTED grpc::Status.
 // ---------------------------------------------------------------------------
@@ -390,7 +390,7 @@ TEST(GrpcDispatchE2E, HandlerThrowsValidationErrorReturnsAbortedValidationError)
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(), "LockIdentifier");
@@ -409,7 +409,7 @@ TEST(GrpcDispatchE2E, HandlerThrowsDefinedExecutionErrorReturnsAbortedWithDeclar
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kDefinedErrorId);
@@ -428,7 +428,7 @@ TEST(GrpcDispatchE2E, HandlerThrowsUndefinedExecutionErrorReturnsAbortedUndefine
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::UndefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::UndefinedExecutionError);
     const auto* err = dynamic_cast<const UndefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(std::string{err->what()}, "sentinel-triggered undefined failure");
@@ -447,7 +447,7 @@ TEST(GrpcDispatchE2E, HandlerThrowsFrameworkErrorReturnsAbortedFrameworkError) {
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::FrameworkError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::FrameworkError);
     const auto* err = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->frameworkErrorType(), FrameworkError::FrameworkErrorType::InvalidMetadata);
@@ -466,7 +466,7 @@ TEST(GrpcDispatchE2E, HandlerThrowsStdExceptionWrapsAsUndefinedExecutionErrorWit
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::UndefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::UndefinedExecutionError);
     const auto* err = dynamic_cast<const UndefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(std::string{err->what()}, "sentinel-triggered std::exception");
@@ -485,7 +485,7 @@ TEST(GrpcDispatchE2E, HandlerThrowsNonStdExceptionWrapsAsUndefinedExecutionError
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::UndefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::UndefinedExecutionError);
     const auto* err = dynamic_cast<const UndefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(std::string{err->what()}, "unknown exception");
@@ -528,7 +528,7 @@ TEST(GrpcDispatchE2E, SubscribeRecoverableErrorsHandlerThrowsMidStreamReturnsAbo
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    EXPECT_EQ(reconstructed->errorType(), SiLAError::ErrorType::UndefinedExecutionError);
+    EXPECT_EQ(reconstructed->errorType(), SilaError::ErrorType::UndefinedExecutionError);
 }
 
 TEST(GrpcDispatchE2E, SubscribeRecoverableErrorsRejectedByAuthReturnsAbortedBeforeAnySend) {
@@ -558,7 +558,7 @@ TEST(GrpcDispatchE2E, SubscribeRecoverableErrorsRejectedByAuthReturnsAbortedBefo
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    EXPECT_EQ(reconstructed->errorType(), SiLAError::ErrorType::FrameworkError);
+    EXPECT_EQ(reconstructed->errorType(), SilaError::ErrorType::FrameworkError);
     const auto* error = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(error, nullptr);
     EXPECT_EQ(error->frameworkErrorType(), FrameworkError::FrameworkErrorType::InvalidMetadata);

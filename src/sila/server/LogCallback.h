@@ -15,7 +15,7 @@ enum class LogLevel { kInfo, kWarning, kError };
 /// discovery warnings. `category` is a short tag such as "auth", "dispatch",
 /// or "discovery"; `message` is a human-readable line, already formatted.
 ///
-/// @see SiLAServerBase::Builder::setLogCallback, which installs it. An empty
+/// @see SilaServerBase::Builder::setLogCallback, which installs it. An empty
 ///      (default-constructed) LogCallback means no callback was installed,
 ///      and logEvent() is then a no-op.
 using LogCallback = std::function<void(LogLevel level,

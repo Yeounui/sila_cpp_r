@@ -4,7 +4,7 @@
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include "SiLAFramework.pb.h"
 

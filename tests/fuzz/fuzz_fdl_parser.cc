@@ -1,6 +1,6 @@
 // fuzz_fdl_parser.cc — libfuzzer target for FDL XML parser (audit 3.1l/3.1j)
 //
-// Build:
+// build:
 //   cmake --preset fuzz
 //   cmake --build build/fuzz --target fuzz_fdl_parser
 //

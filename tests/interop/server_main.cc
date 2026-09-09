@@ -9,11 +9,11 @@
 #include <sila/server/auth/AccessPolicy.h>
 #include <sila/server/auth/CredentialVerifier.h>
 #include <fstream>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/auth/DenyByDefaultAccessPolicy.h>
 #include <sila/server/config/ServerConfig.h>
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>
 #include <sila/server/transport/CallContext.h>
@@ -41,7 +41,7 @@ namespace {
 std::atomic<bool> gTerminateRequested{false};
 
 // SIGTERM must not kill the process outright — audit 4.4a needs main() to
-// return so SiLAServerBase destructs without an explicit Shutdown() call.
+// return so SilaServerBase destructs without an explicit shutdown() call.
 // relaxed is enough: the only cross-thread requirement is that the polling
 // loop below eventually observes this flag, not ordering vs. other state.
 void handleSigterm(int /*signum*/) {
@@ -132,11 +132,11 @@ int main(int argc, char* argv[]) {
     std::mutex echoStatesMu;
     std::unordered_map<std::string, std::shared_ptr<EchoBinariesState>> echoStates;
 
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate(args.hostname, args.ip)
-        .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("InteropTestServer"))
-        .WithBinaryTransfer()
-        .WithAuthentication(
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate(args.hostname, args.ip)
+        .withConfig(std::make_unique<sila2::InMemoryServerConfig>("InteropTestServer"))
+        .withBinaryTransfer()
+        .withAuthentication(
             std::make_unique<TestCredentialVerifier>(),
             std::make_unique<sila2::auth::DenyByDefaultAccessPolicy>(
                 interopProtectedFqis()),
@@ -449,14 +449,14 @@ int main(int argc, char* argv[]) {
     };
 
     auto server = builder
-        .AddFeature("org.silastandard/test/AuthenticationTest/v1",
+        .addFeature("org.silastandard/test/AuthenticationTest/v1",
                     std::string{sila2::generated::authenticationtest::kFdlXml},
                     authAdapter)
-        .AddFeature("org.silastandard/test/BinaryTransferTest/v1",
+        .addFeature("org.silastandard/test/BinaryTransferTest/v1",
                     std::string{sila2::generated::binarytransfertest::kFdlXml},
                     binaryAdapter)
-        .WithDiscovery(port)
-        .Build();
+        .withDiscovery(port)
+        .build();
 
     if (!args.certOut.empty()) {
         std::ofstream f{args.certOut};
@@ -465,11 +465,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "SiLA2 interop server listening on port " << port << "\n";
     std::signal(SIGTERM, handleSigterm);
-    server.Run(false);
+    server.run(false);
     while (!gTerminateRequested.load(std::memory_order_relaxed)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-    // No server.Shutdown() here — audit 4.4a exercises destruction while the
+    // No server.shutdown() here — audit 4.4a exercises destruction while the
     // server is still live, matching a kill/crash scenario, not a clean exit.
     return 0;
 }

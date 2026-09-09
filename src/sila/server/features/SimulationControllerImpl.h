@@ -20,7 +20,7 @@ namespace sila2 {
 
 struct InterceptorChain;
 
-// FQI constant for SimulationController — used by Builder::Build() to auto-register.
+// FQI constant for SimulationController — used by Builder::build() to auto-register.
 inline constexpr std::string_view kSimulationControllerFqi =
     "org.silastandard/core/SimulationController/v1";
 
@@ -49,8 +49,8 @@ namespace simctrl_proto = sila2::org::silastandard::core::simulationcontroller::
 /// letting a @ref gl_sila_client "SiLA Client" switch the server between
 /// Simulation Mode and Real Mode.
 ///
-/// Not installed by any `SiLAServerBase::Builder::WithX()` call; a server
-/// author registers it like a custom Feature through SiLAServerBase::Builder::AddFeature,
+/// Not installed by any `SilaServerBase::Builder::withX()` call; a server
+/// author registers it like a custom Feature through SilaServerBase::Builder::addFeature,
 /// passing kSimulationControllerFqi, simulationControllerFdlXml() and the service.
 class SimulationControllerImpl final : public simctrl_proto::SimulationController::Service {
 public:

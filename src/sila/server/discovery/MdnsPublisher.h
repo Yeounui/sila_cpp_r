@@ -17,8 +17,8 @@ namespace sila2::discovery {
 /// This library's implementation of @ref gl_sila_server_discovery "SiLA Server Discovery" : lets a
 /// @ref gl_sila_client "SiLA Client" find this
 /// server on the local network with no prior configuration. Installed and
-/// owned by `SiLAServerBase` -- always on (Part B p75 MUST) -- so a server
-/// author never constructs one directly; `SiLAServerBase::mdnsPublisher()`
+/// owned by `SilaServerBase` -- always on (Part B p75 MUST) -- so a server
+/// author never constructs one directly; `SilaServerBase::mdnsPublisher()`
 /// exposes this one for inspection.
 ///
 /// Advertises a SiLA server via mDNS multicast on the well-known _sila._tcp
@@ -90,9 +90,9 @@ public:
     void shutdown();
 
     /// Sets the port the SRV record advertises. Must be called before publish():
-    /// SiLAServerBase::Run() calls it once BuildAndStart has written back the
+    /// SilaServerBase::run() calls it once BuildAndStart has written back the
     /// port the OS actually bound, which is the only moment that number exists
-    /// for a server built with WithDiscovery(0). port_ is atomic so a later
+    /// for a server built with withDiscovery(0). port_ is atomic so a later
     /// call cannot race the listen thread's read in listenCallback().
     void setPort(uint16_t port);
 
@@ -244,7 +244,7 @@ private:
     // at construction and never modified after, so buildRecords()/listenCallback()
     // may read it without mu_.
     std::string caCertPem_;
-    // Written by setPort() from Run() after the port is finally known, read
+    // Written by setPort() from run() after the port is finally known, read
     // by buildRecords() and the static listenCallback() on the listen
     // thread -- atomic so a setPort()-after-publish() cannot race that read.
     std::atomic<uint16_t> port_;

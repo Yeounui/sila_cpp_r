@@ -250,7 +250,7 @@ TEST_F(CloudRouterDispatch, CommandDispatchWithNoHandlerReturnsFrameworkError) {
     EXPECT_EQ(resp.requestuuid(), "req-7");
     ASSERT_TRUE(resp.has_commanderror());
     ASSERT_TRUE(resp.commanderror().has_frameworkerror());
-    // Pins the value as chosen (SiLAErrorSubtypes.h's deleted `Invalid`
+    // Pins the value as chosen (SilaErrorSubtypes.h's deleted `Invalid`
     // sentinel used to reach this same wire value only by falling through to
     // proto's default 0) rather than inherited by accident.
     EXPECT_EQ(resp.commanderror().frameworkerror().errortype(),

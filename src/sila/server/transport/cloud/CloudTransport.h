@@ -26,7 +26,7 @@ namespace cloud = org::silastandard;
 /// (cloud connectivity) to a SiLA Client's CloudClientEndpoint: this server
 /// connects out to the client's cloud endpoint and opens a bidi stream
 /// (architecture.md §3.9). A server author never constructs this directly —
-/// it is created and owned by SiLAServerBase for each host/port pair the
+/// it is created and owned by SilaServerBase for each host/port pair the
 /// ConnectionConfigurationService is told to connect to.
 class CloudTransport {
 public:

@@ -46,7 +46,7 @@ namespace auth_proto = sila2::org::silastandard::core::authenticationservice::v1
 /// (@ref gl_sila_client_metadata "SiLA Client Metadata") scoped to the
 /// Features it requested, and log back out to invalidate that token.
 ///
-/// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
+/// Installed by @ref SilaServerBase::Builder::withAuthentication().
 class AuthenticationServiceImpl final : public auth_proto::AuthenticationService::Service {
 public:
     /// Constructs the service from the store, verifier, policy, and

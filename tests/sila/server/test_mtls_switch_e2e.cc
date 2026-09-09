@@ -1,12 +1,12 @@
-// End-to-end tests for SiLAServerBase::Builder::WithMutualTls, exercised
-// through the same Run()/Build() path a real server takes (architecture.md
-// §3.1) — audit finding 3.1f: WithMutualTls accept/reject was never driven
+// End-to-end tests for SilaServerBase::Builder::withMutualTls, exercised
+// through the same run()/build() path a real server takes (architecture.md
+// §3.1) — audit finding 3.1f: withMutualTls accept/reject was never driven
 // through the framework, only unit-tested against raw grpc::ServerCredentials
 // (test_client_config_e2e.cc covers ClientConfig's client-side branch; this
 // file covers the server-side switch).
 //
-// WithMutualTls(caCertPem) only ever sets Builder::caCertPem_
-// (SiLAServerBase.cc:309-312); the actual branch lives in Run():
+// withMutualTls(caCertPem) only ever sets Builder::caCertPem_
+// (SilaServerBase.cc:309-312); the actual branch lives in run():
 //   caCertPem_.empty()  -> ssl_opts.client_certificate_request left at its
 //                          default (GRPC_SSL_DONT_REQUEST_CLIENT_CERTIFICATE)
 //                          -> no client cert requested at all.
@@ -21,16 +21,16 @@
 // separate CA key" API in this codebase. A self-signed certificate can still
 // serve as its own trust anchor (handed to the peer as pem_root_certs), so
 // "signed by CA X" below means "the exact self-signed certificate X, handed
-// directly to WithMutualTls as the trusted root" — the same substitution
+// directly to withMutualTls as the trusted root" — the same substitution
 // test_client_config_e2e.cc's generateSelfSigned() already relies on.
 // Because of that, "signed by a different CA" and "self-signed cert not in
 // the CA" collapse onto the same rejection mechanism (client cert not
 // present in pem_root_certs); a third, structurally distinct False input
 // (malformed cert bytes) is used instead of a second flavor of the same
 // untrusted-issuer case.
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/config/TlsConfig.h>
 #include <sila/server/auth/AccessPolicy.h>
 #include <sila/server/auth/CredentialVerifier.h>
@@ -45,10 +45,10 @@
 
 namespace {
 
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 
 // Distinct ports per test, same rationale as
-// test_sila_server_base_run_shutdown_e2e.cc: every Run()-driving test here
+// test_sila_server_base_run_shutdown_e2e.cc: every run()-driving test here
 // enables discovery just to control the listening port.
 constexpr uint16_t kPortTrustedClient = 50280;
 constexpr uint16_t kPortNoMutualTlsBaseline = 50281;
@@ -63,7 +63,7 @@ struct KeyCertPem {
 };
 
 // Self-signed leaf cert — its own root, so it doubles as the CA handed to
-// WithMutualTls (see file header comment on TlsConfig's capabilities).
+// withMutualTls (see file header comment on TlsConfig's capabilities).
 KeyCertPem generateSelfSigned() {
     const auto key = sila2::generateKey();
     const auto cert = sila2::generateCertificate(key, "SiLA2", "127.0.0.1");
@@ -74,7 +74,7 @@ KeyCertPem generateSelfSigned() {
 // certificate, optionally presenting a client identity — same shape as
 // test_sila_server_base_run_shutdown_e2e.cc's dialChannel, extended with the
 // two client-credential fields mTLS needs.
-std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server, uint16_t port,
+std::shared_ptr<grpc::Channel> dialChannel(const SilaServerBase& server, uint16_t port,
                                             const std::string& clientCertPem = {},
                                             const std::string& clientKeyPem = {}) {
     grpc::SslCredentialsOptions opts;
@@ -113,58 +113,58 @@ struct AllowAllPolicy : sila2::auth::AccessPolicy {
 }  // namespace
 
 // ---------------------------------------------------------------------------
-// WithMutualTls — True (positive) paths
+// withMutualTls — True (positive) paths
 // ---------------------------------------------------------------------------
 
 TEST(MutualTlsSwitch, ClientWithTrustedCertConnectsAndCallsRpc) {
     const auto clientPair = generateSelfSigned();
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithMutualTls(clientPair.certPem)
-                      .WithDiscovery(kPortTrustedClient)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withMutualTls(clientPair.certPem)
+                      .withDiscovery(kPortTrustedClient)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortTrustedClient, clientPair.certPem, clientPair.keyPem);
     EXPECT_TRUE(getServerUuidSucceeds(channel));
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST(MutualTlsSwitch, ServerWithoutMutualTlsAcceptsClientWithoutCert) {
-    // No WithMutualTls() call — caCertPem_ stays empty, so Run() must leave
+    // No withMutualTls() call — caCertPem_ stays empty, so run() must leave
     // client_certificate_request at its default and never require a cert.
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortNoMutualTlsBaseline)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortNoMutualTlsBaseline)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortNoMutualTlsBaseline);  // no client cert
     EXPECT_TRUE(getServerUuidSucceeds(channel));
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST(MutualTlsSwitch, ClientWithTrustedCertCanMutateServerNameOverMutualTlsChannel) {
     // Distinct code path from the read-only Get_ServerUUID above: a mutating
     // command (SetServerName -> ServerConfig::setName), and composed with a
-    // second Builder axis (WithAuthentication) to prove mTLS does not
-    // interfere with the rest of Run()'s registeredServices() loop.
+    // second Builder axis (withAuthentication) to prove mTLS does not
+    // interfere with the rest of run()'s registeredServices() loop.
     const auto clientPair = generateSelfSigned();
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithMutualTls(clientPair.certPem)
-                      .WithAuthentication(std::make_unique<AcceptingVerifier>(),
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withMutualTls(clientPair.certPem)
+                      .withAuthentication(std::make_unique<AcceptingVerifier>(),
                                           std::make_unique<AllowAllPolicy>(), {})
-                      .WithDiscovery(kPortMutualTlsWithAuth)
-                      .Build();
-    server.Run(false);
+                      .withDiscovery(kPortMutualTlsWithAuth)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortMutualTlsWithAuth, clientPair.certPem, clientPair.keyPem);
     auto stub = sila2::silaservice_proto::SiLAService::NewStub(channel);
@@ -178,11 +178,11 @@ TEST(MutualTlsSwitch, ClientWithTrustedCertCanMutateServerNameOverMutualTlsChann
     ASSERT_TRUE(status.ok()) << status.error_message();
     EXPECT_EQ(server.serverConfig().name(), "mTLS Test Server");
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // ---------------------------------------------------------------------------
-// WithMutualTls — False (negative/rejection) paths
+// withMutualTls — False (negative/rejection) paths
 // All three funnel through the same rejection mechanism inside BoringSSL/
 // gRPC's client-certificate verification (see file header comment): the
 // server never accepts the connection, so the RPC fails.
@@ -194,39 +194,39 @@ TEST(MutualTlsSwitch, ClientWithTrustedCertCanMutateServerNameOverMutualTlsChann
 TEST(MutualTlsSwitch, ClientWithoutCertIsRejectedWhenMutualTlsRequired) {
     const auto clientPair = generateSelfSigned();
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithMutualTls(clientPair.certPem)
-                      .WithDiscovery(kPortNoClientCert)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withMutualTls(clientPair.certPem)
+                      .withDiscovery(kPortNoClientCert)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortNoClientCert);  // no client cert presented
     EXPECT_FALSE(getServerUuidSucceeds(channel));
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // CAUGHT: client presents a well-formed, real certificate — just not the one
-// (nor signed by the one) WithMutualTls trusted.
+// (nor signed by the one) withMutualTls trusted.
 TEST(MutualTlsSwitch, ClientWithUntrustedCaCertIsRejected) {
     const auto trustedPair = generateSelfSigned();
     const auto untrustedPair = generateSelfSigned();  // different key/cert entirely
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithMutualTls(trustedPair.certPem)
-                      .WithDiscovery(kPortWrongCaClientCert)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withMutualTls(trustedPair.certPem)
+                      .withDiscovery(kPortWrongCaClientCert)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortWrongCaClientCert,
                                 untrustedPair.certPem, untrustedPair.keyPem);
     EXPECT_FALSE(getServerUuidSucceeds(channel));
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // CAUGHT: client cert content is truncated garbage rather than a real,
@@ -240,17 +240,17 @@ TEST(MutualTlsSwitch, ClientWithMalformedCertIsRejected) {
     const std::string truncatedCert =
         malformedClientPair.certPem.substr(0, malformedClientPair.certPem.size() / 2);
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithMutualTls(trustedPair.certPem)
-                      .WithDiscovery(kPortMalformedClientCert)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withMutualTls(trustedPair.certPem)
+                      .withDiscovery(kPortMalformedClientCert)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortMalformedClientCert,
                                 truncatedCert, malformedClientPair.keyPem);
     EXPECT_FALSE(getServerUuidSucceeds(channel));
 
-    server.Shutdown();
+    server.shutdown();
 }

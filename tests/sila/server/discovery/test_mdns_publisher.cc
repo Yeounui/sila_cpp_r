@@ -291,7 +291,7 @@ TEST(MdnsPublisherAppendServiceRecords, NeverAdvertisesAnAaaaRecord)
 {
     // REJECTION: Part B p75 (B095) requires the advertised address to represent
     // the socket the HTTP server actually serves on; the gRPC server binds
-    // IPv4-only (SiLAServerBase.cc), so no AAAA record may ever be emitted here
+    // IPv4-only (SilaServerBase.cc), so no AAAA record may ever be emitted here
     // regardless of how many addresses are passed in.
     mdns_record_t ptr{};
     std::vector<mdns_record_t> additional;

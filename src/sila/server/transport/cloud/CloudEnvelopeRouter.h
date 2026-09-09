@@ -1,7 +1,7 @@
 // CloudEnvelopeRouter.h — Routes incoming cloud envelope messages to SiLA handlers (architecture.md §3.9)
 #pragma once
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/AsciiCase.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/transport/CallContext.h>
@@ -60,19 +60,19 @@ using CloudValueSerializer = std::function<std::string(const std::any&)>;
 /// (cloud connectivity) stream to the same
 /// Command/Property handlers the direct-gRPC path runs (architecture.md
 /// §3.9). One router is shared by every CloudTransport a server has open. A
-/// server author does not construct or call this directly: SiLAServerBase
+/// server author does not construct or call this directly: SilaServerBase
 /// builds and populates it from the Features registered via
-/// SiLAServerBase::Builder::AddFeature, and CloudTransport is what drives it
+/// SilaServerBase::Builder::addFeature, and CloudTransport is what drives it
 /// per connection.
 class CloudEnvelopeRouter {
 public:
     /// Constructs the router for one server. Installed automatically by
-    /// SiLAServerBase::Builder::Build() -- a server author never constructs one directly.
+    /// SilaServerBase::Builder::build() -- a server author never constructs one directly.
     /// @param registry Feature registry this server exposes; must outlive this object.
     /// @param chain Interceptor bundle for auth/metadata admission checks; must outlive this
     /// object.
     /// @param binaryStore Backing store for inline Binary Transfer values on the cloud path,
-    ///        or nullptr when WithBinaryTransfer() was not called.
+    ///        or nullptr when withBinaryTransfer() was not called.
     /// @param observableCommands Every registered ObservableCommandManager, so findExecution()
     ///        can resolve a Command Execution UUID across all of them.
     /// @param cloudWriteTimeout Per-write timeout applied to every StreamWriteSerializer this

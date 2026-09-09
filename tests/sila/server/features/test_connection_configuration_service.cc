@@ -5,8 +5,8 @@
 // network connection and is out of scope for this suite).
 #include <sila/server/features/ConnectionConfigurationServiceImpl.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/transport/cloud/CloudEnvelopeRouter.h>
@@ -28,7 +28,7 @@ using sila2::ConnectionConfigurationServiceImpl;
 using sila2::FeatureRegistry;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::error::ValidationError;
 
 namespace connconfig_proto = sila2::org::silastandard::core::connectionconfigurationservice::v1;
@@ -177,7 +177,7 @@ TEST(ConnectionConfigurationService, ConnectWithClientNameAtMaxLengthPassesValid
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     // The port FQI (not Name/Host) means both length constraints cleared.
@@ -219,7 +219,7 @@ TEST(ConnectionConfigurationService, ConnectWithEmptyHostReturnsInvalidSiLAClien
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidSiLAClientErrorId);
@@ -237,7 +237,7 @@ TEST(ConnectionConfigurationService, ConnectWithPortZeroReturnsValidationError) 
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     // Message wording is not pinned here (S21): the parameter FQI is the
@@ -261,7 +261,7 @@ TEST(ConnectionConfigurationService, ConnectWithPort65536IsNotAValidationError) 
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidSiLAClientErrorId);
@@ -281,7 +281,7 @@ TEST(ConnectionConfigurationService, ConnectWithPort65537ReturnsValidationError)
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(), kClientPortParamFqi);
@@ -298,7 +298,7 @@ TEST(ConnectionConfigurationService, ConnectWithPortAbove65536ReturnsValidationE
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(), kClientPortParamFqi);
@@ -316,7 +316,7 @@ TEST(ConnectionConfigurationService, ConnectWithClientNameOver255CharsReturnsVal
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(), kClientNameParamFqi);
@@ -336,7 +336,7 @@ TEST(ConnectionConfigurationService, ConnectWithSiLAClientHostOver255CharsReturn
     ASSERT_NE(reconstructed, nullptr);
     // Must be the length ValidationError, not the empty-host InvalidSiLAClient
     // DefinedExecutionError — the constraint check runs on the actual value.
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(), kClientHostParamFqi);
@@ -356,7 +356,7 @@ TEST(ConnectionConfigurationService, DisconnectWithClientNameOver255CharsReturns
     ASSERT_NE(reconstructed, nullptr);
     // Must be the length ValidationError, not the unknown-client
     // InvalidSiLAClient DEE — the constraint check runs before the lookup.
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(), kDisconnectClientNameParamFqi);
@@ -373,7 +373,7 @@ TEST(ConnectionConfigurationService, DisconnectWithUnknownClientNameReturnsInval
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidSiLAClientErrorId);
@@ -382,11 +382,11 @@ TEST(ConnectionConfigurationService, DisconnectWithUnknownClientNameReturnsInval
 
 // The 2-arg (unconfigured) constructor is gone: Part A p32 (SHALL support)
 // means every server now gets working server-initiated defaults from
-// SiLAServerBase::Builder::Build(), so a service instance always carries real
+// SilaServerBase::Builder::build(), so a service instance always carries real
 // credentials and a real store. Their old obligations moved to the Builder
-// level: positive (Enable works without WithConnectionConfiguration) is
+// level: positive (Enable works without withConnectionConfiguration) is
 // test_sila_server_base.cc's DefaultBuildEnablesServerInitiatedModeOverCloud;
-// rejection (WithConnectionConfiguration itself still requires both
+// rejection (withConnectionConfiguration itself still requires both
 // arguments) is WithConnectionConfigurationRejectsEmptyPathAndNullCredentials
 // in the same file.
 

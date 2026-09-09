@@ -5,7 +5,7 @@
 // sila_cpp has no equivalent — it holds grpc::ServerWriter directly.
 #pragma once
 
-#include <sila/common/error/SiLAError.h>
+#include <sila/common/error/SilaError.h>
 
 namespace sila2 {
 
@@ -28,8 +28,8 @@ public:
     virtual void finish() = 0;
 
     /// Signal an error and terminate the response stream: the client receives
-    /// @p error as the SiLA error it represents (see sila2::error::SiLAError and its subtypes).
-    virtual void fail(const error::SiLAError& error) = 0;
+    /// @p error as the SiLA error it represents (see sila2::error::SilaError and its subtypes).
+    virtual void fail(const error::SilaError& error) = 0;
 };
 
 }  // namespace sila2

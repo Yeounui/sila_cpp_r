@@ -18,7 +18,7 @@
 #include <sila/client/dynamic/FdlRuntimeParser.h>
 #include <sila/client/dynamic/FeatureCatalog.h>
 
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/features/AuthenticationServiceImpl.h>
 #include <sila/server/features/AuthorizationConfigurationServiceImpl.h>
 #include <sila/server/features/AuthorizationServiceImpl.h>

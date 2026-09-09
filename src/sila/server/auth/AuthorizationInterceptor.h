@@ -13,7 +13,7 @@ namespace sila2::auth {
 
 /// Gates a protected call on a valid access token before the server's handler runs.
 ///
-/// Assembled by SiLAServerBase::Builder::WithAuthentication() from the AuthTokenStore
+/// Assembled by SilaServerBase::Builder::withAuthentication() from the AuthTokenStore
 /// and the protected-FQI list the caller supplied; not constructed directly by a
 /// server author.
 class AuthorizationInterceptor {

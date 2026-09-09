@@ -8,8 +8,8 @@
 // exercise cross-command scoping in-process.
 #include <sila/server/transport/GrpcTransport.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/auth/AuthTokenStore.h>
 #include <sila/server/auth/AuthorizationInterceptor.h>
 #include <sila/server/auth/FqiMatch.h>
@@ -36,7 +36,7 @@ using sila2::auth::AuthTokenStore;
 using sila2::error::DefinedExecutionError;
 using sila2::error::FrameworkError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using namespace std::chrono_literals;
 
 namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller::v1;
@@ -53,7 +53,7 @@ const std::string kInvalidAccessTokenErrorId =
     "org.silastandard/core/AuthorizationService/v1/DefinedExecutionError/InvalidAccessToken";
 
 // Only LockServer is listed as protected. anyFqiCovers, not ==, matches
-// production SiLAServerBase (SiLAServerBase.cc:636): an operator's
+// production SilaServerBase (SilaServerBase.cc:636): an operator's
 // protectedFqis vector may list a command FQI or a feature FQI, and either
 // must gate LockServer -- but neither should ever gate UnlockServer, since
 // UnlockServer's FQI shares no prefix relationship with a bare LockServer
@@ -212,7 +212,7 @@ TEST(CommandGranularAuthE2E, LockServerWithoutTokenReturnsAbortedWithInvalidMeta
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::FrameworkError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::FrameworkError);
     const auto* err = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->frameworkErrorType(), FrameworkError::FrameworkErrorType::InvalidMetadata);
@@ -232,7 +232,7 @@ TEST(CommandGranularAuthE2E, LockServerWithBogusTokenReturnsInvalidAccessToken) 
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidAccessTokenErrorId);
@@ -256,7 +256,7 @@ TEST(CommandGranularAuthE2E, LockServerWithSiblingCommandTokenReturnsInvalidAcce
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidAccessTokenErrorId);

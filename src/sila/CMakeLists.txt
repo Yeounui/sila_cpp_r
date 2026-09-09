@@ -132,11 +132,11 @@ foreach(_entry IN LISTS _fdl_standard_embed_entries)
     )
     list(APPEND _fdl_headers ${_hdr})
 endforeach()
-add_custom_target(sila2_generated_headers DEPENDS ${_fdl_headers})
+add_custom_target(sila_cpp_r_generated_headers DEPENDS ${_fdl_headers})
 
-# --- sila2_core library ----------------------------------------------------
+# --- sila_cpp_r_core library ----------------------------------------------------
 
-add_library(sila2_core
+add_library(sila_cpp_r_core
     server/binary/BinaryStore.cc
     server/binary/InMemoryBinaryStore.cc
     server/binary/FileSpoolBinaryStore.cc
@@ -145,14 +145,14 @@ add_library(sila2_core
     server/binary/BinaryDownloadService.cc
     server/FeatureRegistry.cc
     server/CommandParameterValidator.cc
-    server/SiLAServerBase.cc
-    server/SiLAServiceImpl.cc
+    server/SilaServerBase.cc
+    server/SilaServiceImpl.cc
     server/config/TlsConfig.cc
     common/tls/UntrustedTlsCredentials.cc
     server/config/ServerConfig.cc
-    common/error/SiLAError.cc
-    common/error/SiLAErrorException.cc
-    common/error/SiLAErrorSubtypes.cc
+    common/error/SilaError.cc
+    common/error/SilaErrorException.cc
+    common/error/SilaErrorSubtypes.cc
     server/metadata/MetadataExtractingInterceptor.cc
     client/ClientConfig.cc
     client/MetadataInjector.cc
@@ -198,10 +198,10 @@ add_library(sila2_core
     client/ServerRegistry.cc
     ${_sila_proto_generated_srcs}
 )
-add_library(sila2::core ALIAS sila2_core)
-add_dependencies(sila2_core sila2_generated_headers)
+add_library(sila_cpp_r::core ALIAS sila_cpp_r_core)
+add_dependencies(sila_cpp_r_core sila_cpp_r_generated_headers)
 
-set_target_properties(sila2_core PROPERTIES EXPORT_NAME core)
+set_target_properties(sila_cpp_r_core PROPERTIES EXPORT_NAME core)
 
 # -Wall/-Wextra on our own targets only, never via global CMAKE_CXX_FLAGS,
 # so vcpkg/protobuf-generated third-party sources don't drown out our own
@@ -209,20 +209,20 @@ set_target_properties(sila2_core PROPERTIES EXPORT_NAME core)
 # flags, so the warning count is unknown -- turning them into errors is a
 # deliberate follow-up once that count is seen.
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(sila2_core PRIVATE -Wall -Wextra)
+    target_compile_options(sila_cpp_r_core PRIVATE -Wall -Wextra)
     # The protoc/grpc-generated sources above are compiled as part of this
     # target; silence warnings on those specific files rather than on all of
-    # sila2_core, since they're vendor-generated code we don't own.
+    # sila_cpp_r_core, since they're vendor-generated code we don't own.
     set_source_files_properties(${_sila_proto_generated_srcs} PROPERTIES COMPILE_OPTIONS "-w")
 endif()
 
-target_include_directories(sila2_core PUBLIC
+target_include_directories(sila_cpp_r_core PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(sila2_core
+target_link_libraries(sila_cpp_r_core
     PRIVATE OpenSSL::Crypto gRPC::grpc++_reflection LibXml2::LibXml2 LibXslt::LibXslt nlohmann_json_schema_validator::validator
     PUBLIC  gRPC::grpc++ protobuf::libprotobuf
 )
@@ -230,32 +230,32 @@ target_link_libraries(sila2_core
 option(SILA_ENABLE_OTEL "Enable OpenTelemetry tracing" OFF)
 if(SILA_ENABLE_OTEL)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
-    target_link_libraries(sila2_core
+    target_link_libraries(sila_cpp_r_core
         PUBLIC  opentelemetry-cpp::api
         PRIVATE opentelemetry-cpp::sdk)
-    target_compile_definitions(sila2_core PUBLIC SILA_ENABLE_OTEL)
+    target_compile_definitions(sila_cpp_r_core PUBLIC SILA_ENABLE_OTEL)
 endif()
 
-# --- sila2_dynamic library (§1.1, §4.2) -----------------------------------
-# Device-side builds link only sila2::core, which now includes descriptor
-# assembly and the Any codec (R10-9a); orchestrators add sila2::dynamic
+# --- sila_cpp_r_dynamic library (§1.1, §4.2) -----------------------------------
+# Device-side builds link only sila_cpp_r::core, which now includes descriptor
+# assembly and the Any codec (R10-9a); orchestrators add sila_cpp_r::dynamic
 # for the runtime dynamic-call path (FeatureCatalog, GenericStub, JSON).
 
-add_library(sila2_dynamic
+add_library(sila_cpp_r_dynamic
     client/dynamic/FeatureCatalog.cc
     client/dynamic/DynamicCall.cc
     client/dynamic/ObservableCommandRunner.cc
     client/dynamic/JsonCodec.cc
 )
-add_library(sila2::dynamic ALIAS sila2_dynamic)
-set_target_properties(sila2_dynamic PROPERTIES EXPORT_NAME dynamic)
-add_dependencies(sila2_dynamic sila2_generated_headers)
+add_library(sila_cpp_r::dynamic ALIAS sila_cpp_r_dynamic)
+set_target_properties(sila_cpp_r_dynamic PROPERTIES EXPORT_NAME dynamic)
+add_dependencies(sila_cpp_r_dynamic sila_cpp_r_generated_headers)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(sila2_dynamic PRIVATE -Wall -Wextra)
+    target_compile_options(sila_cpp_r_dynamic PRIVATE -Wall -Wextra)
 endif()
 
-target_link_libraries(sila2_dynamic
-    PUBLIC  sila2::core
+target_link_libraries(sila_cpp_r_dynamic
+    PUBLIC  sila_cpp_r::core
     PRIVATE LibXml2::LibXml2 LibXslt::LibXslt
 )

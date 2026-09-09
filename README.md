@@ -27,17 +27,17 @@ This is a **re**-implementation of the SiLA protocol in C++, removing the Qt dep
 
 ## Library Structure
 
-- `sila2::core` — Server instance creation, static stub client, binary transfer, cloud connectivity, authentication & authorization, error recovery, mDNS discovery, FDL runtime parsing & constraint validation
-- `sila2::dynamic` — Operates on top of `sila2::core`; connects to core's channel (`grpc::Channel`), injector (`MetadataInjector`), etc. Builds protobuf descriptors from parsed FDL to make dynamic RPC calls without stubs.
+- `sila_cpp_r::core` — Server instance creation, static stub client, binary transfer, cloud connectivity, authentication & authorization, error recovery, mDNS discovery, FDL runtime parsing & constraint validation
+- `sila_cpp_r::dynamic` — Operates on top of `sila_cpp_r::core`; connects to core's channel (`grpc::Channel`), injector (`MetadataInjector`), etc. Builds protobuf descriptors from parsed FDL to make dynamic RPC calls without stubs.
 
 The two sub-libraries are designed for different use cases:
-- **`sila2::dynamic`** is designed for software that receives messages from multiple instruments and needs to interpret protobuf messages unknown at build time.
-- **`sila2::core`** is designed for resource-constrained instruments whose features are already defined by hardware. When using `sila2::core`, codegen converts the instrument's FDL to `.proto` IDL (Interface Description Language), then compiles it with `protoc`/`grpc_cpp_plugin` to produce static stubs.
+- **`sila_cpp_r::dynamic`** is designed for software that receives messages from multiple instruments and needs to interpret protobuf messages unknown at build time.
+- **`sila_cpp_r::core`** is designed for resource-constrained instruments whose features are already defined by hardware. When using `sila_cpp_r::core`, codegen converts the instrument's FDL to `.proto` IDL (Interface Description Language), then compiles it with `protoc`/`grpc_cpp_plugin` to produce static stubs.
 
 | | Instrument (SiLA Server) | Software (SiLA Client) |
 |---|---|---|
 | Stub | codegen FDL conversion → `.proto` + static stub + Metadata | None — dynamically interprets the peer's FDL |
-| Link | `sila2::core` | `sila2::dynamic` (+`sila2::core`) |
+| Link | `sila_cpp_r::core` | `sila_cpp_r::dynamic` (+`sila_cpp_r::core`) |
 | FDL runtime interpretation | Parameter constraint validation (`CommandParameterValidator.cc`) | Parameter constraint validation + dynamic message serialization/deserialization |
 
 ## Architecture
@@ -156,7 +156,7 @@ While `sila_cpp` implements only SiLAService, Observable commands/properties, di
 | `gtest` | 1.17.0 | Tests |
 | `opentelemetry-cpp` | 1.28.0 | Optional feature `otel` — OpenTelemetry instrumentation |
 
-## Build
+## build
 
 ```bash
 git clone --recursive <repo-url>
@@ -166,7 +166,7 @@ cmake --preset default
 cmake --build build/gcc
 ```
 
-| Preset | Build directory | Purpose |
+| Preset | build directory | Purpose |
 |---|---|---|
 | `default` | `build/gcc` | GCC, RelWithDebInfo |
 | `clang` | `build/clang` | Clang build |
@@ -235,28 +235,28 @@ Override the path with `--xsd` if it changes.
 ```cpp
 namespace gen = sila2::generated::temperaturecontroller;
 
-sila2::SiLAServerBase::Builder builder;
-builder.WithSelfSignedCertificate("localhost", "127.0.0.1")
-       .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("BioShakeQX"));
+sila2::SilaServerBase::Builder builder;
+builder.withSelfSignedCertificate("localhost", "127.0.0.1")
+       .withConfig(std::make_unique<sila2::InMemoryServerConfig>("BioShakeQX"));
 
 // TemperatureControllerImpl embeds the codegen-generated
 // TemperatureControllerServiceAdapter and registers handlers
 // for each RPC in its constructor.
 TemperatureControllerImpl impl(builder.chain());
 
-// AddFeature registers the FQI ID, FDL XML, and gRPC service pointer
+// addFeature registers the FQI ID, FDL XML, and gRPC service pointer
 // (TemperatureControllerServiceAdapter) with the server.
 // Chain With...() methods for discovery, binary transfer, authentication,
 // error recovery, and cloud connectivity.
-// Build() creates and registers the interceptors and gRPC services
+// build() creates and registers the interceptors and gRPC services
 // configured by the preceding methods.
 auto server = builder
-    .AddFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
-    .RegisterCommandManager(&impl.commandManager())
-    .WithDiscovery(50052)
-    .Build();
+    .addFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
+    .registerCommandManager(&impl.commandManager())
+    .withDiscovery(50052)
+    .build();
 
-server.Run(true);
+server.run(true);
 ```
 
 ### Client
@@ -284,7 +284,7 @@ src/
   sila/
     common/
       error/
-        SiLAError.h/.cc                     Framework · Validation · DefinedExecution · Undefined error types
+        SilaError.h/.cc                     Framework · Validation · DefinedExecution · Undefined error types
       types/
         BasicTypes.h                        SiLA basic types (Integer, Real, String, etc.) C++ mapping
         Constraints.h/.cc                   FDL constraint definitions & validation
@@ -294,9 +294,9 @@ src/
       discovery/
         MdnsSocketPair.h                    mDNS socket — shared by server & client
     server/
-      SiLAServerBase.h/.cc                  Server builder — configure with With...() methods, create with Build()
+      SilaServerBase.h/.cc                  Server builder — configure with With...() methods, create with build()
       FeatureRegistry.h/.cc                 Feature FQI / FDL / gRPC service registration & lookup
-      SiLAServiceImpl.h/.cc                 SiLAService implementation — GetFeatureDefinition and other core RPCs
+      SilaServiceImpl.h/.cc                 SiLAService implementation — GetFeatureDefinition and other core RPCs
       CommandParameterValidator.h/.cc       FDL constraint-based parameter runtime validation
       config/
         ServerConfig.h/.cc                  Server configuration persistence

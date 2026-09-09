@@ -9,7 +9,7 @@
 // forbids).
 #include <sila/server/metadata/MetadataPolicy.h>
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/transport/InterceptorChain.h>
 

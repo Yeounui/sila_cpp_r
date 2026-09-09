@@ -62,8 +62,8 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-install(TARGETS sila2_core sila2_dynamic
-    EXPORT sila2Targets
+install(TARGETS sila_cpp_r_core sila_cpp_r_dynamic
+    EXPORT sila_cpp_rTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
@@ -86,16 +86,16 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/src/sila/generated/
     FILES_MATCHING PATTERN "*.h"
 )
 
-install(EXPORT sila2Targets
-    NAMESPACE sila2::
+install(EXPORT sila_cpp_rTargets
+    NAMESPACE sila_cpp_r::
     FILE sila_cpp_rTargets.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sila_cpp_r
 )
 
 if(SILA_ENABLE_OTEL)
-    set(SILA2_OTEL_FIND_DEPENDENCY "find_dependency(opentelemetry-cpp CONFIG)")
+    set(SILA_OTEL_FIND_DEPENDENCY "find_dependency(opentelemetry-cpp CONFIG)")
 else()
-    set(SILA2_OTEL_FIND_DEPENDENCY "")
+    set(SILA_OTEL_FIND_DEPENDENCY "")
 endif()
 
 configure_package_config_file(

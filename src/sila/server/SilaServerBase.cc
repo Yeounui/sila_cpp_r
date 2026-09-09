@@ -1,5 +1,5 @@
-// SiLAServerBase.cc
-#include "SiLAServerBase.h"
+// SilaServerBase.cc
+#include "SilaServerBase.h"
 
 #include <sila/common/tls/UntrustedTlsCredentials.h>
 #include <sila/common/types/Constraints.h>
@@ -28,7 +28,7 @@
 #include <sila/server/recovery/ErrorRecoveryServiceImpl.h>
 #include <sila/server/recovery/RecoverableErrorGate.h>
 #include <sila/server/metadata/MetadataPolicy.h>
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/property/ObservablePropertyManager.h>
 
 #include "ErrorRecoveryService.pb.h"
@@ -49,14 +49,14 @@
 // The gate's local spelling (MetadataPolicy.h, spelled there to keep the
 // generated-adapter include graph free of SiLAService.grpc.pb.h) must never
 // drift from the canonical one: a drift would silently disable rule (a) for
-// the real SiLAService while WithMetadata kept rejecting the other spelling.
+// the real SiLAService while withMetadata kept rejecting the other spelling.
 static_assert(sila2::kSiLAServiceFqi == sila2::kSiLAServiceFeatureFqi);
 
 namespace sila2 {
 
 namespace {
 
-// The three FDL Patterns Build() validates a default-or-caller-supplied
+// The three FDL Patterns build() validates a default-or-caller-supplied
 // Identity against. Duplicated from the FDL into C++ string literals rather
 // than parsed from it at runtime -- codegen-emitted constraint constants
 // would remove the duplication but that is out of this item's scope.
@@ -75,13 +75,13 @@ const std::string kServerVersionPattern =
 // SiLAService-v1_0.sila.xml:197 -- ServerVendorURL Pattern.
 const std::string kServerVendorUrlPattern = "https?://.+";
 
-// One throw site for all three identity checks in Build(), so the
+// One throw site for all three identity checks in build(), so the
 // std::logic_error construction is written once instead of three times.
 void requireIdentityPattern(const char* property, const std::string& value,
                              const std::string& pattern) {
     if (auto patternError = types::checkPattern(value, pattern)) {
         throw std::logic_error{
-            "SiLAServerBase::Builder::Build: " + std::string{property} +
+            "SilaServerBase::Builder::build: " + std::string{property} +
             " does not match its FDL Pattern: " + *patternError};
     }
 }
@@ -107,7 +107,7 @@ std::string loadOrCreatePersistentUuid(const std::filesystem::path& path) {
             InMemoryServerConfig{storedUuid, "SiLAServer"};
         } catch (const std::invalid_argument& badUuid) {
             throw std::runtime_error{
-                "SiLAServerBase::Builder::WithPersistentUuid: " + path.string() +
+                "SilaServerBase::Builder::withPersistentUuid: " + path.string() +
                 " does not hold a conformant ServerUUID: " + badUuid.what()};
         }
         return storedUuid;
@@ -117,25 +117,25 @@ std::string loadOrCreatePersistentUuid(const std::filesystem::path& path) {
     std::ofstream out{path};
     if (!out) {
         throw std::runtime_error{
-            "SiLAServerBase::Builder::WithPersistentUuid: could not create " + path.string()};
+            "SilaServerBase::Builder::withPersistentUuid: could not create " + path.string()};
     }
     out << freshUuid;
     out.flush();
     if (!out) {
         throw std::runtime_error{
-            "SiLAServerBase::Builder::WithPersistentUuid: could not write " + path.string()};
+            "SilaServerBase::Builder::withPersistentUuid: could not write " + path.string()};
     }
     return freshUuid;
 }
 
 }  // namespace
 
-SiLAServerBase::OwnedComponents::OwnedComponents() = default;
-SiLAServerBase::OwnedComponents::~OwnedComponents() = default;
-SiLAServerBase::OwnedComponents::OwnedComponents(OwnedComponents&&) noexcept = default;
-SiLAServerBase::OwnedComponents& SiLAServerBase::OwnedComponents::operator=(OwnedComponents&&) noexcept = default;
+SilaServerBase::OwnedComponents::OwnedComponents() = default;
+SilaServerBase::OwnedComponents::~OwnedComponents() = default;
+SilaServerBase::OwnedComponents::OwnedComponents(OwnedComponents&&) noexcept = default;
+SilaServerBase::OwnedComponents& SilaServerBase::OwnedComponents::operator=(OwnedComponents&&) noexcept = default;
 
-SiLAServerBase::SiLAServerBase(FeatureRegistry featureRegistry,
+SilaServerBase::SilaServerBase(FeatureRegistry featureRegistry,
                                 std::string certificatePem, std::string privateKeyPem,
                                 std::string caCertPem,
                                 std::unique_ptr<ServerConfig> config,
@@ -166,14 +166,14 @@ SiLAServerBase::SiLAServerBase(FeatureRegistry featureRegistry,
       // featureRegistry_ and config_ are initialized above, safe to reference.
       // components (parameter) has not been moved yet — silaService_ is declared
       // before components_ in the class, so its initializer runs first.
-      silaService_{std::make_shared<SiLAServiceImpl>(featureRegistry_, *config_,
+      silaService_{std::make_shared<SilaServiceImpl>(featureRegistry_, *config_,
                                                       components.mdnsPublisher.get(),
                                                       components.chain.get())},
       components_{std::move(components)},
       port_{port} {
     featureRegistry_.registerService(std::string{kSiLAServiceFqi}, silaService_);
 
-    // Built here, not in Build(): the router built in Build() would reference
+    // Built here, not in build(): the router built in build() would reference
     // the Builder's featureRegistry_, which dangles once moved into the
     // member above. Recreating with featureRegistry_ (already moved-into)
     // keeps the reference valid for the server's lifetime.
@@ -185,9 +185,9 @@ SiLAServerBase::SiLAServerBase(FeatureRegistry featureRegistry,
 
     // Part A p32 (SHALL): every SiLA Server conforming to SiLA 2 Version >=
     // "1.1" SHALL support the Server-Initiated Connection Method, indicated
-    // by offering this Feature (Part A p80 SHALL: implement it). Build()
+    // by offering this Feature (Part A p80 SHALL: implement it). build()
     // guarantees connectionConfigurationCredentials is never null here --
-    // either the caller's WithConnectionConfiguration, or Build()'s own
+    // either the caller's withConnectionConfiguration, or build()'s own
     // default derivation -- so the 4-arg constructor is the only one needed.
     components_.connectionConfigurationService =
         std::make_shared<ConnectionConfigurationServiceImpl>(
@@ -198,15 +198,15 @@ SiLAServerBase::SiLAServerBase(FeatureRegistry featureRegistry,
         components_.connectionConfigurationService);
 
     std::string silaFqi{kSiLAServiceFqi};
-    regCmd(r, silaFqi, "GetFeatureDefinition", silaService_, &SiLAServiceImpl::getFeatureDefinition);
-    regCmd(r, silaFqi, "SetServerName",        silaService_, &SiLAServiceImpl::setServerName);
-    regProp(r, silaFqi, "ServerName",          silaService_, &SiLAServiceImpl::getServerName);
-    regProp(r, silaFqi, "ServerType",          silaService_, &SiLAServiceImpl::getServerType);
-    regProp(r, silaFqi, "ServerUUID",          silaService_, &SiLAServiceImpl::getServerUuid);
-    regProp(r, silaFqi, "ServerDescription",   silaService_, &SiLAServiceImpl::getServerDescription);
-    regProp(r, silaFqi, "ServerVersion",       silaService_, &SiLAServiceImpl::getServerVersion);
-    regProp(r, silaFqi, "ServerVendorURL",     silaService_, &SiLAServiceImpl::getServerVendorUrl);
-    regProp(r, silaFqi, "ImplementedFeatures", silaService_, &SiLAServiceImpl::getImplementedFeatures);
+    regCmd(r, silaFqi, "GetFeatureDefinition", silaService_, &SilaServiceImpl::getFeatureDefinition);
+    regCmd(r, silaFqi, "SetServerName",        silaService_, &SilaServiceImpl::setServerName);
+    regProp(r, silaFqi, "ServerName",          silaService_, &SilaServiceImpl::getServerName);
+    regProp(r, silaFqi, "ServerType",          silaService_, &SilaServiceImpl::getServerType);
+    regProp(r, silaFqi, "ServerUUID",          silaService_, &SilaServiceImpl::getServerUuid);
+    regProp(r, silaFqi, "ServerDescription",   silaService_, &SilaServiceImpl::getServerDescription);
+    regProp(r, silaFqi, "ServerVersion",       silaService_, &SilaServiceImpl::getServerVersion);
+    regProp(r, silaFqi, "ServerVendorURL",     silaService_, &SilaServiceImpl::getServerVendorUrl);
+    regProp(r, silaFqi, "ImplementedFeatures", silaService_, &SilaServiceImpl::getImplementedFeatures);
 
     // Unconditional now (Part A p80): the service always exists, so both the
     // direct-gRPC service base (registerService above) and these cloud handlers
@@ -311,7 +311,7 @@ SiLAServerBase::SiLAServerBase(FeatureRegistry featureRegistry,
     }
 }
 
-void SiLAServerBase::stopCommandManagerGC() {
+void SilaServerBase::stopCommandManagerGC() {
     for (auto* mgr : components_.commandManagers) {
         mgr->stopAutoGC();
         // Also drop the observers themselves: after this point cloudRouter and
@@ -325,24 +325,24 @@ void SiLAServerBase::stopCommandManagerGC() {
 
 // Defined here (not = default in header) so that the implicit
 // unique_ptr<grpc::Server> destructor sees the complete type.
-SiLAServerBase::~SiLAServerBase() {
-    // Shutdown(), not just stopCommandManagerGC(): members die in reverse
+SilaServerBase::~SilaServerBase() {
+    // shutdown(), not just stopCommandManagerGC(): members die in reverse
     // declaration order, components_ before server_, so errorRecoveryPropMgr
     // would be destroyed while a Subscribe_RecoverableErrors handler still
     // holds it by reference, and only then would ~unique_ptr<grpc::Server>
     // run its own no-deadline shutdown and wait for that same handler --
-    // a use-after-free followed by a hang. Shutdown() cancels and joins
-    // first. Idempotent, so this is a no-op after an explicit Shutdown().
-    Shutdown();
+    // a use-after-free followed by a hang. shutdown() cancels and joins
+    // first. Idempotent, so this is a no-op after an explicit shutdown().
+    shutdown();
 }
 // Explicit: chain_ must be heap-allocated upfront so chain() returns a
-// stable pointer that adapters can capture before Build() populates it.
-SiLAServerBase::Builder::Builder()
+// stable pointer that adapters can capture before build() populates it.
+SilaServerBase::Builder::Builder()
     : logCallback_{defaultLogCallback()},
       chain_{std::make_unique<InterceptorChain>()} {}
-SiLAServerBase::Builder::~Builder() = default;
+SilaServerBase::Builder::~Builder() = default;
 
-void SiLAServerBase::Run(bool block) {
+void SilaServerBase::run(bool block) {
     grpc::ServerBuilder builder;
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -383,14 +383,14 @@ void SiLAServerBase::Run(bool block) {
     }
 
     // Part A p32/p80: the service is always present and always configured
-    // (Build() supplies default credentials/store when the caller did not),
+    // (build() supplies default credentials/store when the caller did not),
     // so this reconnects every persisted client on every server.
     components_.connectionConfigurationService->connectPersistentClients();
 
     server_ = builder.BuildAndStart();
     if (!server_) {
         throw std::runtime_error{
-            "SiLAServerBase::Run: gRPC server failed to start — "
+            "SilaServerBase::Run: gRPC server failed to start — "
             "check port availability and TLS credentials"};
     }
 
@@ -401,7 +401,7 @@ void SiLAServerBase::Run(bool block) {
 
     // Advertise only now: port_ above is the port the listener actually holds,
     // and BuildAndStart has already succeeded, so every SRV record this sends
-    // names a socket that accepts connections. A Run() that threw above leaves
+    // names a socket that accepts connections. A run() that threw above leaves
     // the publisher silent, which is the correct outcome for a server that
     // never bound.
     if (components_.mdnsPublisher) {
@@ -410,7 +410,7 @@ void SiLAServerBase::Run(bool block) {
             components_.mdnsPublisher->publish();
         } catch (const std::exception& e) {
             // publish() throwing (no mDNS socket could open) must not tear down
-            // a gRPC server that already started: callers would see Run() fail
+            // a gRPC server that already started: callers would see run() fail
             // half-done and might retry over a live server_. The server stays
             // reachable by direct dial, only undiscoverable.
             logEvent(components_.chain->logCallback, LogLevel::kWarning, "discovery",
@@ -423,15 +423,15 @@ void SiLAServerBase::Run(bool block) {
     }
 }
 
-void SiLAServerBase::Shutdown() {
+void SilaServerBase::shutdown() {
     for (auto* mgr : components_.commandManagers) {
         mgr->interruptAll();
     }
     // Command managers are application-owned and can outlive this server, so
-    // Shutdown() must drop the callback into cloudRouter (which does not
+    // shutdown() must drop the callback into cloudRouter (which does not
     // outlive this server) before returning. binaryStore's and
     // authTokenStore's GC are server-owned components with no such dangling
-    // risk, so they are left running until ~SiLAServerBase.
+    // risk, so they are left running until ~SilaServerBase.
     stopCommandManagerGC();
     if (components_.mdnsPublisher) {
         components_.mdnsPublisher->shutdown();
@@ -459,17 +459,17 @@ void SiLAServerBase::Shutdown() {
 /*  const FeatureRegistry: 반환값 수정 못하게.
     const {...}: 메서드 내 멤버 수정 못하게.
 */
-const FeatureRegistry& SiLAServerBase::featureRegistry() const { return featureRegistry_; }
-const std::string& SiLAServerBase::certificatePem() const { return certificatePem_; }
-const std::string& SiLAServerBase::privateKeyPem() const { return privateKeyPem_; }
-ServerConfig& SiLAServerBase::serverConfig() { return *config_; }
-const ServerConfig& SiLAServerBase::serverConfig() const { return *config_; }
-CloudEnvelopeRouter* SiLAServerBase::cloudRouter() { return components_.cloudRouter.get(); }
-ObservablePropertyManager* SiLAServerBase::errorRecoveryPropertyManager() { return components_.errorRecoveryPropMgr.get(); }
-const discovery::MdnsPublisher* SiLAServerBase::mdnsPublisher() const { return components_.mdnsPublisher.get(); }
-uint16_t SiLAServerBase::port() const { return port_; }
+const FeatureRegistry& SilaServerBase::featureRegistry() const { return featureRegistry_; }
+const std::string& SilaServerBase::certificatePem() const { return certificatePem_; }
+const std::string& SilaServerBase::privateKeyPem() const { return privateKeyPem_; }
+ServerConfig& SilaServerBase::serverConfig() { return *config_; }
+const ServerConfig& SilaServerBase::serverConfig() const { return *config_; }
+CloudEnvelopeRouter* SilaServerBase::cloudRouter() { return components_.cloudRouter.get(); }
+ObservablePropertyManager* SilaServerBase::errorRecoveryPropertyManager() { return components_.errorRecoveryPropMgr.get(); }
+const discovery::MdnsPublisher* SilaServerBase::mdnsPublisher() const { return components_.mdnsPublisher.get(); }
+uint16_t SilaServerBase::port() const { return port_; }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::AddFeature(
+SilaServerBase::Builder& SilaServerBase::Builder::addFeature(
     std::string fqi, std::string fdlXml, std::shared_ptr<grpc::Service> service) {
     featureRegistry_.registerFeature(fqi, std::move(fdlXml));
     if (service) {
@@ -478,23 +478,23 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::AddFeature(
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithConfig(
+SilaServerBase::Builder& SilaServerBase::Builder::withConfig(
     std::unique_ptr<ServerConfig> config) {
     config_ = std::move(config);
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithPersistentUuid(std::filesystem::path path) {
+SilaServerBase::Builder& SilaServerBase::Builder::withPersistentUuid(std::filesystem::path path) {
     persistentUuidPath_ = std::move(path);
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithSelfSignedCertificate(
+SilaServerBase::Builder& SilaServerBase::Builder::withSelfSignedCertificate(
     std::string hostname, std::string ip) {
-    // Defer key+cert generation to Build(), where the server UUID is known
+    // Defer key+cert generation to build(), where the server UUID is known
     // and can be embedded as the OID extension (Part B p75 RECOMMENDED).
     selfSignedParams_ = SelfSignedParams{std::move(hostname), std::move(ip)};
-    // Clear any WithCertificate material so last-write-wins and Build()
+    // Clear any withCertificate material so last-write-wins and build()
     // retry after a late failure does not see stale cert data.
     certificatePem_.clear();
     privateKeyPem_.clear();
@@ -502,7 +502,7 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::WithSelfSignedCertificate(
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithCertificate(
+SilaServerBase::Builder& SilaServerBase::Builder::withCertificate(
     std::string certificatePem, std::string privateKeyPem,
     std::string caCertPemForDiscovery) {
     certificatePem_ = std::move(certificatePem);
@@ -512,27 +512,27 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::WithCertificate(
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithMutualTls(std::string caCertPem) {
+SilaServerBase::Builder& SilaServerBase::Builder::withMutualTls(std::string caCertPem) {
     caCertPem_ = std::move(caCertPem);
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithBinaryTransfer() {
+SilaServerBase::Builder& SilaServerBase::Builder::withBinaryTransfer() {
     enableBinaryTransfer_ = true;
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithAuthentication(
+SilaServerBase::Builder& SilaServerBase::Builder::withAuthentication(
     std::unique_ptr<auth::CredentialVerifier> verifier,
     std::unique_ptr<auth::AccessPolicy> policy,
     std::vector<std::string> protectedFqis) {
     if (!verifier) {
         throw std::invalid_argument{
-            "SiLAServerBase::Builder::WithAuthentication: verifier must not be null"};
+            "SilaServerBase::Builder::withAuthentication: verifier must not be null"};
     }
     if (!policy) {
         throw std::invalid_argument{
-            "SiLAServerBase::Builder::WithAuthentication: policy must not be null"};
+            "SilaServerBase::Builder::withAuthentication: policy must not be null"};
     }
     // protectedFqis accepts Feature, Command, and Property FQIs: the codegen
     // upgrade makes the gRPC path gate at Command/Property granularity (symmetric
@@ -544,7 +544,7 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::WithAuthentication(
     for (const auto& entry : protectedFqis) {
         if (auth::isMetadataFqi(entry)) {
             throw std::invalid_argument{
-                "SiLAServerBase::Builder::WithAuthentication: protectedFqis entry '"
+                "SilaServerBase::Builder::withAuthentication: protectedFqis entry '"
                 + entry + "' names a Metadata item; Metadata-granular authorization "
                 "is not supported -- use its Feature, Command, or Property FQI."};
         }
@@ -554,7 +554,7 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::WithAuthentication(
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithMetadata(
+SilaServerBase::Builder& SilaServerBase::Builder::withMetadata(
     std::string metadataFqi, std::vector<std::string> affectedCalls) {
     for (const auto& entry : affectedCalls) {
         // Part A: the affected list "MUST NOT contain any Commands or
@@ -567,7 +567,7 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::WithMetadata(
         // Command-granular entry under SiLAService is caught too.
         if (auth::fqiCovers(kSiLAServiceFqi, entry)) {
             throw std::invalid_argument{
-                "SiLAServerBase::Builder::WithMetadata: affectedCalls entry '"
+                "SilaServerBase::Builder::withMetadata: affectedCalls entry '"
                 + entry + "' is part of the SiLAService Feature, which must never"
                           " be affected by SiLA Client Metadata."};
         }
@@ -576,33 +576,33 @@ SiLAServerBase::Builder& SiLAServerBase::Builder::WithMetadata(
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithLock() {
+SilaServerBase::Builder& SilaServerBase::Builder::withLock() {
     enableLock_ = true;
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithErrorRecovery() {
+SilaServerBase::Builder& SilaServerBase::Builder::withErrorRecovery() {
     enableErrorRecovery_ = true;
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithConnectionConfiguration(
+SilaServerBase::Builder& SilaServerBase::Builder::withConnectionConfiguration(
     std::filesystem::path storePath,
     std::shared_ptr<grpc::ChannelCredentials> outboundCredentials) {
     if (storePath.empty()) {
         throw std::invalid_argument{
-            "SiLAServerBase::Builder::WithConnectionConfiguration: storePath must not be empty"};
+            "SilaServerBase::Builder::withConnectionConfiguration: storePath must not be empty"};
     }
     if (!outboundCredentials) {
         throw std::invalid_argument{
-            "SiLAServerBase::Builder::WithConnectionConfiguration: outboundCredentials must not be null"};
+            "SilaServerBase::Builder::withConnectionConfiguration: outboundCredentials must not be null"};
     }
     connectionConfigurationConfig_ = {
         std::move(storePath), std::move(outboundCredentials)};
     return *this;
 }
 
-tls::OutboundCredentialsProvider SiLAServerBase::Builder::defaultOutboundCredentials(
+tls::OutboundCredentialsProvider SilaServerBase::Builder::defaultOutboundCredentials(
     std::string certificatePem, std::string privateKeyPem, std::string caCertPem) {
     // Part A p32 default. This server's own certificate is always presented
     // as identity (CloudClientListener on the client side binds the connection
@@ -629,41 +629,41 @@ tls::OutboundCredentialsProvider SiLAServerBase::Builder::defaultOutboundCredent
     };
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::WithDiscovery(uint16_t port) {
+SilaServerBase::Builder& SilaServerBase::Builder::withDiscovery(uint16_t port) {
     discoveryPort_ = port;
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::RegisterCommandManager(
+SilaServerBase::Builder& SilaServerBase::Builder::registerCommandManager(
     ObservableCommandManager* mgr) {
-    // GC is started in Build(), not here — see this method's doc comment.
+    // GC is started in build(), not here — see this method's doc comment.
     commandManagers_.push_back(mgr);
     return *this;
 }
 
-SiLAServerBase::Builder& SiLAServerBase::Builder::setLogCallback(LogCallback cb) {
+SilaServerBase::Builder& SilaServerBase::Builder::setLogCallback(LogCallback cb) {
     logCallback_ = std::move(cb);
     return *this;
 }
 
-const InterceptorChain* SiLAServerBase::Builder::chain() const {
+const InterceptorChain* SilaServerBase::Builder::chain() const {
     return chain_.get();
 }
 
-SiLAServerBase SiLAServerBase::Builder::Build() {
+SilaServerBase SilaServerBase::Builder::build() {
     if (!selfSignedParams_ && (certificatePem_.empty() || privateKeyPem_.empty())) {
         throw std::logic_error{
-            "SiLAServerBase::Builder::Build: TLS material required — call "
-            "WithSelfSignedCertificate or WithCertificate first"};
+            "SilaServerBase::Builder::build: TLS material required — call "
+            "withSelfSignedCertificate or withCertificate first"};
     }
 
-    // WithConfig and WithPersistentUuid each supply their own uuid source, so
+    // withConfig and withPersistentUuid each supply their own uuid source, so
     // calling both is ambiguous about which one should win. config_ is still
-    // nullptr here unless WithConfig set it, which is the only signal
+    // nullptr here unless withConfig set it, which is the only signal
     // available to detect the conflict.
     if (persistentUuidPath_ && config_) {
         throw std::logic_error{
-            "SiLAServerBase::Builder::Build: WithConfig and WithPersistentUuid "
+            "SilaServerBase::Builder::build: withConfig and withPersistentUuid "
             "are mutually exclusive"};
     }
 
@@ -679,11 +679,11 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
             // every boot, violating SiLAService-v1_0.sila.xml:134-137's "generated
             // once and remain the same for all times" obligation -- and doing so
             // silently, which is the worst failure mode. Refuse instead: the caller
-            // owns where the UUID is persisted (WithConfig injects a caller-stored
-            // one, WithPersistentUuid delegates the file to this library).
+            // owns where the UUID is persisted (withConfig injects a caller-stored
+            // one, withPersistentUuid delegates the file to this library).
             throw std::logic_error{
-                "SiLAServerBase::Builder::Build: no server identity -- call WithConfig "
-                "with a caller-persisted ServerUUID, or WithPersistentUuid(path). A UUID "
+                "SilaServerBase::Builder::build: no server identity -- call withConfig "
+                "with a caller-persisted ServerUUID, or withPersistentUuid(path). A UUID "
                 "generated fresh each boot violates SiLAService-v1_0.sila.xml:134-137."};
         }
     }
@@ -700,40 +700,40 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
         discoveryCaCertPem_ = certificatePem_;
     }
 
-    // Checked here, not in ServerConfig's constructors: Build() is the one
+    // Checked here, not in ServerConfig's constructors: build() is the one
     // seam every ServerConfig implementation -- present and future -- passes
     // through, and it is the last point at which these values are still
     // ours to reject.
     const std::string serverUuid = config_->uuid();
     if (auto lengthError = types::checkLength(serverUuid, 36)) {
         throw std::logic_error{
-            "SiLAServerBase::Builder::Build: ServerUUID " + *lengthError};
+            "SilaServerBase::Builder::build: ServerUUID " + *lengthError};
     }
     requireIdentityPattern("ServerUUID", serverUuid, kServerUuidPattern);
 
     if (auto lengthError = types::checkMaximalLength(config_->serverType(), 255)) {
         throw std::logic_error{
-            "SiLAServerBase::Builder::Build: ServerType " + *lengthError};
+            "SilaServerBase::Builder::build: ServerType " + *lengthError};
     }
     requireIdentityPattern("ServerType", config_->serverType(), kServerTypePattern);
     requireIdentityPattern("ServerVersion", config_->version(), kServerVersionPattern);
     requireIdentityPattern("ServerVendorURL", config_->vendorUrl(), kServerVendorUrlPattern);
 
     // ServerName's MaximalLength 255 (SiLAService-v1_0.sila.xml:107) is enforced
-    // on the SetServerName path, but the *initial* name injected through WithConfig
-    // never passes through that command -- Build() is its only conformance seam
+    // on the SetServerName path, but the *initial* name injected through withConfig
+    // never passes through that command -- build() is its only conformance seam
     // (audit #6). checkMaximalLength counts Unicode code points, matching
     // SetServerName's own check so both paths reject the same values.
     if (auto lengthError = types::checkMaximalLength(config_->name(), 255)) {
         throw std::logic_error{
-            "SiLAServerBase::Builder::Build: ServerName " + *lengthError};
+            "SilaServerBase::Builder::build: ServerName " + *lengthError};
     }
 
     // ponytail: codegen will emit this in SiLAServiceMeta (§2); explicit call removed then
     featureRegistry_.registerFeature(std::string{kSiLAServiceFqi}, silaServiceFdlXml());
     // Part A p32 SHALL support + p80 SHALL implement: unconditional, like
     // SiLAService above. The FDL is advertised whether or not
-    // WithConnectionConfiguration was called, so the Feature appears in
+    // withConnectionConfiguration was called, so the Feature appears in
     // ListImplementedFeatures / GetFeatureDefinition on every 1.1 server.
     featureRegistry_.registerFeature(
         std::string{kConnectionConfigurationServiceFqi},
@@ -770,7 +770,7 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
             *components.accessPolicy, *config_, chain_.get());
         // Copies rather than moves: the gate below still reads
         // authConfig_->protectedFqis, and the list is a handful of short
-        // strings built once at Build().
+        // strings built once at build().
         components.authzService = std::make_shared<AuthorizationServiceImpl>(
             authConfig_->protectedFqis, chain_.get());
         components.authzConfigService =
@@ -833,7 +833,7 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
 
     // Part B p75 MUST: "the SiLA Server MUST have SiLA Server Discovery
     // enabled by default. It MUST NOT be possible to disable any part of
-    // SiLA Server Discovery." -- constructed unconditionally; WithDiscovery
+    // SiLA Server Discovery." -- constructed unconditionally; withDiscovery
     // only overrides `port` above, it cannot suppress this. The instance
     // name is the ServerUUID, not ServerName (Part B p76 MUST), so uuid is
     // passed first; serverName/description feed the server_name/description
@@ -843,11 +843,11 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
         config_->uuid(), config_->name(), config_->description(), discoveryCaCertPem_,
         port, config_->mdnsReadvertiseInterval(), config_->mdnsRecordTtl(),
         config_->mdnsProbeWait());
-    // Constructed here (SiLAServiceImpl below captures this pointer for
+    // Constructed here (SilaServiceImpl below captures this pointer for
     // SetServerName's mDNS rename) but deliberately NOT published here:
-    // the SRV port is only final after Run()'s BuildAndStart, so
+    // the SRV port is only final after run()'s BuildAndStart, so
     // publishing now would advertise the requested port before anything
-    // is listening on it, and the literal 0 for a WithDiscovery(0)
+    // is listening on it, and the literal 0 for a withDiscovery(0)
     // server (audit S31).
 
     // Populate interceptor chain — adapters already hold chain() pointer;
@@ -856,7 +856,7 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
     chain_->binaryStore = components.binaryStore.get();
     chain_->binarySlotLifetime = config_->binarySlotLifetime();
     chain_->logCallback = std::move(logCallback_);
-    // Snapshot before featureRegistry_ is moved into SiLAServerBase below —
+    // Snapshot before featureRegistry_ is moved into SilaServerBase below —
     // every built-in Feature (SiLAService above, auth/error-recovery Features
     // above) is already registered by this point, so CreateBinary's parameter-
     // FQI gate (BinaryUploadService.cc) sees the complete list.
@@ -882,7 +882,7 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
         // take the identifier as a Parameter (:29-39, :78-85), so no FCP of this
         // Feature is affected by the metadata. SiLAService: Part A's affected list
         // "MUST NOT contain ... the SiLA Service Feature Identifier itself", which
-        // is also why WithMetadata refuses it (above).
+        // is also why withMetadata refuses it (above).
         // Snapshotted from the same frozen registry as registeredFeatureFqis above,
         // so the list cannot change during the server's lifetime, as Part A requires.
         std::vector<std::string> affected;
@@ -906,17 +906,17 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
         };
     }
     components.chain = std::move(chain_);
-    // Started here rather than in RegisterCommandManager: a Builder that is
+    // Started here rather than in registerCommandManager: a Builder that is
     // registered but never successfully built (the TLS/config checks above
     // throw) leaves no sweep thread running on the caller-owned manager. The
     // UUID->execution map only shrinks via removeExpired(); nothing else
-    // starts the sweep in production. The SiLAServerBase{...} constructor
+    // starts the sweep in production. The SilaServerBase{...} constructor
     // below can still throw during feature/property registration, but its
     // last action is addRemovalObserver() (this file, above), so nothing
     // dangles on that path — and ~ObservableCommandManager stops the sweep
     // regardless, since mgr is application-owned and can outlive the server.
-    // Stopped in the non-throwing case by SiLAServerBase::Shutdown()/
-    // ~SiLAServerBase (stopCommandManagerGC).
+    // Stopped in the non-throwing case by SilaServerBase::shutdown()/
+    // ~SilaServerBase (stopCommandManagerGC).
     for (auto* mgr : commandManagers_) {
         mgr->startAutoGC(std::chrono::seconds{60});
     }
@@ -934,7 +934,7 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
     } else {
         // Part A p32: every SiLA 2 Version >= "1.1" server SHALL support
         // server-initiated connections, so a server built without
-        // WithConnectionConfiguration still gets a working store and
+        // withConnectionConfiguration still gets a working store and
         // outbound credentials rather than being left "unconfigured".
         connectionConfigurationStorePath = persistentUuidPath_
             ? std::filesystem::path{persistentUuidPath_->string() + ".connections"}
@@ -945,7 +945,7 @@ SiLAServerBase SiLAServerBase::Builder::Build() {
             defaultOutboundCredentials(certificatePem_, privateKeyPem_, caCertPem_);
     }
 
-    return SiLAServerBase{std::move(featureRegistry_), std::move(certificatePem_),
+    return SilaServerBase{std::move(featureRegistry_), std::move(certificatePem_),
                           std::move(privateKeyPem_), std::move(caCertPem_),
                           std::move(config_), std::move(components),
                           std::move(connectionConfigurationStorePath),

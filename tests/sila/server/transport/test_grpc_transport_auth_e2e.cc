@@ -1,11 +1,11 @@
 // test_grpc_transport_auth_e2e.cc — End-to-end tests for dispatchToHandler's
 // auth path (architecture.md §3.8, §3.11). A real gRPC unary call reaches
 // dispatchToHandler, which runs AuthorizationInterceptor::intercept before
-// the handler; a rejection throws a SiLAError that guardHandler routes to
-// sink.fail(), and GrpcUnaryResponseSink converts it via SiLAError::toStatus()
+// the handler; a rejection throws a SilaError that guardHandler routes to
+// sink.fail(), and GrpcUnaryResponseSink converts it via SilaError::toStatus()
 // into a gRPC ABORTED grpc::Status carrying the serialized SiLA error in the
 // binary details field. These tests drive that whole path over a real socket
-// with a real grpc::Stub and decode the returned Status back into a SiLAError
+// with a real grpc::Stub and decode the returned Status back into a SilaError
 // via fromGrpcStatus — the wire-level conversion no existing test exercises.
 // AuthorizationInterceptor's own unit tests (test_authorization_interceptor.cc)
 // stop at the thrown C++ exception, one layer before dispatchToHandler and the
@@ -17,8 +17,8 @@
 // RPC surface needed to drive dispatchToHandler over a socket.
 #include <sila/server/transport/GrpcTransport.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/auth/AuthTokenStore.h>
 #include <sila/server/auth/AuthorizationInterceptor.h>
 #include <sila/server/binary/BinaryUploadService.h>
@@ -46,7 +46,7 @@ using sila2::auth::AuthTokenStore;
 using sila2::error::DefinedExecutionError;
 using sila2::error::FrameworkError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::BinaryUploadService;
 using sila2::InMemoryBinaryStore;
 using sila2::kBinaryUploadFqi;
@@ -371,7 +371,7 @@ TEST(GrpcTransportAuthE2E, ProtectedFqiWithoutTokenReturnsAbortedWithInvalidMeta
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::FrameworkError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::FrameworkError);
     const auto* err = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->frameworkErrorType(), FrameworkError::FrameworkErrorType::InvalidMetadata);
@@ -391,7 +391,7 @@ TEST(GrpcTransportAuthE2E, ProtectedFqiWithInvalidTokenReturnsAbortedWithInvalid
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidAccessTokenErrorId);
@@ -411,7 +411,7 @@ TEST(GrpcTransportAuthE2E, CreateBinaryWithoutTokenForProtectedParamReturnsAbort
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::FrameworkError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::FrameworkError);
     const auto* err = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->frameworkErrorType(), FrameworkError::FrameworkErrorType::InvalidMetadata);
@@ -433,7 +433,7 @@ TEST(GrpcTransportAuthE2E, CreateBinaryWithInvalidTokenReturnsAborted) {
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidAccessTokenErrorId);
@@ -457,7 +457,7 @@ TEST(GrpcTransportAuthE2E, CreateBinaryWithTokenScopedToDifferentParamReturnsAbo
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidAccessTokenErrorId);
@@ -489,7 +489,7 @@ TEST(GrpcTransportAuthE2E, UploadChunkWithoutTokenOnProtectedFqiReturnsInvalidMe
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::FrameworkError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::FrameworkError);
     const auto* err = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->frameworkErrorType(), FrameworkError::FrameworkErrorType::InvalidMetadata);
@@ -553,7 +553,7 @@ TEST(GrpcTransportAuthE2E, UploadChunkWithTokenScopedToAnotherFqiReturnsInvalidA
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* err = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->errorIdentifier(), kInvalidAccessTokenErrorId);

@@ -13,7 +13,7 @@ set -u
 ITERS="${1:-100}"
 BUILD="${2:-build/gcc}"
 BIN="$BUILD/tests/test_sila"
-FILTER='SiLAServerBaseRun.StartsListeningAndServesUnaryRpc'
+FILTER='SilaServerBaseRun.StartsListeningAndServesUnaryRpc'
 
 ulimit -c unlimited
 

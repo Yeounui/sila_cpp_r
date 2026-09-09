@@ -3,8 +3,8 @@
 // as SiLA errors, preventing non-SiLA exceptions from leaking across the RPC
 // boundary.
 #include <sila/server/error/ErrorTransmitInterceptor.h>
-#include <sila/common/error/SiLAError.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaError.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/transport/ResponseSink.h>
 
 #include <gtest/gtest.h>
@@ -15,13 +15,13 @@
 
 namespace {
 
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 
 class MockResponseSink : public sila2::ResponseSink<std::string> {
 public:
     void send(const std::string&) override { sendCalled = true; }
     void finish() override { finishCalled = true; }
-    void fail(const SiLAError& error) override {
+    void fail(const SilaError& error) override {
         failCalled = true;
         errorType = error.errorType();
         errorMessage = error.what();
@@ -30,7 +30,7 @@ public:
     bool sendCalled = false;
     bool finishCalled = false;
     bool failCalled = false;
-    SiLAError::ErrorType errorType{};
+    SilaError::ErrorType errorType{};
     std::string errorMessage;
 };
 
@@ -52,7 +52,7 @@ TEST(ErrorTransmitInterceptor, ValidationErrorForwardedToSink) {
     }, sink);
 
     ASSERT_TRUE(sink.failCalled);
-    EXPECT_EQ(sink.errorType, SiLAError::ErrorType::ValidationError);
+    EXPECT_EQ(sink.errorType, SilaError::ErrorType::ValidationError);
     EXPECT_EQ(sink.errorMessage, "bad value");
 }
 
@@ -64,7 +64,7 @@ TEST(ErrorTransmitInterceptor, DefinedExecutionErrorForwardedToSink) {
     }, sink);
 
     ASSERT_TRUE(sink.failCalled);
-    EXPECT_EQ(sink.errorType, SiLAError::ErrorType::DefinedExecutionError);
+    EXPECT_EQ(sink.errorType, SilaError::ErrorType::DefinedExecutionError);
     EXPECT_EQ(sink.errorMessage, "pump jammed");
 }
 
@@ -77,7 +77,7 @@ TEST(ErrorTransmitInterceptor, FrameworkErrorForwardedToSink) {
     }, sink);
 
     ASSERT_TRUE(sink.failCalled);
-    EXPECT_EQ(sink.errorType, SiLAError::ErrorType::FrameworkError);
+    EXPECT_EQ(sink.errorType, SilaError::ErrorType::FrameworkError);
     EXPECT_EQ(sink.errorMessage, "missing lock-id");
 }
 
@@ -90,7 +90,7 @@ TEST(ErrorTransmitInterceptor, StdRuntimeErrorWrappedAsUndefinedExecutionError) 
     }, sink);
 
     ASSERT_TRUE(sink.failCalled);
-    EXPECT_EQ(sink.errorType, SiLAError::ErrorType::UndefinedExecutionError);
+    EXPECT_EQ(sink.errorType, SilaError::ErrorType::UndefinedExecutionError);
     EXPECT_EQ(sink.errorMessage, "disk full");
 }
 
@@ -101,7 +101,7 @@ TEST(ErrorTransmitInterceptor, StdLogicErrorWrappedAsUndefinedExecutionError) {
     }, sink);
 
     ASSERT_TRUE(sink.failCalled);
-    EXPECT_EQ(sink.errorType, SiLAError::ErrorType::UndefinedExecutionError);
+    EXPECT_EQ(sink.errorType, SilaError::ErrorType::UndefinedExecutionError);
     EXPECT_EQ(sink.errorMessage, "out of range");
 }
 
@@ -112,7 +112,7 @@ TEST(ErrorTransmitInterceptor, NonStdExceptionWrappedAsUnknown) {
     }, sink);
 
     ASSERT_TRUE(sink.failCalled);
-    EXPECT_EQ(sink.errorType, SiLAError::ErrorType::UndefinedExecutionError);
+    EXPECT_EQ(sink.errorType, SilaError::ErrorType::UndefinedExecutionError);
     EXPECT_EQ(sink.errorMessage, "unknown exception");
 }
 

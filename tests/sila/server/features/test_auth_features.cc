@@ -7,8 +7,8 @@
 #include <sila/server/auth/AuthTokenStore.h>
 #include <sila/server/auth/CredentialVerifier.h>
 #include <sila/server/config/ServerConfig.h>
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include <gtest/gtest.h>
 #include <grpcpp/grpcpp.h>
@@ -28,7 +28,7 @@ using sila2::auth::AuthTokenStore;
 using sila2::auth::CredentialVerifier;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::error::ValidationError;
 
 namespace auth_proto = sila2::org::silastandard::core::authenticationservice::v1;
@@ -242,7 +242,7 @@ TEST(AuthFeatures, LoginWithInvalidCredentialsReturnsAuthenticationFailed) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* definedError = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(definedError, nullptr);
     EXPECT_EQ(definedError->errorIdentifier(),
@@ -266,7 +266,7 @@ TEST(AuthFeatures, LoginWithWrongServerUuidReturnsValidationError) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     const std::string parameterFqi = validationError->parameter();
@@ -300,7 +300,7 @@ TEST(AuthFeatures, LoginWithMalformedRequestedServerReturnsValidationErrorBefore
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     EXPECT_EQ(validationError->parameter(),
@@ -327,7 +327,7 @@ TEST(AuthFeatures, LoginWithMalformedFqiReturnsValidationError) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     EXPECT_EQ(validationError->parameter(),
@@ -354,7 +354,7 @@ TEST(AuthFeatures, LoginWithMissingVersionSegmentFqiReturnsValidationError) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     EXPECT_EQ(validationError->parameter(),
@@ -408,7 +408,7 @@ TEST(AuthFeatures, LoginWithOneMalformedAmongValidFqisReturnsValidationError) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     EXPECT_EQ(validationError->parameter(),
@@ -460,7 +460,7 @@ TEST(AuthFeatures, LogoutWithEmptyAccessTokenReturnsInvalidAccessToken) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* definedError = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(definedError, nullptr);
     EXPECT_EQ(definedError->errorIdentifier(),
@@ -509,7 +509,7 @@ TEST(AuthFeatures, LogoutWithUnknownTokenReturnsInvalidAccessToken) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
 }
 
 // ---------------------------------------------------------------------------
@@ -554,7 +554,7 @@ TEST(AuthFeatures, SetAuthorizationProviderWithShortUuidReturnsValidationError) 
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* err = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->parameter(),
@@ -579,7 +579,7 @@ TEST(AuthFeatures, SetAuthorizationProviderWithUppercaseUuidReturnsValidationErr
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
 }
 
 // Ordering matters operationally: a rejected SetAuthorizationProvider must
@@ -640,7 +640,7 @@ TEST(AuthFeatures, GetAuthorizationProviderAfterRejectedShortSetIsUnchanged) {
     ASSERT_FALSE(setStatus.ok());
     const auto setError = fromGrpcStatus(setStatus);
     ASSERT_NE(setError, nullptr);
-    ASSERT_EQ(setError->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(setError->errorType(), SilaError::ErrorType::ValidationError);
 
     authzconfig_proto::Get_AuthorizationProvider_Parameters getRequest;
     authzconfig_proto::Get_AuthorizationProvider_Responses getResponse;
@@ -669,7 +669,7 @@ TEST(AuthFeatures, GetAuthorizationProviderAfterRejectedUppercaseSetIsUnchanged)
     ASSERT_FALSE(setStatus.ok());
     const auto setError = fromGrpcStatus(setStatus);
     ASSERT_NE(setError, nullptr);
-    ASSERT_EQ(setError->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(setError->errorType(), SilaError::ErrorType::ValidationError);
 
     authzconfig_proto::Get_AuthorizationProvider_Parameters getRequest;
     authzconfig_proto::Get_AuthorizationProvider_Responses getResponse;

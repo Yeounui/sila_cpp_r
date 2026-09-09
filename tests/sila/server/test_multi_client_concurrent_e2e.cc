@@ -1,10 +1,10 @@
 // End-to-end test for concurrent RPC clients (architecture.md §2.2a):
-// several independent gRPC channels hitting the same SiLAServerBase at once
+// several independent gRPC channels hitting the same SilaServerBase at once
 // must all get correctly-served responses. test_interop.cc only drives a
 // single, sequential client — this exercises the server under real
 // concurrent load instead.
-#include <sila/server/SiLAServerBase.h>
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServerBase.h>
+#include <sila/server/SilaServiceImpl.h>
 
 #include <gtest/gtest.h>
 #include <grpcpp/grpcpp.h>
@@ -15,16 +15,16 @@
 
 namespace {
 
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 using sila2::silaservice_proto::SiLAService;
 
 constexpr uint16_t kPortMultiClient = 50270;
 constexpr int kClientCount = 4;
 constexpr int kCallsPerClient = 10;
 
-// SiLAServerBase only ever serves TLS (self-signed here); same dial pattern
+// SilaServerBase only ever serves TLS (self-signed here); same dial pattern
 // as test_sila_server_base_run_shutdown_e2e.cc's dialChannel().
-std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server, uint16_t port) {
+std::shared_ptr<grpc::Channel> dialChannel(const SilaServerBase& server, uint16_t port) {
     grpc::SslCredentialsOptions opts;
     opts.pem_root_certs = server.certificatePem();
     return grpc::CreateChannel("localhost:" + std::to_string(port), grpc::SslCredentials(opts));
@@ -33,12 +33,12 @@ std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server, uint16_
 }  // namespace
 
 TEST(MultiClientConcurrent, FourClientsGetServerName) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortMultiClient)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortMultiClient)
+                      .build();
+    server.run(false);
 
     const std::string expectedName = server.serverConfig().name();
 
@@ -71,5 +71,5 @@ TEST(MultiClientConcurrent, FourClientsGetServerName) {
         }
     }
 
-    server.Shutdown();
+    server.shutdown();
 }

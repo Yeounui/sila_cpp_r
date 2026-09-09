@@ -11,12 +11,12 @@
 #include <sila/client/dynamic/DynamicCall.h>
 #include <sila/client/dynamic/FeatureCatalog.h>
 #include <sila/client/MetadataInjector.h>
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/config/ServerConfig.h>
 #include <sila/server/features/AuthenticationServiceImpl.h>
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>
 #include <sila/server/transport/CallContext.h>
@@ -50,9 +50,9 @@ namespace binary_test = sila2::org::silastandard::test::binarytransfertest::v1;
 namespace fw = sila2::org::silastandard;
 
 // 0 = let the OS choose; the real port is read back from server().port() after
-// Run(). WithDiscovery is currently the only way to set the listen port, so
+// run(). withDiscovery is currently the only way to set the listen port, so
 // this harness advertises port 0 over mDNS — inert here because no test
-// browses for it (see the follow-up note on Builder::WithPort).
+// browses for it (see the follow-up note on Builder::withPort).
 constexpr uint16_t kPort = 0;
 
 // --- Server-side helpers (copied from server_main.cc) ----------------------
@@ -81,7 +81,7 @@ public:
     std::vector<std::string> allowedFqis(const std::string& user) const override {
         if (user.empty()) return {};
         // S14: BinaryUpload/v1 is now in the protectedFqis list passed to
-        // WithAuthentication() below, so a logged-in token must also be
+        // withAuthentication() below, so a logged-in token must also be
         // scoped to it or DeleteBinary/UploadChunk calls that attach the
         // token (e.g. CreateBinaryThenDeleteThenGetInfoFails) get rejected
         // as InvalidAccessToken instead of exercising what they test.
@@ -103,17 +103,17 @@ struct EchoBinariesState {
 
 // --- Server and channel singletons ----------------------------------------
 
-sila2::SiLAServerBase& server() {
+sila2::SilaServerBase& server() {
     static auto s = [] {
         static sila2::ObservableCommandManager cmdManager;
         static std::mutex echoStatesMu;
         static std::unordered_map<std::string, std::shared_ptr<EchoBinariesState>> echoStates;
 
-        sila2::SiLAServerBase::Builder builder;
-        builder.WithSelfSignedCertificate("localhost", "127.0.0.1")
-            .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("InteropTestServer"))
-            .WithBinaryTransfer()
-            .WithAuthentication(
+        sila2::SilaServerBase::Builder builder;
+        builder.withSelfSignedCertificate("localhost", "127.0.0.1")
+            .withConfig(std::make_unique<sila2::InMemoryServerConfig>("InteropTestServer"))
+            .withBinaryTransfer()
+            .withAuthentication(
                 std::make_unique<TestCredentialVerifier>(),
                 std::make_unique<InteropAccessPolicy>(),
                 // S14: this in-process server is what the tests below actually
@@ -414,22 +414,22 @@ sila2::SiLAServerBase& server() {
             sink.finish();
         };
 
-        builder.AddFeature("org.silastandard/test/AuthenticationTest/v1",
+        builder.addFeature("org.silastandard/test/AuthenticationTest/v1",
                            std::string{sila2::generated::authenticationtest::kFdlXml},
                            authAdapter)
-            .AddFeature("org.silastandard/test/BinaryTransferTest/v1",
+            .addFeature("org.silastandard/test/BinaryTransferTest/v1",
                         std::string{sila2::generated::binarytransfertest::kFdlXml},
                         binaryAdapter)
-            .WithDiscovery(kPort);
+            .withDiscovery(kPort);
 
-        return builder.Build();
+        return builder.build();
     }();
     return s;
 }
 
 std::shared_ptr<grpc::Channel>& channel() {
     static auto ch = [] {
-        server().Run(false);
+        server().run(false);
         grpc::SslCredentialsOptions opts;
         opts.pem_root_certs = server().certificatePem();
         grpc::ChannelArguments args;
@@ -746,7 +746,7 @@ TEST(InteropBinaryTransfer, UploadDeleteBinaryWithoutTokenIsRejected) {
     EXPECT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = sila2::error::fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), sila2::error::SiLAError::ErrorType::FrameworkError);
+    ASSERT_EQ(reconstructed->errorType(), sila2::error::SilaError::ErrorType::FrameworkError);
     const auto* err = dynamic_cast<const sila2::error::FrameworkError*>(reconstructed.get());
     ASSERT_NE(err, nullptr);
     EXPECT_EQ(err->frameworkErrorType(),
@@ -936,7 +936,7 @@ TEST(InteropDynamicEquivalence, FeatureCatalogLookupUnknownRpcThrows) {
 // ===========================================================================
 
 TEST(InteropServerLimits, BoundPortIsReportedAfterRun) {
-    channel();  // forces the one-time server().Run(false)
+    channel();  // forces the one-time server().run(false)
     EXPECT_NE(server().port(), 0);
 }
 

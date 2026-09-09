@@ -14,7 +14,7 @@
 #include <sila/server/auth/AuthorizationInterceptor.h>
 #include <sila/server/auth/CredentialVerifier.h>
 #include <sila/server/config/ServerConfig.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/transport/CallContext.h>
 
 #include <gtest/gtest.h>
@@ -46,7 +46,7 @@ const std::string kServerUuid = "12345678-1234-1234-1234-123456789abc";
 const std::string kFeature1 = "org.silastandard/core/Feature1/v1";
 const std::string kFeature2 = "org.silastandard/core/Feature2/v1";
 // The one list all three parties read, the way a real server derives all
-// three from Builder::WithAuthentication's protectedFqis: discovery
+// three from Builder::withAuthentication's protectedFqis: discovery
 // (AuthorizationServiceImpl), the gate (isProtected), and the token scope
 // Login grants (MockAccessPolicy).
 const std::vector<std::string> kProtectedFqis{kFeature1, kFeature2};

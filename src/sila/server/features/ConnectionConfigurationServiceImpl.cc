@@ -1,7 +1,7 @@
 // ConnectionConfigurationServiceImpl.cc — SiLA2 core feature (architecture.md §3.9)
 #include "ConnectionConfigurationServiceImpl.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/server/features/ConnectionConfigurationServiceFdl.h>
 #include <sila/server/transport/GrpcTransport.h>
@@ -277,8 +277,8 @@ void ConnectionConfigurationServiceImpl::connectSiLAClient(
             "SiLAClientHost '" + host + "' is not a private-range IP address"
             " (RFC1918/RFC4193) and this SiLA Server has no trusted CA"
             " configured for it -- Part B p75 allows an untrusted certificate"
-            " only inside a private network; configure WithMutualTls or"
-            " WithConnectionConfiguration to reach other hosts"};
+            " only inside a private network; configure withMutualTls or"
+            " withConnectionConfiguration to reach other hosts"};
     }
 
     // Persist before connecting: no observable side effect until the record is
@@ -455,8 +455,8 @@ void ConnectionConfigurationServiceImpl::saveState() {
                    std::to_string(entry.port) + '\n';
     }
 
-    // The default store may live in the shared temp directory (SiLAServerBase
-    // Build() fallback), where another local user can plant or swap anything
+    // The default store may live in the shared temp directory (SilaServerBase
+    // build() fallback), where another local user can plant or swap anything
     // at a PREDICTABLE name: a symlink to a file this process can write, or a
     // victim file renamed onto a stale temp we are about to delete. So the
     // temp name is not predictable at all: mkstemp creates a fresh, unique,

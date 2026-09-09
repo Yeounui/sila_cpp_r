@@ -145,7 +145,7 @@ private:
     std::condition_variable cv_;
 };
 
-class CloudTransportFixture : public ::testing::Test {
+class CloudTransport : public ::testing::Test {
 protected:
     void SetUp() override {
         grpc::ServerBuilder builder;
@@ -171,7 +171,7 @@ protected:
 // ---------------------------------------------------------------------------
 
 // server-cloud-receive-loop happy path: one message in, one routed response out.
-TEST_F(CloudTransportFixture, ReceiveLoopRoutesMessageAndWritesResponse) {
+TEST_F(CloudTransport, ReceiveLoopRoutesMessageAndWritesResponse) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     router.registerCommandHandler("org.test/Feature/Command/v1",
@@ -205,7 +205,7 @@ TEST_F(CloudTransportFixture, ReceiveLoopRoutesMessageAndWritesResponse) {
 
 // server-cloud-receive-loop happy path, second condition: the loop keeps
 // dispatching correctly across multiple message kinds on one connection.
-TEST_F(CloudTransportFixture, ReceiveLoopHandlesSequentialCommandAndPropertyMessages) {
+TEST_F(CloudTransport, ReceiveLoopHandlesSequentialCommandAndPropertyMessages) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     router.registerCommandHandler("org.test/Feature/Command/v1",
@@ -256,7 +256,7 @@ TEST_F(CloudTransportFixture, ReceiveLoopHandlesSequentialCommandAndPropertyMess
 // server-cloud-reconnect happy path: after the first stream breaks,
 // reconnect() re-establishes a new stream to the same target and routing
 // resumes on it.
-TEST_F(CloudTransportFixture, ReconnectAfterStreamBreakResumesRouting) {
+TEST_F(CloudTransport, ReconnectAfterStreamBreakResumesRouting) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     router.registerCommandHandler("org.test/Feature/Command/v1",
@@ -297,7 +297,7 @@ TEST_F(CloudTransportFixture, ReconnectAfterStreamBreakResumesRouting) {
 
 // server-cloud-disconnect happy path: a full connect/disconnect cycle tears
 // resources down cleanly enough that a fresh connect() succeeds afterward.
-TEST_F(CloudTransportFixture, DisconnectAfterConnectAllowsReconnecting) {
+TEST_F(CloudTransport, DisconnectAfterConnectAllowsReconnecting) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
 
@@ -321,7 +321,7 @@ TEST_F(CloudTransportFixture, DisconnectAfterConnectAllowsReconnecting) {
 // server-cloud-disconnect happy path, second condition: disconnect() after
 // successfully exchanging messages (calls_ has already-completed contexts,
 // not just fresh ones) still tears down cleanly.
-TEST_F(CloudTransportFixture, DisconnectAfterExchangingMessagesTearsDownCleanly) {
+TEST_F(CloudTransport, DisconnectAfterExchangingMessagesTearsDownCleanly) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     router.registerCommandHandler("org.test/Feature/Command/v1",
@@ -358,7 +358,7 @@ TEST_F(CloudTransportFixture, DisconnectAfterExchangingMessagesTearsDownCleanly)
 // server-cloud-receive-loop error path (CAUGHT): a handler exception is
 // swallowed by receiveLoop()'s catch(...) safety net and the loop keeps
 // processing subsequent messages.
-TEST_F(CloudTransportFixture, ReceiveLoopSwallowsHandlerExceptionAndContinues) {
+TEST_F(CloudTransport, ReceiveLoopSwallowsHandlerExceptionAndContinues) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     router.registerCommandHandler("org.test/Feature/Throws/v1",
@@ -405,7 +405,7 @@ TEST_F(CloudTransportFixture, ReceiveLoopSwallowsHandlerExceptionAndContinues) {
 
 // server-cloud-receive-loop error path (CAUGHT): stream_->Read() returning
 // false marks the transport disconnected and hands off to reconnect().
-TEST_F(CloudTransportFixture, StreamBreakSetsDisconnectedBeforeReconnectSucceeds) {
+TEST_F(CloudTransport, StreamBreakSetsDisconnectedBeforeReconnectSucceeds) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
 
@@ -426,7 +426,7 @@ TEST_F(CloudTransportFixture, StreamBreakSetsDisconnectedBeforeReconnectSucceeds
 // server-cloud-reconnect error path (CAUGHT): disconnect() called while
 // reconnect() is inside its backoff wait returns promptly instead of
 // blocking for the full backoff duration.
-TEST_F(CloudTransportFixture, DisconnectDuringReconnectBackoffExitsCleanly) {
+TEST_F(CloudTransport, DisconnectDuringReconnectBackoffExitsCleanly) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
 
@@ -451,7 +451,7 @@ TEST_F(CloudTransportFixture, DisconnectDuringReconnectBackoffExitsCleanly) {
 
 // server-cloud-disconnect error path (CAUGHT no-op): disconnect() without a
 // prior connect() is a safe early return.
-TEST_F(CloudTransportFixture, DisconnectWithoutPriorConnectIsNoop) {
+TEST_F(CloudTransport, DisconnectWithoutPriorConnectIsNoop) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     sila2::CloudTransport transport{"127.0.0.1", port_, grpc::InsecureChannelCredentials(), router};
@@ -462,7 +462,7 @@ TEST_F(CloudTransportFixture, DisconnectWithoutPriorConnectIsNoop) {
 
 // server-cloud-disconnect error path (CAUGHT no-op): a second disconnect()
 // call after a completed disconnect is idempotent.
-TEST_F(CloudTransportFixture, DisconnectTwiceIsIdempotent) {
+TEST_F(CloudTransport, DisconnectTwiceIsIdempotent) {
     sila2::FeatureRegistry registry;
     sila2::CloudEnvelopeRouter router{registry};
     sila2::CloudTransport transport{"127.0.0.1", port_, grpc::InsecureChannelCredentials(), router};

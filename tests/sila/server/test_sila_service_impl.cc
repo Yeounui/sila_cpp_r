@@ -1,11 +1,11 @@
-// Tests for SiLAServiceImpl: GetFeatureDefinition lookup through
+// Tests for SilaServiceImpl: GetFeatureDefinition lookup through
 // FeatureRegistry, SetServerName validation and config update, and property
 // getters returning ServerConfig values.
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServiceImpl.h>
 
 #include <sila/server/config/ServerConfig.h>
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/FeatureRegistry.h>
 
 #include "SiLAService.grpc.pb.h"
@@ -19,10 +19,10 @@ namespace
 {
 using sila2::FeatureRegistry;
 using sila2::InMemoryServerConfig;
-using sila2::SiLAServiceImpl;
+using sila2::SilaServiceImpl;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::error::ValidationError;
 
 namespace silaservice_proto = sila2::org::silastandard::core::silaservice::v1;
@@ -42,11 +42,11 @@ const std::string kServerUuid = "00000000-1111-2222-3333-444444444444";
 // GetFeatureDefinition — True paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServiceImpl, GetFeatureDefinitionReturnsRegisteredFdl) {
+TEST(SilaServiceImpl, GetFeatureDefinitionReturnsRegisteredFdl) {
     FeatureRegistry registry;
     registry.registerFeature(kTestFqi, kTestFdl);
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     grpc::ServerContext ctx;
     silaservice_proto::GetFeatureDefinition_Parameters request;
@@ -63,10 +63,10 @@ TEST(SiLAServiceImpl, GetFeatureDefinitionReturnsRegisteredFdl) {
 // GetFeatureDefinition — False paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServiceImpl, GetFeatureDefinitionUnknownFqiReturnsUnimplementedFeature) {
+TEST(SilaServiceImpl, GetFeatureDefinitionUnknownFqiReturnsUnimplementedFeature) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     grpc::ServerContext ctx;
     silaservice_proto::GetFeatureDefinition_Parameters request;
@@ -78,7 +78,7 @@ TEST(SiLAServiceImpl, GetFeatureDefinitionUnknownFqiReturnsUnimplementedFeature)
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* definedError = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(definedError, nullptr);
     EXPECT_EQ(definedError->errorIdentifier(),
@@ -88,10 +88,10 @@ TEST(SiLAServiceImpl, GetFeatureDefinitionUnknownFqiReturnsUnimplementedFeature)
 // A malformed FQI (missing the Category segment) must be rejected as
 // ValidationError before the registry lookup ever runs — not fall through to
 // UnimplementedFeature, which is for well-formed-but-unregistered FQIs only.
-TEST(SiLAServiceImpl, GetFeatureDefinitionMalformedFqiReturnsValidationError) {
+TEST(SilaServiceImpl, GetFeatureDefinitionMalformedFqiReturnsValidationError) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     grpc::ServerContext ctx;
     silaservice_proto::GetFeatureDefinition_Parameters request;
@@ -103,7 +103,7 @@ TEST(SiLAServiceImpl, GetFeatureDefinitionMalformedFqiReturnsValidationError) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     EXPECT_EQ(validationError->parameter(),
@@ -114,10 +114,10 @@ TEST(SiLAServiceImpl, GetFeatureDefinitionMalformedFqiReturnsValidationError) {
 // SetServerName — True paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServiceImpl, SetServerNameUpdatesConfigName) {
+TEST(SilaServiceImpl, SetServerNameUpdatesConfigName) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "OriginalName"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     grpc::ServerContext setCtx;
     silaservice_proto::SetServerName_Parameters setReq;
@@ -135,10 +135,10 @@ TEST(SiLAServiceImpl, SetServerNameUpdatesConfigName) {
     EXPECT_EQ(getResp.servername().value(), "NewName");
 }
 
-TEST(SiLAServiceImpl, SetServerNameAcceptsMaxLength255) {
+TEST(SilaServiceImpl, SetServerNameAcceptsMaxLength255) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     const std::string maxName(255, 'A');
     grpc::ServerContext ctx;
@@ -150,10 +150,10 @@ TEST(SiLAServiceImpl, SetServerNameAcceptsMaxLength255) {
     EXPECT_TRUE(status.ok());
 }
 
-TEST(SiLAServiceImpl, SetServerNameAccepts255MultiByteCharacters) {
+TEST(SilaServiceImpl, SetServerNameAccepts255MultiByteCharacters) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     // "한" is one 3-byte UTF-8 character; 255 of them is 765 bytes but only
     // 255 characters, which is what the FDL's MaximalLength=255 counts.
@@ -178,12 +178,12 @@ TEST(SiLAServiceImpl, SetServerNameAccepts255MultiByteCharacters) {
 
 // The FDL declares only MaximalLength=255 for ServerName (no
 // MinimalLength), and Part A p29 sets no lower bound on a Display Name — so
-// an empty ServerName must be accepted, matching the Build() initial-name
+// an empty ServerName must be accepted, matching the build() initial-name
 // path (S73).
-TEST(SiLAServiceImpl, SetServerNameAcceptsEmptyString) {
+TEST(SilaServiceImpl, SetServerNameAcceptsEmptyString) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     grpc::ServerContext ctx;
     silaservice_proto::SetServerName_Parameters request;
@@ -204,10 +204,10 @@ TEST(SiLAServiceImpl, SetServerNameAcceptsEmptyString) {
 // SetServerName — False paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServiceImpl, SetServerNameExceedsMaxLengthReturnsValidationError) {
+TEST(SilaServiceImpl, SetServerNameExceedsMaxLengthReturnsValidationError) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     const std::string tooLong(256, 'X');
     grpc::ServerContext ctx;
@@ -220,13 +220,13 @@ TEST(SiLAServiceImpl, SetServerNameExceedsMaxLengthReturnsValidationError) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
 }
 
-TEST(SiLAServiceImpl, SetServerNameRejects256MultiByteCharacters) {
+TEST(SilaServiceImpl, SetServerNameRejects256MultiByteCharacters) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     // 256 multi-byte characters must still be rejected — the fix must count
     // characters correctly, not simply stop rejecting anything.
@@ -244,19 +244,19 @@ TEST(SiLAServiceImpl, SetServerNameRejects256MultiByteCharacters) {
     ASSERT_FALSE(status.ok());
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
 }
 
 // ---------------------------------------------------------------------------
 // Property getters — True paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServiceImpl, PropertyGettersReturnConfigValues) {
+TEST(SilaServiceImpl, PropertyGettersReturnConfigValues) {
     FeatureRegistry registry;
     InMemoryServerConfig config{kServerUuid, "TestServer",
         sila2::ServerConfig::Identity{
             "TestType", "Test description", "2.0", "https://example.com"}};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     {
         grpc::ServerContext ctx;
@@ -299,7 +299,7 @@ TEST(SiLAServiceImpl, PropertyGettersReturnConfigValues) {
 // Get_ImplementedFeatures — True path
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServiceImpl, GetImplementedFeaturesListsAllRegisteredFqis) {
+TEST(SilaServiceImpl, GetImplementedFeaturesListsAllRegisteredFqis) {
     FeatureRegistry registry;
     // Four-segment FQIs (S46 requires an FDL-derivable identity); the
     // Category segment stays "test" for all three so alphabetical order over
@@ -314,7 +314,7 @@ TEST(SiLAServiceImpl, GetImplementedFeaturesListsAllRegisteredFqis) {
                              R"(<Feature Originator="org.example" Category="test" FeatureVersion="1.0">)"
                              R"(<Identifier>Gamma</Identifier></Feature>)");
     InMemoryServerConfig config{kServerUuid, "TestServer"};
-    SiLAServiceImpl service{registry, config};
+    SilaServiceImpl service{registry, config};
 
     grpc::ServerContext ctx;
     silaservice_proto::Get_ImplementedFeatures_Parameters request;

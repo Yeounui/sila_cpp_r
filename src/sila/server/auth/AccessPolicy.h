@@ -11,7 +11,7 @@ namespace sila2::auth {
 ///
 /// A server author implements this to plug in a site-specific authorization strategy
 /// (allow-list, role-based, ...); pass an instance to
-/// SiLAServerBase::Builder::WithAuthentication(). Ships with @ref DenyByDefaultAccessPolicy.
+/// SilaServerBase::Builder::withAuthentication(). Ships with @ref DenyByDefaultAccessPolicy.
 // Pure interface so callers (e.g. an interceptor) can swap decision
 // strategies (allow-list, role-based, ...) without depending on a concrete
 // implementation.

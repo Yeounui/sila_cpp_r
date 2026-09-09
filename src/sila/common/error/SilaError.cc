@@ -1,9 +1,9 @@
-// SiLAError.cc
+// SilaError.cc
 //
 // Ported from sila_cpp v0.3.11
-// src/lib/framework/error_handling/SiLAError.cpp (MIT License, Copyright 2020
+// src/lib/framework/error_handling/SilaError.cpp (MIT License, Copyright 2020
 // SiLA2).
-#include "SiLAError.h"
+#include "SilaError.h"
 
 #include <utility>
 
@@ -21,50 +21,50 @@ namespace {
 // matching the reference's PrivateImpl::PrivateImpl behavior.
 // Computed ahead of the base std::runtime_error construction below,
 // since the base has to be initialized with the final message in the member-initializer list.
-std::string resolveMessage(SiLAError::ErrorType type, std::string msg) {
+std::string resolveMessage(SilaError::ErrorType type, std::string msg) {
     if (!msg.empty()) {
         return msg;
     }
     // ponytail: no logging subsystem yet, add calls back when one exists
-    return "A " + SiLAError::errorTypeToString(type)
+    return "A " + SilaError::errorTypeToString(type)
            + " occurred while executing a SiLA 2 Command or reading a "
              "Property!";
 }
 }  // namespace
 
-SiLAError::SiLAError(ErrorType type, std::string msg)
+SilaError::SilaError(ErrorType type, std::string msg)
     : std::runtime_error{resolveMessage(type, std::move(msg))}, type_{type} {}
 
-SiLAError::ErrorType SiLAError::errorType() const { return type_; }
+SilaError::ErrorType SilaError::errorType() const { return type_; }
 
 /*  errorTypeName()과 errorTypeToString()을 나눈 이유:
 
     errorTypeName()은 에러 인스턴스 내에서 errorTypeToString(type_)을 내부 호출.
-        catch (const SiLAError& e) {
+        catch (const SilaError& e) {
             log(e.errorTypeName());  // errorTypeToString(e.errorType())와 동일
         }
 */
-std::string SiLAError::errorTypeName() const { return errorTypeToString(type_); }
+std::string SilaError::errorTypeName() const { return errorTypeToString(type_); }
 
-// SiLA 2 §3.4: gRPC's error message carries the base64-encoded SiLAError
+// SiLA 2 §3.4: gRPC's error message carries the base64-encoded SilaError
 // payload for clients such as sila2-python; retain raw bytes in error_details
 // for the native status round-trip.
-grpc::Status SiLAError::toStatus() const {
+grpc::Status SilaError::toStatus() const {
     auto errorMsg = makeErrorMessage();
     std::string serialized = errorMsg->SerializeAsString();
     return grpc::Status{grpc::StatusCode::ABORTED, base64Encode(serialized), serialized};
 }
 
-std::unique_ptr<sila2::org::silastandard::SiLAError> SiLAError::toProto() const {
+std::unique_ptr<sila2::org::silastandard::SiLAError> SilaError::toProto() const {
     return makeErrorMessage();
 }
 
 /*
     errorTypeToString()은 static — 에러 객체 없이 타입 이름만 필요할 때 (로깅, UI 표시 등)
     ErrorType 값만으로 문자열 변환 가능.
-        log("expected: " + SiLAError::errorTypeToString(ErrorType::ValidationError));
+        log("expected: " + SilaError::errorTypeToString(ErrorType::ValidationError));
 */
-std::string SiLAError::errorTypeToString(ErrorType type) {
+std::string SilaError::errorTypeToString(ErrorType type) {
     switch (type) {
     case ErrorType::DefinedExecutionError:
         return "Defined Execution Error";

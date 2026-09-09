@@ -9,7 +9,7 @@
 // _Intermediate handler.
 #include "ShakeControllerImpl.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/transport/CallContext.h>
 #include <sila/server/transport/ResponseSink.h>
@@ -79,7 +79,7 @@ ShakeControllerImpl::ShakeControllerImpl(const sila2::InterceptorChain* chain)
                 // Direct gRPC's _Info stream no longer sets this (§3.3 ②,
                 // architecture-v2.md:286) -- the only caller left is
                 // ObservableCommandManager::interruptAll() on server shutdown
-                // (SiLAServerBase.cc), which this poll still has to honor.
+                // (SilaServerBase.cc), which this poll still has to honor.
                 if (exec->isInterruptionRequested()) {
                     exec->fail("Cancelled");
                     {

@@ -47,8 +47,8 @@ grpc::Status BinaryUploadService::createBinary(
     std::size_t chunkCount = request.chunkcount();
 
     // ponytail: empty list means no Builder-assembled chain, so no validation.
-    // A real server always registers SiLAService (SiLAServerBase.cc:398) before
-    // the snapshot at Build()'s end, so the list is non-empty in production.
+    // A real server always registers SiLAService (SilaServerBase.cc:398) before
+    // the snapshot at build()'s end, so the list is non-empty in production.
     if (chain_ && !chain_->registeredFeatureFqis.empty() &&
         !auth::isKnownParameterFqi(chain_->registeredFeatureFqis,
                                    request.parameteridentifier())) {

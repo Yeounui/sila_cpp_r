@@ -1,6 +1,6 @@
 // End-to-end tests for the ShakeController example Feature
 // (tests/examples/shake_controller/ShakeControllerImpl.cc): a real
-// SiLAServerBase with ShakeControllerImpl registered, dialed over gRPC with
+// SilaServerBase with ShakeControllerImpl registered, dialed over gRPC with
 // the codegen-generated ShakeController stub. Covers every RPC path the
 // implementation actually defines — StartShaking / StopShaking (with its two
 // branches), the full ShakeForTime Observable Command lifecycle (initiate ->
@@ -13,7 +13,7 @@
 #include "ShakeControllerImpl.h"
 #include "ShakeControllerMeta.h"
 
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 
 #include <gtest/gtest.h>
@@ -30,21 +30,21 @@ namespace shake_proto = sila2::org::silastandard::examples::shakecontroller::v1;
 namespace fw = sila2::org::silastandard;
 namespace gen = sila2::generated::shakecontroller;
 
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 
 // Real local channel dialed against the server's own self-signed
 // certificate — same pattern as test_sila_server_base_run_shutdown_e2e.cc's
 // dialChannel().
-std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server) {
+std::shared_ptr<grpc::Channel> dialChannel(const SilaServerBase& server) {
     grpc::SslCredentialsOptions opts;
     opts.pem_root_certs = server.certificatePem();
     return grpc::CreateChannel("localhost:" + std::to_string(server.port()),
                                 grpc::SslCredentials(opts));
 }
 
-// Parses a failed RPC's error_details() back into the SiLAError protobuf
+// Parses a failed RPC's error_details() back into the SilaError protobuf
 // message ErrorTransmitInterceptor.h's guardHandler() serialized
-// (SiLAError::toStatus(), sila/common/error/SiLAError.cc:52) — every False
+// (SilaError::toStatus(), sila/common/error/SilaError.cc:52) — every False
 // path below ends up here rather than at a bare grpc::StatusCode, since that
 // is the only way to tell a DefinedExecutionError apart from a FrameworkError
 // at the client.
@@ -102,32 +102,32 @@ void cancelInfoStreamAfterFirstRead(shake_proto::ShakeController::Stub& stub, co
 // Every test in this suite stands up the same embedded server; the fixture
 // replaces nine copies of the eleven-line Builder dance (SC8 review
 // cleanup). A startShakeServer() free helper cannot return the server --
-// SiLAServerBase deletes its move operations -- so the server member is
-// initialized straight from Build()'s prvalue, which constructs it in place
+// SilaServerBase deletes its move operations -- so the server member is
+// initialized straight from build()'s prvalue, which constructs it in place
 // (guaranteed elision, no move involved).
 class ShakeControllerRun : public ::testing::Test {
 protected:
-    sila2::SiLAServerBase::Builder builder;
+    sila2::SilaServerBase::Builder builder;
     shake_example::ShakeControllerImpl impl;
-    sila2::SiLAServerBase server;
+    sila2::SilaServerBase server;
     std::unique_ptr<shake_proto::ShakeController::Stub> stub;
 
     ShakeControllerRun()
         : impl{certifiedChain()},
           server{builder
-                     .AddFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
-                     .RegisterCommandManager(&impl.commandManager())
-                     .WithDiscovery(0)
-                     .Build()} {
-        server.Run(false);
+                     .addFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
+                     .registerCommandManager(&impl.commandManager())
+                     .withDiscovery(0)
+                     .build()} {
+        server.run(false);
         stub = shake_proto::ShakeController::NewStub(dialChannel(server));
     }
 
     // The certificate has to be configured before chain() is handed to the
     // impl, preserving the order the tests used inline.
     const sila2::InterceptorChain* certifiedChain() {
-        builder.WithSelfSignedCertificate("localhost", "127.0.0.1");
-        builder.WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
+        builder.withSelfSignedCertificate("localhost", "127.0.0.1");
+        builder.withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"));
         return builder.chain();
     }
 };
@@ -142,7 +142,7 @@ TEST_F(ShakeControllerRun, StartShakingSucceeds) {
 
     EXPECT_TRUE(status.ok()) << status.error_message();
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // Exercises StopShaking's positive branch (shaking_ == true) — distinct from
@@ -165,7 +165,7 @@ TEST_F(ShakeControllerRun, StopShakingAfterStartSucceeds) {
 
     EXPECT_TRUE(status.ok()) << status.error_message();
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST_F(ShakeControllerRun, ShakeForTimeCompletesInitiateInfoResult) {
@@ -193,7 +193,7 @@ TEST_F(ShakeControllerRun, ShakeForTimeCompletesInitiateInfoResult) {
     auto resultStatus = stub->ShakeForTime_Result(&resultCtx, resultReq, &resultResp);
     EXPECT_TRUE(resultStatus.ok()) << resultStatus.error_message();
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ TEST_F(ShakeControllerRun, StopShakingWithoutStartFailsWithDefinedExecutionError
     ASSERT_TRUE(error.has_definedexecutionerror());
     EXPECT_EQ(error.definedexecutionerror().erroridentifier(), std::string{gen::kError_CancelledError});
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // CAUGHT: ShakeForTime_Result delegates UUID lookup to
@@ -235,7 +235,7 @@ TEST_F(ShakeControllerRun, ShakeForTimeResultWithUnknownUuidFailsWithFrameworkEr
     EXPECT_EQ(error.frameworkerror().errortype(),
               fw::FrameworkError_ErrorType_INVALID_COMMAND_EXECUTION_UUID);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // TargetSpeed is validated by the generated adapter: the application handler
@@ -256,7 +256,7 @@ TEST_F(ShakeControllerRun, GeneratedAdapterRejectsInvalidTargetSpeed) {
     EXPECT_EQ(error.validationerror().parameter(),
               "org.silastandard/examples/ShakeController/v1/Command/ShakeForTime/Parameter/TargetSpeed");
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // ---------------------------------------------------------------------------
@@ -302,7 +302,7 @@ TEST_F(ShakeControllerRun, InfoStreamCancellationDoesNotInterruptShakeForTime) {
     EXPECT_EQ(exec->state(), sila2::ObservableCommandExecution::State::FinishedSuccessfully);
     EXPECT_FALSE(exec->isInterruptionRequested());
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // REJECTION: guards against requestInterruption() placed on the shared exit
@@ -327,7 +327,7 @@ TEST_F(ShakeControllerRun, CompletedShakeForTimeIsNotMarkedInterrupted) {
     EXPECT_FALSE(exec->isInterruptionRequested());
     EXPECT_EQ(exec->state(), sila2::ObservableCommandExecution::State::FinishedSuccessfully);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // The old premise ("cancelling _Info stops the worker") is gone, so the
@@ -359,7 +359,7 @@ TEST_F(ShakeControllerRun, StopShakingAfterCancelledInfoStreamStillSucceeds) {
 
     EXPECT_TRUE(status.ok()) << status.error_message();
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // ---------------------------------------------------------------------------
@@ -409,7 +409,7 @@ TEST_F(ShakeControllerRun, InfoStreamSendsOnlyOnChange) {
     EXPECT_GE(messageCount, 2);
     EXPECT_EQ(info.commandstatus(), fw::ExecutionInfo_CommandStatus_finishedSuccessfully);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // ---------------------------------------------------------------------------
@@ -438,7 +438,7 @@ TEST_F(ShakeControllerRun, CommandConfirmationCarriesLifetimeOfExecution) {
     ASSERT_TRUE(confirmation.has_lifetimeofexecution());
     EXPECT_EQ(confirmation.lifetimeofexecution().seconds(), 60);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST_F(ShakeControllerRun, InfoStreamCarriesUpdatedLifetimeOfExecution) {
@@ -472,7 +472,7 @@ TEST_F(ShakeControllerRun, InfoStreamCarriesUpdatedLifetimeOfExecution) {
     reader->Finish();
     EXPECT_GT(messagesSeen, 0);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // REJECTION: fails against the pre-fix tree, where lifetimeOfExecution was
@@ -490,5 +490,5 @@ TEST_F(ShakeControllerRun, LifetimeOfExecutionIsNotTheProto3Default) {
 
     EXPECT_NE(confirmation.lifetimeofexecution().seconds(), 0);
 
-    server.Shutdown();
+    server.shutdown();
 }

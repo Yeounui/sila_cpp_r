@@ -53,20 +53,20 @@ struct ShakeState {
 ///
 /// Usage with Builder:
 ///   ShakeControllerImpl impl(builder.chain());
-///   builder.AddFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
-///          .RegisterCommandManager(&impl.commandManager());
+///   builder.addFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
+///          .registerCommandManager(&impl.commandManager());
 class ShakeControllerImpl {
 public:
     /// @param chain Interceptor chain shared by the server (auth, logging,
     ///               metadata handling); forwarded to the generated adapter.
     explicit ShakeControllerImpl(const sila2::InterceptorChain* chain);
 
-    /// Returns the configured adapter, ready for Builder::AddFeature to
+    /// Returns the configured adapter, ready for Builder::addFeature to
     /// register as the gRPC service for this Feature.
     std::shared_ptr<grpc::Service> service() const;
 
     /// Returns the manager tracking in-flight observable command executions
-    /// (ShakeForTime), for Builder::RegisterCommandManager.
+    /// (ShakeForTime), for Builder::registerCommandManager.
     sila2::ObservableCommandManager& commandManager();
 
 private:

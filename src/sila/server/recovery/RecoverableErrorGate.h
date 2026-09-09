@@ -25,7 +25,7 @@ namespace sila2::recovery {
 
 // ObservablePropertyManager key for the RecoverableErrors property. Shared
 // rather than duplicated: the gate publishes under it, ErrorRecoveryServiceImpl
-// subscribes with it and SiLAServerBase registers the cloud route with it, and
+// subscribes with it and SilaServerBase registers the cloud route with it, and
 // the three hand-synchronised copies had already drifted to a v1 spelling.
 // const char*, not string_view: publish()/subscribe()/registerObservableProperty()
 // all take const std::string& and string_view does not convert implicitly.
@@ -78,7 +78,7 @@ struct RecoverableError {
 /// Lets a Feature implementation raise a recoverable error mid-execution and
 /// wait for the client to choose how to proceed, instead of failing the
 /// command outright. A server enables ErrorRecoveryService by calling
-/// `SiLAServerBase::Builder::WithErrorRecovery()`, which owns one gate
+/// `SilaServerBase::Builder::withErrorRecovery()`, which owns one gate
 /// internally; a Feature calls raiseAndWait() with the error and its
 /// ContinuationOptions, the client sees it published on the
 /// ErrorRecoveryService RecoverableErrors @ref gl_observable_property "Observable Property" , and
@@ -89,7 +89,7 @@ struct RecoverableError {
 /// selects a ContinuationOption (or the gate is aborted/shut down).
 ///
 /// Thread-safe: all public methods lock an internal mutex.
-/// @see SiLAServerBase::Builder::WithErrorRecovery
+/// @see SilaServerBase::Builder::withErrorRecovery
 class RecoverableErrorGate {
 public:
     /// @param propertyManager Publishes the RecoverableErrors

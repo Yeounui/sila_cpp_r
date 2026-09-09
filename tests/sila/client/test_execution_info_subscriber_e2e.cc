@@ -11,7 +11,7 @@
 #include <sila/client/ExecutionInfoSubscriber.h>
 
 #include <sila/client/CommandExecutionStatus.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include "dynamic/GenericDynamicTestServer.h"
 

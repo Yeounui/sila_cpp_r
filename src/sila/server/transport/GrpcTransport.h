@@ -8,7 +8,7 @@
 #include <sila/server/auth/AuthorizationInterceptor.h>
 #include <sila/server/binary/BinaryParameterInterceptor.h>
 #include <sila/server/error/ErrorTransmitInterceptor.h>
-#include <sila/common/error/SiLAError.h>
+#include <sila/common/error/SilaError.h>
 #include <sila/server/metadata/MetadataExtractingInterceptor.h>
 #include <sila/server/metadata/MetadataPolicy.h>
 #include <sila/server/transport/CallContext.h>
@@ -58,7 +58,7 @@ public:
     // nothing to do here.
     void finish() override {}
 
-    void fail(const error::SiLAError& error) override {
+    void fail(const error::SilaError& error) override {
         status_ = error.toStatus();
     }
 
@@ -92,7 +92,7 @@ public:
     // the service method; nothing to do here.
     void finish() override {}
 
-    void fail(const error::SiLAError& error) override {
+    void fail(const error::SilaError& error) override {
         status_ = error.toStatus();
     }
 

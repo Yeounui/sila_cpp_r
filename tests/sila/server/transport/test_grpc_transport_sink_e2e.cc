@@ -1,5 +1,5 @@
 // End-to-end tests for GrpcUnaryResponseSink::fail() and
-// GrpcStreamResponseSink::fail() (architecture.md §3.8): the SiLAError ->
+// GrpcStreamResponseSink::fail() (architecture.md §3.8): the SilaError ->
 // grpc::Status conversion every gRPC service method relies on to report a
 // rejected/thrown Command or Property as a spec-conformant ABORTED status.
 // fail() itself has no branches (errorPaths: [] for both classes) — the
@@ -13,8 +13,8 @@
 // exercise this flow.
 #include <sila/server/transport/GrpcTransport.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include "SiLAFramework.pb.h"
 
@@ -35,7 +35,7 @@ using sila2::GrpcStreamResponseSink;
 using sila2::GrpcUnaryResponseSink;
 using sila2::error::DefinedExecutionError;
 using sila2::error::FrameworkError;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::error::ValidationError;
 using sila2::error::fromGrpcStatus;
 
@@ -44,7 +44,7 @@ using SilaString = sila2::org::silastandard::String;
 }  // namespace
 
 // ---------------------------------------------------------------------------
-// True paths — fail() converts each SiLAError subtype to an ABORTED status
+// True paths — fail() converts each SilaError subtype to an ABORTED status
 // that round-trips back to the same information via fromGrpcStatus().
 // ---------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ TEST(GrpcTransportSinkE2E, UnarySinkFailWithValidationErrorProducesAbortedStatus
     ASSERT_EQ(status.error_code(), grpc::StatusCode::ABORTED);
     const auto reconstructed = fromGrpcStatus(status);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::ValidationError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::ValidationError);
     const auto* validationError = dynamic_cast<const ValidationError*>(reconstructed.get());
     ASSERT_NE(validationError, nullptr);
     EXPECT_EQ(validationError->parameter(), "org.example/Feature/v1/Command/Foo/Parameter/Bar");
@@ -127,7 +127,7 @@ TEST(GrpcTransportSinkE2E, UnarySinkSecondFailCallSilentlyOverwritesFirst) {
 }
 
 // CAUGHT: an empty error message is not rejected by the sink — it flows
-// through to SiLAError's own generic-message fallback (SiLAError.cc's
+// through to SilaError's own generic-message fallback (SilaError.cc's
 // resolveMessage()), so the resulting status is still well-formed.
 TEST(GrpcTransportSinkE2E, StreamSinkFailWithEmptyMessageFallsBackToGenericMessage) {
     GrpcStreamResponseSink<SilaString> sink{static_cast<grpc::ServerWriter<SilaString>*>(nullptr)};

@@ -20,7 +20,7 @@ struct RecoverableError;
 
 namespace sila2 {
 
-// FQI for ErrorRecoveryService — used by Builder::Build() to auto-register.
+// FQI for ErrorRecoveryService — used by Builder::build() to auto-register.
 // v1 is not advertised: no v1 gRPC service exists (S8b, architecture-v2.md §3.12).
 inline constexpr std::string_view kErrorRecoveryServiceFqi =
     "org.silastandard/core/ErrorRecoveryService/v2";
@@ -49,7 +49,7 @@ namespace errorrecovery_proto = sila2::org::silastandard::core::errorrecoveryser
 
 /// Fills a Subscribe_RecoverableErrors_Responses from the gate's published
 /// error list. Shared by the direct-gRPC subscription and the cloud observable-
-/// property registration in SiLAServerBase.cc so the two transports cannot
+/// property registration in SilaServerBase.cc so the two transports cannot
 /// drift into different wire shapes.
 void fillRecoverableErrorsResponse(
     const std::vector<recovery::RecoverableError>& errors,
@@ -60,7 +60,7 @@ void fillRecoverableErrorsResponse(
 /// needs to resolve a @ref sila2::recovery::RecoverableErrorGate "recoverable error" a
 /// Feature raised -- select a ContinuationOption, abort error handling, or
 /// change how long the server waits before giving up. Installed
-/// automatically by `SiLAServerBase::Builder::WithErrorRecovery()`; a server
+/// automatically by `SilaServerBase::Builder::withErrorRecovery()`; a server
 /// author does not construct it directly.
 class ErrorRecoveryServiceImpl final : public errorrecovery_proto::ErrorRecoveryService::Service {
 public:

@@ -17,11 +17,11 @@
 // dispatching under the caller's parameterIdentifier
 // (BinaryUploadService.cc:38), cloud at the kCreateBinaryUploadRequest
 // branch, where the refusal is degraded to a BinaryTransferError because
-// that oneof cannot carry a SiLAError (CreateBinary cases below).
+// that oneof cannot carry a SilaError (CreateBinary cases below).
 #include "CloudRouterTestHarness.h"
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/command/ObservableCommandExecution.h>
@@ -48,7 +48,7 @@ using sila2::InterceptorChain;
 using sila2::ResponseSink;
 using sila2::error::FrameworkError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using sila2::metadataHeaderKey;
 
 namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller::v1;
@@ -372,7 +372,7 @@ TEST_F(MetadataGateDualTransport, SiLAServiceCallWithMetadataIsNoMetadataAllowed
     const auto* grpcErr = dynamic_cast<const FrameworkError*>(reconstructed.get());
     ASSERT_NE(grpcErr, nullptr);
     // Also proves the throw lands inside guardHandler and reaches sink.fail():
-    // a ABORTED status only appears here via SiLAError::toStatus().
+    // a ABORTED status only appears here via SilaError::toStatus().
     EXPECT_EQ(grpcErr->frameworkErrorType(), FrameworkError::FrameworkErrorType::NoMetadataAllowed);
 
     sila2::FeatureRegistry registry;
@@ -533,7 +533,7 @@ TEST_F(MetadataGateDualTransport, MetadataRejectionLogsUnderTheMetadataTagNotAut
 // Cloud CreateBinary seam (review SC13 nonblocking #1)
 // ---------------------------------------------------------------------------
 
-// The refusal arrives as a BinaryTransferError, not a SiLAError envelope:
+// The refusal arrives as a BinaryTransferError, not a SilaError envelope:
 // this oneof has no commandError/propertyError arm, so INVALID_METADATA is
 // degraded the same way the auth gate on this branch degrades its verdict.
 TEST_F(MetadataGateDualTransport, CreateBinaryMissingRequiredMetadataIsRejectedOnCloud) {

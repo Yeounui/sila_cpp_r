@@ -1,4 +1,4 @@
-// End-to-end tests for the operational surface Run() turns on alongside the
+// End-to-end tests for the operational surface run() turns on alongside the
 // application's own gRPC services: the gRPC health-check service
 // (grpc::EnableDefaultHealthCheckService), gRPC server reflection
 // (grpc::reflection::InitProtoReflectionServerBuilderPlugin), and the
@@ -21,10 +21,10 @@
 // wire formats below are the stable, minimal (varint + length-delimited)
 // subset documented in gRPC's health.proto / reflection.proto, so hand
 // encoding/decoding sidesteps the build change for two trivial messages.
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
 #include <sila/server/LogCallback.h>
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/auth/AccessPolicy.h>
 #include <sila/server/auth/CredentialVerifier.h>
 
@@ -50,7 +50,7 @@ namespace {
 
 using sila2::LogCallback;
 using sila2::LogLevel;
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 
 // Distinct ports per test, following test_sila_server_base_run_shutdown_e2e.cc's
 // convention — picked outside every kPort* range already in use under tests/sila.
@@ -70,7 +70,7 @@ constexpr std::string_view kAuthenticationServiceProtoName =
     "sila2.org.silastandard.core.authenticationservice.v1.AuthenticationService";
 
 // Same pattern as test_sila_server_base_run_shutdown_e2e.cc's dialChannel.
-std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server, uint16_t port) {
+std::shared_ptr<grpc::Channel> dialChannel(const SilaServerBase& server, uint16_t port) {
     grpc::SslCredentialsOptions opts;
     opts.pem_root_certs = server.certificatePem();
     return grpc::CreateChannel("localhost:" + std::to_string(port), grpc::SslCredentials(opts));
@@ -251,12 +251,12 @@ std::vector<std::string> listServicesViaReflection(const std::shared_ptr<grpc::C
 // ---------------------------------------------------------------------------
 
 TEST(SiLAServerOperational, HealthCheckReturnsServingAfterServerStart) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortHealthCheckServing)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortHealthCheckServing)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortHealthCheckServing);
     grpc::ClientContext ctx;
@@ -267,18 +267,18 @@ TEST(SiLAServerOperational, HealthCheckReturnsServingAfterServerStart) {
     ASSERT_TRUE(status.ok()) << status.error_message();
     EXPECT_EQ(servingStatus, kHealthStatusServing);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST(SiLAServerOperational, ReflectionListsAllRegisteredFeatureServices) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithAuthentication(std::make_unique<AcceptingVerifier>(),
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withAuthentication(std::make_unique<AcceptingVerifier>(),
                                           std::make_unique<AllowAllPolicy>(), {})
-                      .WithDiscovery(kPortReflectionListsServices)
-                      .Build();
-    server.Run(false);
+                      .withDiscovery(kPortReflectionListsServices)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortReflectionListsServices);
     grpc::Status status;
@@ -292,7 +292,7 @@ TEST(SiLAServerOperational, ReflectionListsAllRegisteredFeatureServices) {
     EXPECT_NE(std::find(names.begin(), names.end(), kAuthenticationServiceProtoName),
               names.end());
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 TEST(SiLAServerOperational, LogCallbackReceivesDispatchEventForDispatchedCommand) {
@@ -304,18 +304,18 @@ TEST(SiLAServerOperational, LogCallbackReceivesDispatchEventForDispatchedCommand
     std::mutex mutex;
     std::vector<Event> events;
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
                       .setLogCallback([&](LogLevel level, std::string_view category,
                                           std::string_view message) {
                           std::lock_guard<std::mutex> lock{mutex};
                           events.push_back(Event{level, std::string{category},
                                                  std::string{message}});
                       })
-                      .WithDiscovery(kPortLogCallbackDispatch)
-                      .Build();
-    server.Run(false);
+                      .withDiscovery(kPortLogCallbackDispatch)
+                      .build();
+    server.run(false);
 
     // Any dispatched gRPC call goes through dispatchToHandler
     // (GrpcTransport.h), which fires logEvent(..., kInfo, "dispatch", fqi)
@@ -328,7 +328,7 @@ TEST(SiLAServerOperational, LogCallbackReceivesDispatchEventForDispatchedCommand
     auto status = stub->Get_ServerUUID(&ctx, req, &resp);
     ASSERT_TRUE(status.ok()) << status.error_message();
 
-    server.Shutdown();
+    server.shutdown();
 
     std::lock_guard<std::mutex> lock{mutex};
     auto dispatched = std::find_if(events.begin(), events.end(), [](const Event& e) {
@@ -344,14 +344,14 @@ TEST(SiLAServerOperational, LogCallbackReceivesDispatchEventForDispatchedCommand
 
 // CAUGHT: nothing is listening on this port, so the gRPC channel layer
 // itself rejects the call — not application logic, but still the only way
-// a health check request can fail for a server that was never Run().
+// a health check request can fail for a server that was never run().
 TEST(SiLAServerOperational, HealthCheckBeforeServerStartFailsWithConnectionError) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortHealthCheckBeforeStart)
-                      .Build();
-    // server.Run() deliberately not called.
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortHealthCheckBeforeStart)
+                      .build();
+    // server.run() deliberately not called.
 
     auto channel = dialChannel(server, kPortHealthCheckBeforeStart);
     grpc::ClientContext ctx;
@@ -365,17 +365,17 @@ TEST(SiLAServerOperational, HealthCheckBeforeServerStartFailsWithConnectionError
 
 // UNCAUGHT: Builder::setLogCallback(nullptr) is never rejected — logCallback_
 // is a plain std::function assignment with no validity check anywhere on the
-// Build()/Run() path. It is harmless only because logEvent() (LogCallback.h)
-// guards every call site with `if (cb) cb(...)`, not because Build() or
+// build()/run() path. It is harmless only because logEvent() (LogCallback.h)
+// guards every call site with `if (cb) cb(...)`, not because build() or
 // setLogCallback() themselves reject a null callback.
 TEST(SiLAServerOperational, LogCallbackNullptrDoesNotCrashDispatch) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
                       .setLogCallback(nullptr)
-                      .WithDiscovery(kPortLogCallbackNullptr)
-                      .Build();
-    server.Run(false);
+                      .withDiscovery(kPortLogCallbackNullptr)
+                      .build();
+    server.run(false);
 
     auto stub = sila2::silaservice_proto::SiLAService::NewStub(
         dialChannel(server, kPortLogCallbackNullptr));
@@ -387,22 +387,22 @@ TEST(SiLAServerOperational, LogCallbackNullptrDoesNotCrashDispatch) {
     EXPECT_NO_THROW(status = stub->Get_ServerUUID(&ctx, req, &resp));
     EXPECT_TRUE(status.ok()) << status.error_message();
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // Not a rejection path — no upstream code path can omit SiLAService from
-// FeatureRegistry (Builder::Build() registers it unconditionally). Included
+// FeatureRegistry (Builder::build() registers it unconditionally). Included
 // per audit finding 3.4g's explicit request: a completeness assertion that
 // reflection's enumeration is not silently missing the one service every
 // SiLA2 client depends on to discover the rest, distinct from the "at least
 // two services" check above.
 TEST(SiLAServerOperational, ReflectionIncludesSiLAServiceAmongRegisteredServices) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithDiscovery(kPortReflectionIncludesSiLAService)
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withDiscovery(kPortReflectionIncludesSiLAService)
+                      .build();
+    server.run(false);
 
     auto channel = dialChannel(server, kPortReflectionIncludesSiLAService);
     grpc::Status status;
@@ -411,5 +411,5 @@ TEST(SiLAServerOperational, ReflectionIncludesSiLAServiceAmongRegisteredServices
     ASSERT_TRUE(status.ok()) << status.error_message();
     EXPECT_NE(std::find(names.begin(), names.end(), kSiLAServiceProtoName), names.end());
 
-    server.Shutdown();
+    server.shutdown();
 }

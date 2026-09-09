@@ -3,7 +3,7 @@
 
 #include <sila/common/util/AsciiCase.h>
 #include <sila/common/util/uuid.h>
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 #include <sila/server/config/TlsConfig.h>
 
 #include <openssl/asn1.h>
@@ -207,7 +207,7 @@ void CloudClientListener::start() {
     // accepted there and rejected here would split the transport in two.
     builder.SetMaxReceiveMessageSize(kMaxReceiveMessageSizeBytes);
     // Server half of CloudTransport::openStream's 60 s KEEPALIVE_TIME
-    // (SiLAServerBase.cc carries the matching values for its own peer,
+    // (SilaServerBase.cc carries the matching values for its own peer,
     // inbound clients). MIN_RECV_PING_INTERVAL_WITHOUT_DATA must stay <= that
     // 60 s or gRPC answers CloudTransport's pings with GOAWAY/ENHANCE_YOUR_CALM
     // after 2 strikes.

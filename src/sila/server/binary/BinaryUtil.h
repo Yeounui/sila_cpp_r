@@ -14,7 +14,7 @@ namespace sila2 {
 /// Builds the gRPC status a Binary Transfer RPC returns for @p type, such as
 /// an unknown or expired Binary Transfer UUID.
 ///
-// Mirrors SiLAError::toStatus() (architecture.md §3.4): errors travel as
+// Mirrors SilaError::toStatus() (architecture.md §3.4): errors travel as
 // ABORTED status with the serialized error proto Base64-encoded into the
 // status message (Part B p65) and the raw bytes kept in error_details.
 inline grpc::Status makeBinaryTransferStatus(
@@ -24,7 +24,7 @@ inline grpc::Status makeBinaryTransferStatus(
     error.set_errortype(type);
     error.set_message(message);
     // Part B p65: the serialized proto MUST be Base64-encoded into the status
-    // message; raw bytes stay in error_details (mirrors SiLAError::toStatus()).
+    // message; raw bytes stay in error_details (mirrors SilaError::toStatus()).
     const std::string serialized = error.SerializeAsString();
     return grpc::Status{grpc::StatusCode::ABORTED, base64Encode(serialized), serialized};
 }

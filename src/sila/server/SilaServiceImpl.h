@@ -1,4 +1,4 @@
-// SiLAServiceImpl.h — SiLA2 core feature (architecture.md §3.2, §3.10)
+// SilaServiceImpl.h — SiLA2 core feature (architecture.md §3.2, §3.10)
 //
 // New component, not a port. The SiLAService Feature is mandatory for every
 // SiLA 2 server: it exposes server identity (name, UUID, type, version) and
@@ -22,7 +22,7 @@ class ServerConfig;
 struct InterceptorChain;
 namespace discovery { class MdnsPublisher; }
 
-// FQI constant for SiLAService — used by Builder::Build() to auto-register.
+// FQI constant for SiLAService — used by Builder::build() to auto-register.
 inline constexpr std::string_view kSiLAServiceFqi =
     "org.silastandard/core/SiLAService/v1";
 
@@ -64,16 +64,16 @@ namespace silaservice_proto = sila2::org::silastandard::core::silaservice::v1;
 /// UUID, type, version, vendor URL) and introspection (list implemented Features, fetch a
 /// Feature's Feature Definition).
 ///
-/// Installed automatically by SiLAServerBase::Builder::Build() -- a caller never
+/// Installed automatically by SilaServerBase::Builder::build() -- a caller never
 /// constructs one directly.
-class SiLAServiceImpl final : public silaservice_proto::SiLAService::Service {
+class SilaServiceImpl final : public silaservice_proto::SiLAService::Service {
 public:
     /// Constructs the SiLA Service handler for one server. Installed automatically by
-    /// SiLAServerBase::Builder::Build() -- a server author never constructs one directly.
-    // registry, config, and publisher must outlive this object — SiLAServerBase owns all.
-    // publisher is nullable at the type level (defaults to nullptr) but Build() always
+    /// SilaServerBase::Builder::build() -- a server author never constructs one directly.
+    // registry, config, and publisher must outlive this object — SilaServerBase owns all.
+    // publisher is nullable at the type level (defaults to nullptr) but build() always
     // passes a non-null one: discovery is always enabled (Part B p75 MUST).
-    SiLAServiceImpl(const FeatureRegistry& registry, ServerConfig& config,
+    SilaServiceImpl(const FeatureRegistry& registry, ServerConfig& config,
                     discovery::MdnsPublisher* publisher = nullptr,
                     const InterceptorChain* chain = nullptr);
 

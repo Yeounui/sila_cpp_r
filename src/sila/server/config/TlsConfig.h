@@ -30,7 +30,7 @@ using X509Ptr = std::unique_ptr<X509, void (*)(X509*)>;
 
 /// Generates an RSA private key.
 ///
-/// Used together with generateCertificate by SiLAServerBase::Builder::WithSelfSignedCertificate
+/// Used together with generateCertificate by SilaServerBase::Builder::withSelfSignedCertificate
 /// to produce the key and certificate pair every SiLA Server needs (TLS is mandatory, Part A
 /// p.29) when the caller supplies neither its own certificate nor an external one.
 /// @param bits Key length in bits. Default 2048, matching the reference

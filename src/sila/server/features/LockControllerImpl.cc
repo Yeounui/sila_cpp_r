@@ -1,7 +1,7 @@
 // LockControllerImpl.cc — SiLA2 core feature (architecture.md §3.10)
 #include "LockControllerImpl.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/auth/FqiMatch.h>
 #include <sila/server/features/LockControllerFdl.h>
@@ -239,14 +239,14 @@ void LockControllerImpl::getFcpAffectedByMetadataLockIdentifier(
     // case). Deriving it from the FeatureRegistry instead, as this function
     // used to, let the two transports advertise different affected calls for
     // one metadata, and Part A requires the client to send exactly what the
-    // list names. It also makes the list a Build()-time snapshot, which is
+    // list names. It also makes the list a build()-time snapshot, which is
     // what Part A's "MUST NOT change during the Lifetime of a SiLA Server"
     // asks for structurally rather than by convention. The two exclusions
     // this function used to apply here (LockController itself, because
     // IsLocked "MUST NOT be lock protected", LockController-v1_0.sila.xml:
     // 95-99 / v2_0.sila.xml:97; and SiLAService, which rejects all client
     // metadata outright) now live where the table is built, in
-    // SiLAServerBase::Builder::Build().
+    // SilaServerBase::Builder::build().
     lockcontroller_proto::Get_FCPAffectedByMetadata_LockIdentifier_Responses response;
     if (chain_) {
         const auto it = chain_->metadataAffectedCalls.find(kLockIdentifierMetadataFqi);

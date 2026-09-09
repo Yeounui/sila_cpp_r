@@ -250,7 +250,7 @@ TEST_F(CodegenCloudE2E, WrapObsInitSnapshotsTheInitiationToken) {
     sila2::InterceptorChain chain;
     chain.auth = &interceptor;
     // issue() takes a scope SET; protectedFqis stays a vector because
-    // anyFqiCovers scans a vector, same as SiLAServerBase::Build().
+    // anyFqiCovers scans a vector, same as SilaServerBase::build().
     const std::string token = store.issue("alice", {protectedFqis.front()}, 60s);
 
     shake_example::ShakeControllerImpl impl{nullptr};
@@ -767,7 +767,7 @@ TEST_F(CodegenCloudE2E, CloudCommandResolvesBinaryTransferUuidParameter) {
     // One store wired to BOTH the adapter's InterceptorChain (so
     // validated_<handler> can resolve) and the router's own binaryStore (so
     // CreateBinaryUpload/UploadChunk have somewhere to write) -- the same
-    // "same store" wiring SiLAServerBase::Builder::Build() uses in production.
+    // "same store" wiring SilaServerBase::Builder::build() uses in production.
     sila2::InMemoryBinaryStore store;
     sila2::InterceptorChain chain;
     chain.binaryStore = &store;

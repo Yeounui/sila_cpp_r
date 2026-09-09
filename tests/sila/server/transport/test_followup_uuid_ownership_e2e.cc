@@ -5,7 +5,7 @@
 //
 // Mirrors test_command_granular_auth_e2e.cc's scaffold (a hand-rolled
 // grpc::Service on a plain insecure grpc::ServerBuilder -- no
-// SiLAServerBase/TLS/FeatureRegistry needed, since only dispatchToHandler's
+// SilaServerBase/TLS/FeatureRegistry needed, since only dispatchToHandler's
 // owner-check branch is under test) crossed with
 // test_observable_command_grpc_e2e.cc's hand-rolled Observable Command RPCs
 // (grpc::internal::RpcServiceMethod machinery, since no FDL-codegen'd
@@ -16,8 +16,8 @@
 // an owner on Initiate and check it on each follow-up.
 #include <sila/server/transport/GrpcTransport.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/command/ObservableCommandExecution.h>
 #include <sila/server/command/ObservableCommandManager.h>
 #include <sila/server/transport/InterceptorChain.h>
@@ -254,7 +254,7 @@ private:
 };
 
 // Boots a plain insecure gRPC server on an ephemeral loopback port -- no
-// SiLAServerBase/TLS/FeatureRegistry, matching test_command_granular_auth_e2e.cc:
+// SilaServerBase/TLS/FeatureRegistry, matching test_command_granular_auth_e2e.cc:
 // only dispatchToHandler's owner-check branch is under test, and that branch
 // runs the same way regardless of transport security or feature registration.
 struct TwoCmdTestServer {
@@ -281,7 +281,7 @@ struct TwoCmdTestServer {
     std::unique_ptr<TwoCmdTestClient> client;
 };
 
-// Reconstructs the SiLAError from a rejected gRPC status and asserts it is
+// Reconstructs the SilaError from a rejected gRPC status and asserts it is
 // FrameworkError{InvalidCommandExecutionUuid} -- the owner gate's rejection
 // (GrpcTransport.h:253-256), same error type the pre-existing unknown-UUID
 // path already produces, but reached here via a MANAGER-KNOWN UUID whose

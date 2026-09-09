@@ -17,7 +17,7 @@ class CallContext;
 /// gRPC headers of one call and stores it on that call's CallContext, so a
 /// Feature implementation and MetadataPolicy can look it up by FQI instead
 /// of parsing headers themselves. Wired in automatically for every server
-/// built with SiLAServerBase::Builder -- a server author never calls it
+/// built with SilaServerBase::Builder -- a server author never calls it
 /// directly.
 class MetadataExtractingInterceptor {
 public:

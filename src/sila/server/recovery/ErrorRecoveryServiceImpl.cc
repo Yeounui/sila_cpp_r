@@ -1,7 +1,7 @@
 // ErrorRecoveryServiceImpl.cc — SiLA2 error recovery feature (architecture.md §3.12)
 #include "ErrorRecoveryServiceImpl.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/BasicTypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/server/recovery/ErrorRecoveryFdl.h>

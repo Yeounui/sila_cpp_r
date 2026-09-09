@@ -11,8 +11,8 @@
 // return true; }, so no test ever drove a real protectedFqis list through
 // both transports at once — that is exactly what this file adds.
 //
-// Each test below builds `isProtected` the same way SiLAServerBase::Build()
-// does (SiLAServerBase.cc:416-418): a std::vector<std::string> protectedFqis
+// Each test below builds `isProtected` the same way SilaServerBase::build()
+// does (SilaServerBase.cc:416-418): a std::vector<std::string> protectedFqis
 // scanned via auth::anyFqiCovers, not a std::unordered_set with exact
 // membership. It then drives the SAME protectedFqis list through a real gRPC
 // unary call (GrpcAuthHarnessServer, adapted from
@@ -27,8 +27,8 @@
 // out of scope for this file.
 #include "CloudRouterTestHarness.h"
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/auth/AuthTokenStore.h>
 #include <sila/server/auth/AuthorizationInterceptor.h>
@@ -64,7 +64,7 @@ using sila2::auth::anyFqiCovers;
 using sila2::error::DefinedExecutionError;
 using sila2::error::FrameworkError;
 using sila2::error::fromGrpcStatus;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 using namespace std::chrono_literals;
 
 namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller::v1;

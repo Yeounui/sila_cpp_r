@@ -44,7 +44,7 @@ void AuthorizationServiceImpl::getFcpAffectedByMetadataAccessToken(
     ResponseSink<authz_proto::Get_FCPAffectedByMetadata_AccessToken_Responses>& sink) {
     // Reports the explicit protected list, not AccessPolicy::allowedFqis().
     // Same reason the gate is derived from that list and not from the policy
-    // (SiLAServerBase.cc: "a permissive policy must not disable the auth
+    // (SilaServerBase.cc: "a permissive policy must not disable the auth
     // gate"): the policy answers per user, and discovery is anonymous.
     // DenyByDefaultAccessPolicy returns {} for an empty user, so asking it
     // here made this property report "no call needs a token". A Feature FQI

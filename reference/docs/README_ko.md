@@ -27,14 +27,14 @@ SiLA 프로토콜은 FDL을 통해 표준화된 방식으로 장비에 명령을
 이 레포는 SiLA 프로토콜 C++ **재**구현체입니다. 기존 `sila_cpp`의 Qt 종속성을 제외하고 실 사용을 위해 재구현했습니다.
 ## 라이브러리 구성
 
-- `sila2::core` — 서버 인스턴스 생성, 정적 stub 클라이언트, 바이너리 전송, 클라우드 연결, 인증·인가, 에러 복구, mDNS Discovery, FDL 런타임 파싱과 제약 검사
-- `sila2::dynamic` — sila2::core 위에서 동작; core의 채널(`grpc::Channel`), 인젝터(`MetadataInjector`) 등과 연결. 파싱된 FDL로 protobuf descriptor를 생성 후, stub 없이 동적 RPC 호출.
+- `sila_cpp_r::core` — 서버 인스턴스 생성, 정적 stub 클라이언트, 바이너리 전송, 클라우드 연결, 인증·인가, 에러 복구, mDNS Discovery, FDL 런타임 파싱과 제약 검사
+- `sila_cpp_r::dynamic` — sila_cpp_r::core 위에서 동작; core의 채널(`grpc::Channel`), 인젝터(`MetadataInjector`) 등과 연결. 파싱된 FDL로 protobuf descriptor를 생성 후, stub 없이 동적 RPC 호출.
  
-본 레포는 사용 기기의 특성에 따라 하위 라이브러리를 선택하여 쓰도록 설계했습니다. 기기 목적에 맞게 `sila2_dynamic`와 `sila2::core`를 선택해서 사용하세요. `sila2::dynamic`은 여러 장비로부터의 메세지를 받아, 빌드 시점에 알 수 없는 protobuf 메시지를 런타임에 해석할 수 있게끔 소프트웨어 입장에서 설계했고, `sila2::core`은 컴퓨팅 자원이 한정되어, 하드웨어에 의해 기능이 이미 정의되어 있는 장비에 이식하여 사용할 수 있게 설계했습니다. `sila2::core` 사용 시, 장비의 FDL을 codegen으로 .proto IDL(Interface Description Language) 변환, 이후 protoc/grpc_cpp_plugin으로 컴파일하여 얻은 정적 stub과 함께 쓰이도록 설계했습니다.
+본 레포는 사용 기기의 특성에 따라 하위 라이브러리를 선택하여 쓰도록 설계했습니다. 기기 목적에 맞게 `sila_cpp_r_dynamic`와 `sila_cpp_r::core`를 선택해서 사용하세요. `sila_cpp_r::dynamic`은 여러 장비로부터의 메세지를 받아, 빌드 시점에 알 수 없는 protobuf 메시지를 런타임에 해석할 수 있게끔 소프트웨어 입장에서 설계했고, `sila_cpp_r::core`은 컴퓨팅 자원이 한정되어, 하드웨어에 의해 기능이 이미 정의되어 있는 장비에 이식하여 사용할 수 있게 설계했습니다. `sila_cpp_r::core` 사용 시, 장비의 FDL을 codegen으로 .proto IDL(Interface Description Language) 변환, 이후 protoc/grpc_cpp_plugin으로 컴파일하여 얻은 정적 stub과 함께 쓰이도록 설계했습니다.
 | | 장비 (SiLA Server) | 소프트웨어 (SiLA Client) |
 |---|---|---|
 |  Stub | codegen의 FDL 변환 → `.proto` + static stub + Metadata | 없음 — 통신 상대의 FDL 동적 해석 |
-| 링크 | `sila2::core` | `sila2::dynamic`(+`sila2::core`) |
+| 링크 | `sila_cpp_r::core` | `sila_cpp_r::dynamic`(+`sila_cpp_r::core`) |
 | FDL 런타임 해석 | 파라미터 제약 검사 (`CommandParameterValidator.cc`) | 파라미터 제약 검사 + 메시지 동적 직렬화/역직렬화. |
 
 ## 아키텍처
@@ -230,9 +230,9 @@ XML 변환을 위해 `third_party/sila_base/schema/FeatureDefinition.xsd`를 사
 ```cpp
 namespace gen = sila2::generated::temperaturecontroller;
 
-sila2::SiLAServerBase::Builder builder;
-builder.WithSelfSignedCertificate("localhost", "127.0.0.1")
-       .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("BioShakeQX"));
+sila2::SilaServerBase::Builder builder;
+builder.withSelfSignedCertificate("localhost", "127.0.0.1")
+       .withConfig(std::make_unique<sila2::InMemoryServerConfig>("BioShakeQX"));
 
 // TemperatureControllerImpl은 codegen이 생성한
 // TemperatureControllerServiceAdapter를 내장하여,
@@ -240,15 +240,15 @@ builder.WithSelfSignedCertificate("localhost", "127.0.0.1")
 TemperatureControllerImpl impl(builder.chain());
 
 // AddFeature를 통해 서버에게 FQI ID, FDL XML 원문, gRPC 서비스 포인터(TemperatureControllerServiceAdapter) 전달.
-// With(...) 메서드를 붙여 발견, 바이너리 전송, 인증, 에러 복구, 클라우드 연결 (WithBinaryTransfer, WithAuthentication, WithErrorRecovery, WithConnectionConfiguration).
-// Build()를 통해 현재까지 붙인 메소드에 대응하는 인터셉터와 gRPC 서비스를 생성·등록.
+// With(...) 메서드를 붙여 발견, 바이너리 전송, 인증, 에러 복구, 클라우드 연결 (withBinaryTransfer, withAuthentication, withErrorRecovery, withConnectionConfiguration).
+// build()를 통해 현재까지 붙인 메소드에 대응하는 인터셉터와 gRPC 서비스를 생성·등록.
 auto server = builder
-    .AddFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
-    .RegisterCommandManager(&impl.commandManager())
-    .WithDiscovery(50052)
-    .Build();
+    .addFeature(std::string{gen::kFqi}, std::string{gen::kFdlXml}, impl.service())
+    .registerCommandManager(&impl.commandManager())
+    .withDiscovery(50052)
+    .build();
 
-server.Run(true);
+server.run(true);
 ```  
 
 ### 클라이언트 사용
@@ -275,7 +275,7 @@ src/
   sila/
     common/
       error/
-        SiLAError.h/.cc                     Framework·Validation·DefinedExecution·Undefined 에러 타입
+        SilaError.h/.cc                     Framework·Validation·DefinedExecution·Undefined 에러 타입
       types/
         BasicTypes.h                        SiLA 기본 타입 (Integer, Real, String 등) C++ 매핑
         Constraints.h/.cc                   FDL 제약 조건 정의·검사
@@ -285,9 +285,9 @@ src/
       discovery/
         MdnsSocketPair.h                    mDNS 소켓 — 서버·클라이언트 공용
     server/
-      SiLAServerBase.h/.cc                  서버 빌더 — With... 메서드로 기능 구성, Build()로 생성
+      SilaServerBase.h/.cc                  서버 빌더 — With... 메서드로 기능 구성, build()로 생성
       FeatureRegistry.h/.cc                 Feature FQI·FDL·gRPC 서비스 등록·조회
-      SiLAServiceImpl.h/.cc                 SiLAService 구현 — GetFeatureDefinition 등 코어 RPC
+      SilaServiceImpl.h/.cc                 SiLAService 구현 — GetFeatureDefinition 등 코어 RPC
       CommandParameterValidator.h/.cc       FDL 제약 기반 파라미터 런타임 검사
       config/
         ServerConfig.h/.cc                  서버 설정 저장·로드

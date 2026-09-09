@@ -20,7 +20,7 @@ class ObservableCommandExecution;
 /// A Feature implementation calls addCommand() when a client invokes an Observable Command,
 /// then getCommand() to look the execution back up for its `_Info` stream. One instance is
 /// shared by every Feature that has an Observable Command; it is installed on the server via
-/// `SiLAServerBase::Builder::RegisterCommandManager()`.
+/// `SilaServerBase::Builder::registerCommandManager()`.
 ///
 /// @code{.cpp}
 /// namespace fw = sila2::org::silastandard;  // SiLAFramework.pb.h

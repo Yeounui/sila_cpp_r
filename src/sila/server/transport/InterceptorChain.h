@@ -21,17 +21,17 @@ class BinaryStore;
 namespace auth { class AuthorizationInterceptor; }
 
 /// Groups the optional interceptors that dispatchToHandler applies around
-/// each handler invocation. Assembled by SiLAServerBase::Builder::Build()
+/// each handler invocation. Assembled by SilaServerBase::Builder::build()
 /// and passed by raw pointer to generated service adapters.
 struct InterceptorChain {
-    auth::AuthorizationInterceptor* auth = nullptr;  ///< null if WithAuthentication not called
-    BinaryStore* binaryStore = nullptr;              ///< null if WithBinaryTransfer not called
+    auth::AuthorizationInterceptor* auth = nullptr;  ///< null if withAuthentication not called
+    BinaryStore* binaryStore = nullptr;              ///< null if withBinaryTransfer not called
     std::chrono::seconds binarySlotLifetime{300};    ///< lifetime for injectBinaryResults slots
     LogCallback logCallback;                         ///< null (empty) if no callback installed
 
     // Validates the LockIdentifier metadata of one call and renews the lock's
     // inactivity timeout on a match (LockControllerImpl::checkLockMetadata).
-    // Empty when the server was built without Builder::WithLock().
+    // Empty when the server was built without Builder::withLock().
     //
     // A std::function rather than a LockControllerImpl*: this header is reached
     // from GrpcTransport.h, i.e. from every generated service adapter in the
@@ -41,21 +41,21 @@ struct InterceptorChain {
     //
     // Throws (error::FrameworkError{InvalidMetadata} or
     // error::DefinedExecutionError{InvalidLockIdentifier}); both call sites are
-    // already inside a SiLAError boundary.
+    // already inside a SilaError boundary.
     std::function<void(std::string_view targetFqi,
-                       const std::optional<std::string>& serializedLockIdentifier)> lockGate;  ///< Checks/renews the LockIdentifier metadata; empty if WithLock() was not called.
+                       const std::optional<std::string>& serializedLockIdentifier)> lockGate;  ///< Checks/renews the LockIdentifier metadata; empty if withLock() was not called.
 
-    // FQIs of every Feature registered on this server, snapshotted at Build().
+    // FQIs of every Feature registered on this server, snapshotted at build().
     // CreateBinary gates auth on the caller's parameterIdentifier
     // (BinaryUploadService.cc:29, CloudEnvelopeRouter.cc:821), so an identifier
     // no registered Feature accounts for is a free pass past that gate.
-    // Empty means the chain was assembled outside SiLAServerBase::Builder
+    // Empty means the chain was assembled outside SilaServerBase::Builder
     // (unit tests wiring only an auth interceptor); validation is then skipped.
-    std::vector<std::string> registeredFeatureFqis;  ///< Every Feature FQI registered on this server, snapshotted at Build().
+    std::vector<std::string> registeredFeatureFqis;  ///< Every Feature FQI registered on this server, snapshotted at build().
 
     // Every SiLA Client Metadata this server declares: fully qualified
     // Metadata identifier -> the Features / Commands / Properties it affects
-    // (Part A's affected list). Snapshotted at Build() and never mutated
+    // (Part A's affected list). Snapshotted at build() and never mutated
     // afterwards, which is why neither reader locks -- Part A makes the
     // immutability a MUST ("MUST NOT change during the Lifetime of a SiLA
     // Server"), so a mutex here would guard a value that cannot change.

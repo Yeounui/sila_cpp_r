@@ -2,13 +2,13 @@
 #include "CloudTransport.h"
 
 #include <sila/client/binary/BinaryRetry.h>
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
 namespace sila2 {
 
 void CloudTransport::openStream() {
     std::string target = host_ + ":" + std::to_string(port_);
-    // This channel — not the inbound listener in SiLAServerBase::Run — is the
+    // This channel — not the inbound listener in SilaServerBase::Run — is the
     // one holding a stream open for hours in server-initiated mode, so it is
     // where keepalive has to live. Values mirror that listener's; change both
     // together. GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA is left at its default

@@ -33,7 +33,7 @@ namespace sila2 {
 class CloudTransport;
 struct InterceptorChain;
 
-// FQI constant for ConnectionConfigurationService — used by Builder::Build() to auto-register.
+// FQI constant for ConnectionConfigurationService — used by Builder::build() to auto-register.
 // Major version only — the FDL is FeatureVersion="1.1" but the FQI (and the
 // generated package, ConnectionConfigurationService.proto:5) carry v1, per
 // sila_base xslt/fdl2proto.xsl:25 substring-before(FeatureVersion, '.').
@@ -76,7 +76,7 @@ namespace connconfig_proto = sila2::org::silastandard::core::connectionconfigura
 /// `CloudTransport` per configured client and persists the connection mode
 /// and any `Persist=true` clients to `storePath` so both survive a restart.
 ///
-/// Installed by @ref SiLAServerBase::Builder::WithConnectionConfiguration().
+/// Installed by @ref SilaServerBase::Builder::withConnectionConfiguration().
 class ConnectionConfigurationServiceImpl final
     : public connconfig_proto::ConnectionConfigurationService::Service {
 public:
@@ -208,11 +208,11 @@ public:
     // ---- Lifecycle ----
 
     /// Reconnects every client persisted with Persist=true. Called once by
-    /// SiLAServerBase after Build(), so a server author does not call this
+    /// SilaServerBase after build(), so a server author does not call this
     /// directly.
     void connectPersistentClients();
 
-    /// Disconnects every managed CloudTransport. Called by SiLAServerBase on
+    /// Disconnects every managed CloudTransport. Called by SilaServerBase on
     /// server shutdown; a server author does not call this directly.
     void shutdown();
 

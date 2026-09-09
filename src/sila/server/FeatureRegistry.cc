@@ -87,7 +87,7 @@ std::string derivedFqi(const std::string& fdlXml) {
 
 }  // namespace
 
-// No mutex: registration only happens during the SiLAServerBase::Builder
+// No mutex: registration only happens during the SilaServerBase::Builder
 // chain at boot time, never concurrently with request handling.
 void FeatureRegistry::registerFeature(std::string fqi, std::string fdlXml) {
     /*  definitions_.find(fqi) != definitions_.end()
@@ -106,8 +106,8 @@ void FeatureRegistry::registerFeature(std::string fqi, std::string fdlXml) {
     }
     // The FQI is what ListImplementedFeatures advertises and the key
     // GetFeatureDefinition answers on; the FDL carries its own identity.
-    // Checking here rather than in Builder::AddFeature covers every caller at
-    // once: AddFeature (SiLAServerBase.cc:404-411) and the Builder's own
+    // Checking here rather than in Builder::addFeature covers every caller at
+    // once: addFeature (SilaServerBase.cc:404-411) and the Builder's own
     // built-in registrations (:567, :620-654) all funnel through this
     // function. Mirrors dynamic::FeatureCatalog::add (FeatureCatalog.cc:53-58)
     // so a Feature is checked the same way whichever side registers it.

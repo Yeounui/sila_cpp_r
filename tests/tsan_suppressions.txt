@@ -70,4 +70,4 @@ race:std::__cxx11::basic_string*::basic_string*
 # OwnedComponents destructor races with gRPC event-engine threads that
 # still reference shared services during teardown.  Tracked for
 # investigation — likely needs explicit Shutdown-before-destroy ordering.
-race:sila2::SiLAServerBase::OwnedComponents::~OwnedComponents
+race:sila2::SilaServerBase::OwnedComponents::~OwnedComponents

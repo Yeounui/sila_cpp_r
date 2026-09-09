@@ -4,7 +4,7 @@
 // by CloudEnvelopeRouter::route() — the switch on message_case() and nested
 // field reads that process untrusted wire bytes from the cloud bidi stream.
 //
-// Build:
+// build:
 //   conda run -n sica clang++ -std=c++20 -fsanitize=fuzzer,address \
 //       -I src -I build/src/sila -I build/vcpkg_installed/x64-linux/include \
 //       tests/fuzz/fuzz_cloud_router.cc \

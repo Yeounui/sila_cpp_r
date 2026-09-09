@@ -14,7 +14,7 @@ namespace sila2::auth {
 
 /// Holds issued access tokens and their per-token allowed-FQI set, with sliding expiry.
 ///
-/// Owned and assembled by SiLAServerBase::Builder::WithAuthentication(); a server
+/// Owned and assembled by SilaServerBase::Builder::withAuthentication(); a server
 /// author does not construct one directly.
 class AuthTokenStore {
 public:

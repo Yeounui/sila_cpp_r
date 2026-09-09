@@ -1,8 +1,8 @@
-// SiLAErrorSubtypes.cc — concrete SiLA 2 error types implementation
+// SilaErrorSubtypes.cc — concrete SiLA 2 error types implementation
 //
 // Ported from sila_cpp v0.3.11
 // src/lib/framework/error_handling/ (MIT License, Copyright 2020 SiLA2).
-#include "SiLAErrorSubtypes.h"
+#include "SilaErrorSubtypes.h"
 
 #include <stdexcept>
 #include <utility>
@@ -17,7 +17,7 @@ namespace error {
 // ---------------------------------------------------------------------------
 
 ValidationError::ValidationError(std::string parameter, std::string message)
-    : SiLAError{ErrorType::ValidationError, std::move(message)}, parameter_{std::move(parameter)} {}
+    : SilaError{ErrorType::ValidationError, std::move(message)}, parameter_{std::move(parameter)} {}
 
 std::string ValidationError::parameter() const { return parameter_; }
 
@@ -34,10 +34,10 @@ std::unique_ptr<sila2::org::silastandard::SiLAError> ValidationError::makeErrorM
 // ---------------------------------------------------------------------------
 
 ExecutionError::ExecutionError(std::string msg)
-    : SiLAError{ErrorType::UndefinedExecutionError, std::move(msg)} {}
+    : SilaError{ErrorType::UndefinedExecutionError, std::move(msg)} {}
 
 ExecutionError::ExecutionError(std::string identifier, std::string msg)
-    : SiLAError{ErrorType::DefinedExecutionError, std::move(msg)},
+    : SilaError{ErrorType::DefinedExecutionError, std::move(msg)},
       errorIdentifier_{std::move(identifier)} {}
 
 std::string ExecutionError::errorIdentifier() const { return errorIdentifier_; }
@@ -46,7 +46,7 @@ std::unique_ptr<sila2::org::silastandard::SiLAError> ExecutionError::makeErrorMe
     auto error = std::make_unique<sila2::org::silastandard::SiLAError>();
     // errorType() distinguishes Defined from Undefined — set by the two-arg
     // vs one-arg ExecutionError ctor, so the subclass identity is already baked
-    // into the base SiLAError::type_ field.
+    // into the base SilaError::type_ field.
     if (errorType() == ErrorType::DefinedExecutionError) {
         auto* defined = error->mutable_definedexecutionerror();
         defined->set_erroridentifier(errorIdentifier_);
@@ -91,7 +91,7 @@ std::string defaultMessageForType(FrameworkError::FrameworkErrorType type) {
 }  // namespace
 
 FrameworkError::FrameworkError(FrameworkErrorType type, std::string message)
-    : SiLAError{ErrorType::FrameworkError, message.empty()
+    : SilaError{ErrorType::FrameworkError, message.empty()
                                                 ? defaultMessageForType(type)
                                                 : std::move(message)},
       frameworkErrorType_{type} {}
@@ -139,12 +139,12 @@ FrameworkError::makeErrorMessage() const {
 // ---------------------------------------------------------------------------
 
 ConnectionError::ConnectionError(grpc::Status status)
-    : SiLAError{ErrorType::ConnectionError, status.error_message()}, status_{std::move(status)} {}
+    : SilaError{ErrorType::ConnectionError, status.error_message()}, status_{std::move(status)} {}
 
 grpc::StatusCode ConnectionError::statusCode() const { return status_.error_code(); }
 
 std::unique_ptr<sila2::org::silastandard::SiLAError> ConnectionError::makeErrorMessage() const {
-    // The SiLAError oneof has no ConnectionError variant — this is an
+    // The SilaError oneof has no ConnectionError variant — this is an
     // infrastructure error, not a SiLA protocol error.
     throw std::logic_error{
         "ConnectionError is not a SiLA protocol error — use statusCode() directly"};

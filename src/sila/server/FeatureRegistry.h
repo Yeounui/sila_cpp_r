@@ -23,7 +23,7 @@ namespace sila2 {
 /// fully qualified identifier (FQI). Populated only during boot through the
 /// Builder chain, then read-only for the lifetime of the server, so no
 /// locking is needed here.
-/// @see SiLAServerBase::Builder::AddFeature, which populates it.
+/// @see SilaServerBase::Builder::addFeature, which populates it.
 class FeatureRegistry {
 public:
     /// Adds a Feature to the registry so a server built from it can serve the Feature's
@@ -47,7 +47,7 @@ public:
     const std::string& featureDefinition(const std::string& fqi) const;
 
     /// @return The @ref gl_fully_qualified_identifier "FQI" of every registered Feature.
-    /// FQI-sorted, for SiLAServiceImpl::ListImplementedFeatures.
+    /// FQI-sorted, for SilaServiceImpl::ListImplementedFeatures.
     std::vector<std::string> registeredFeatureIdentifiers() const;
 
     /// Associates a gRPC service implementation with an already-registered FQI, so the

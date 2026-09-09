@@ -3,7 +3,7 @@
 // raiseAndWait()'s FDL structural validation (S6, S35, S39).
 #include <sila/server/recovery/RecoverableErrorGate.h>
 #include <sila/server/property/ObservablePropertyManager.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 #include <gtest/gtest.h>
 

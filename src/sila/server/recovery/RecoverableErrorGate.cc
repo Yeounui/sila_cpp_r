@@ -2,7 +2,7 @@
 // Error handling (Feature Definition Language, ExecutionErrorHandling).
 #include "RecoverableErrorGate.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/types/Constraints.h>
 #include <sila/common/util/AsciiCase.h>
 #include <sila/server/property/ObservablePropertyManager.h>

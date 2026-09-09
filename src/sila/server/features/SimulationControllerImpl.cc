@@ -1,7 +1,7 @@
 // SimulationControllerImpl.cc — SiLA2 core feature (architecture.md §3.10)
 #include "SimulationControllerImpl.h"
 
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/server/features/SimulationControllerFdl.h>
 #include <sila/server/transport/GrpcTransport.h>
 

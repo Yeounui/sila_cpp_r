@@ -1,18 +1,18 @@
 // main.cc — ShakeController example server entry point.
 //
 // This is teaching material: it shows how a Feature owner assembles a
-// SiLA2 server out of SiLAServerBase::Builder plus a single hand-written
+// SiLA2 server out of SilaServerBase::Builder plus a single hand-written
 // Feature implementation (ShakeControllerImpl). See ShakeControllerImpl.h
 // for how the generated ServiceAdapter and the domain logic are wired
 // together; this file only covers the Builder side of that assembly.
 //
-// Build: cmake -B build -DSILA2_BUILD_EXAMPLES=ON && cmake --build build
+// build: cmake -B build -DSILA2_BUILD_EXAMPLES=ON && cmake --build build
 // Run:   ./build/examples/shake_controller_example [--port 50052]
 #include "ShakeControllerImpl.h"
 #include "ShakeControllerMeta.h"
 
 #include <sila/server/config/ServerConfig.h>
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -42,9 +42,9 @@ int main(int argc, char* argv[]) {
     const std::uint16_t port = parsePort(argc, argv);
 
     // Step 1: Create a Builder and configure server identity + TLS.
-    sila2::SiLAServerBase::Builder builder;
-    builder.WithSelfSignedCertificate("localhost", "127.0.0.1")
-           .WithConfig(std::make_unique<sila2::InMemoryServerConfig>(
+    sila2::SilaServerBase::Builder builder;
+    builder.withSelfSignedCertificate("localhost", "127.0.0.1")
+           .withConfig(std::make_unique<sila2::InMemoryServerConfig>(
                "ShakeControllerExample"));
 
     // Step 2: Create the Feature implementation, passing the Builder's
@@ -56,14 +56,14 @@ int main(int argc, char* argv[]) {
     // ObservableCommandManager so the server can cancel in-flight commands
     // on shutdown.
     auto server = builder
-        .AddFeature(std::string{gen::kFqi},
+        .addFeature(std::string{gen::kFqi},
                     std::string{gen::kFdlXml},
                     shakeController.service())
-        .RegisterCommandManager(&shakeController.commandManager())
-        .WithDiscovery(port)
-        .Build();
+        .registerCommandManager(&shakeController.commandManager())
+        .withDiscovery(port)
+        .build();
 
     std::cout << "ShakeController example server listening on port " << port << "\n";
-    server.Run(true);
+    server.run(true);
     return 0;
 }

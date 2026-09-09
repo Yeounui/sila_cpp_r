@@ -23,7 +23,7 @@ inline constexpr std::string_view kBinaryUploadFqi = "org.silastandard/core/Bina
 /// Lets a SiLA Client upload a binary parameter too large to fit inline, in
 /// chunks, and get back the Binary Transfer UUID
 /// (@ref gl_binary_transfer) to reference it in a command call. Installed
-/// automatically by sila2::SiLAServerBase::Builder::WithBinaryTransfer(); a
+/// automatically by sila2::SilaServerBase::Builder::withBinaryTransfer(); a
 /// Feature implementer never constructs or calls this class directly, and
 /// never sees the UUID itself -- BinaryParameterInterceptor resolves it to
 /// bytes before the handler runs.

@@ -1,19 +1,19 @@
-// End-to-end tests for SiLAServerBase::Run and SiLAServerBase::Shutdown
-// (architecture.md §3.1): Run() assembles TLS credentials, binds the
+// End-to-end tests for SilaServerBase::Run and SilaServerBase::Shutdown
+// (architecture.md §3.1): run() assembles TLS credentials, binds the
 // listening port, registers every service from FeatureRegistry, and starts
-// the gRPC server (or throws if BuildAndStart fails); Shutdown() interrupts
+// the gRPC server (or throws if BuildAndStart fails); shutdown() interrupts
 // every registered ObservableCommandManager, stops mDNS if enabled, and
 // shuts down the gRPC server. Each test drives the flow through a real
-// SiLAServerBase — a Builder is the only way to obtain one, so False inputs
-// for Run() are three distinct malformed-PEM shapes rather than three
-// distinct exception types: Run() has exactly one throw site
+// SilaServerBase — a Builder is the only way to obtain one, so False inputs
+// for run() are three distinct malformed-PEM shapes rather than three
+// distinct exception types: run() has exactly one throw site
 // (BuildAndStart() returning nullptr), confirmed empirically before writing
 // these tests (see below).
-#include <sila/server/SiLAServerBase.h>
+#include <sila/server/SilaServerBase.h>
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
-#include <sila/server/SiLAServiceImpl.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
+#include <sila/server/SilaServiceImpl.h>
 #include <sila/server/auth/AccessPolicy.h>
 #include <sila/server/auth/CredentialVerifier.h>
 #include <sila/server/command/ObservableCommandExecution.h>
@@ -47,15 +47,15 @@ namespace {
 using sila2::ObservableCommandExecution;
 using sila2::ObservableCommandManager;
 using sila2::ObservablePropertyManager;
-using sila2::SiLAServerBase;
+using sila2::SilaServerBase;
 using State = ObservableCommandExecution::State;
 
 namespace errorrecovery_proto = sila2::errorrecovery_proto;
 using sila2::recovery::kRecoverableErrorsPropertyId;
 
 // Distinct ports per test so servers never contend for the same listener —
-// SiLAServerBase::Run only exposes port control through WithDiscovery(), so
-// every Run()-driving test below enables discovery even when it is not
+// SilaServerBase::Run only exposes port control through withDiscovery(), so
+// every run()-driving test below enables discovery even when it is not
 // otherwise under test.
 constexpr uint16_t kPortRunListens = 50250;
 constexpr uint16_t kPortRunMultiService = 50251;
@@ -77,14 +77,14 @@ constexpr uint16_t kPortMdnsFailedRun = 50267;
 
 // Real local channel dialed against server's own self-signed certificate —
 // same pattern as tests/interop/test_interop.cc's channel().
-std::shared_ptr<grpc::Channel> dialChannel(const SiLAServerBase& server, uint16_t port) {
+std::shared_ptr<grpc::Channel> dialChannel(const SilaServerBase& server, uint16_t port) {
     grpc::SslCredentialsOptions opts;
     opts.pem_root_certs = server.certificatePem();
     return grpc::CreateChannel("localhost:" + std::to_string(port), grpc::SslCredentials(opts));
 }
 
 // Minimal stubs reused from test_auth_session_client_e2e.cc's pattern: only
-// used to prove AuthenticationService is reachable once Run() registers it
+// used to prove AuthenticationService is reachable once run() registers it
 // alongside SiLAService, not to exercise auth decision logic.
 struct AcceptingVerifier : sila2::auth::CredentialVerifier {
     std::optional<std::string> verify(const std::string& user, const std::string&) override {
@@ -100,17 +100,17 @@ struct AllowAllPolicy : sila2::auth::AccessPolicy {
 }  // namespace
 
 // ---------------------------------------------------------------------------
-// SiLAServerBase::Run — True (positive) paths
+// SilaServerBase::Run — True (positive) paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServerBaseRun, StartsListeningAndServesUnaryRpc) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortRunListens)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, StartsListeningAndServesUnaryRpc) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortRunListens)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    server.Run(false);  // block=false: must return without waiting
+    server.run(false);  // block=false: must return without waiting
 
     auto stub = sila2::silaservice_proto::SiLAService::NewStub(
         dialChannel(server, kPortRunListens));
@@ -122,10 +122,10 @@ TEST(SiLAServerBaseRun, StartsListeningAndServesUnaryRpc) {
     ASSERT_TRUE(status.ok()) << status.error_message();
     EXPECT_EQ(resp.serveruuid().value(), server.serverConfig().uuid());
 
-    server.Shutdown();
+    server.shutdown();
 }
 
-TEST(SiLAServerBaseRun, RestoresPersistentConnectionClientsBeforeListeningAndClearsThemOnShutdown) {
+TEST(SilaServerBaseRun, RestoresPersistentConnectionClientsBeforeListeningAndClearsThemOnShutdown) {
     const auto storePath = std::filesystem::temp_directory_path() /
                            "sila-connection-configuration-run-test.state";
     std::filesystem::remove(storePath);
@@ -139,13 +139,13 @@ TEST(SiLAServerBaseRun, RestoresPersistentConnectionClientsBeforeListeningAndCle
                                  std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
                                  std::filesystem::perm_options::replace);
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(0)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .WithConnectionConfiguration(
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(0)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .withConnectionConfiguration(
                           storePath, grpc::InsecureChannelCredentials())
-                      .Build();
+                      .build();
     auto services = server.featureRegistry().registeredServices();
     auto serviceIt = std::find_if(services.begin(), services.end(), [](grpc::Service* service) {
         return dynamic_cast<sila2::ConnectionConfigurationServiceImpl*>(service) != nullptr;
@@ -154,7 +154,7 @@ TEST(SiLAServerBaseRun, RestoresPersistentConnectionClientsBeforeListeningAndCle
     auto* connectionService =
         dynamic_cast<sila2::ConnectionConfigurationServiceImpl*>(*serviceIt);
 
-    server.Run(false);
+    server.run(false);
 
     auto stub = sila2::connconfig_proto::ConnectionConfigurationService::NewStub(
         dialChannel(server, server.port()));
@@ -165,7 +165,7 @@ TEST(SiLAServerBaseRun, RestoresPersistentConnectionClientsBeforeListeningAndCle
     ASSERT_EQ(response.configuredsilaclients_size(), 1);
     EXPECT_EQ(response.configuredsilaclients(0).clientname().value(), "persisted");
 
-    server.Shutdown();
+    server.shutdown();
 
     grpc::ServerContext localContext;
     response.Clear();
@@ -175,20 +175,20 @@ TEST(SiLAServerBaseRun, RestoresPersistentConnectionClientsBeforeListeningAndCle
     std::filesystem::remove(storePath);
 }
 
-TEST(SiLAServerBaseRun, RegistersEveryFeatureServiceNotJustSiLAService) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithAuthentication(std::make_unique<AcceptingVerifier>(),
+TEST(SilaServerBaseRun, RegistersEveryFeatureServiceNotJustSiLAService) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withAuthentication(std::make_unique<AcceptingVerifier>(),
                                           std::make_unique<AllowAllPolicy>(),
                                           {})
-                      .WithDiscovery(kPortRunMultiService)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+                      .withDiscovery(kPortRunMultiService)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    server.Run(false);
+    server.run(false);
 
     // AuthenticationService is a second, independently-registered gRPC
-    // service — reaching it proves Run()'s loop over
+    // service — reaching it proves run()'s loop over
     // featureRegistry_.registeredServices() covers more than just the
     // mandatory SiLAService.
     auto stub = sila2::auth_proto::AuthenticationService::NewStub(
@@ -204,21 +204,21 @@ TEST(SiLAServerBaseRun, RegistersEveryFeatureServiceNotJustSiLAService) {
     ASSERT_TRUE(status.ok()) << status.error_message();
     EXPECT_FALSE(resp.accesstoken().value().empty());
 
-    server.Shutdown();
+    server.shutdown();
 }
 
 // Pins S8b Option A (architecture-v2.md §3.12): ErrorRecoveryService v1 is
-// never advertised or served, only v2. WithErrorRecovery() only registers
+// never advertised or served, only v2. withErrorRecovery() only registers
 // the v2 gRPC service (see kErrorRecoveryServiceFqi in
 // ErrorRecoveryServiceImpl.h) — there is no v1 service left to dial.
-TEST(SiLAServerBaseRun, AdvertisesErrorRecoveryV2OnlyNotV1) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortRunErrorRecoveryAdvert)
-                      .WithErrorRecovery()
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
+TEST(SilaServerBaseRun, AdvertisesErrorRecoveryV2OnlyNotV1) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortRunErrorRecoveryAdvert)
+                      .withErrorRecovery()
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
 
     auto stub = sila2::silaservice_proto::SiLAService::NewStub(
         dialChannel(server, kPortRunErrorRecoveryAdvert));
@@ -238,7 +238,7 @@ TEST(SiLAServerBaseRun, AdvertisesErrorRecoveryV2OnlyNotV1) {
               fqis.end());
 
     // GetFeatureDefinition on the unadvertised v1 FQI must fail the same way
-    // it would for any other unimplemented feature (SiLAServiceImpl.cc:56-58).
+    // it would for any other unimplemented feature (SilaServiceImpl.cc:56-58).
     grpc::ClientContext defCtx;
     sila2::silaservice_proto::GetFeatureDefinition_Parameters defRequest;
     defRequest.mutable_featureidentifier()->set_value("org.silastandard/core/ErrorRecoveryService/v1");
@@ -252,135 +252,135 @@ TEST(SiLAServerBaseRun, AdvertisesErrorRecoveryV2OnlyNotV1) {
     EXPECT_EQ(definedError->errorIdentifier(),
               "org.silastandard/core/SiLAService/v1/DefinedExecutionError/UnimplementedFeature");
 
-    server.Shutdown();
+    server.shutdown();
 }
 
-TEST(SiLAServerBaseRun, BlockTrueBlocksCallingThreadUntilShutdown) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortRunBlocks)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, BlockTrueBlocksCallingThreadUntilShutdown) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortRunBlocks)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
     std::atomic<bool> runReturned{false};
     std::thread runner([&] {
-        server.Run(true);  // block=true: must not return before Shutdown()
+        server.run(true);  // block=true: must not return before shutdown()
         runReturned = true;
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds{200});
-    EXPECT_FALSE(runReturned.load()) << "Run(true) returned before Shutdown() was called";
+    EXPECT_FALSE(runReturned.load()) << "run(true) returned before shutdown() was called";
 
-    server.Shutdown();
+    server.shutdown();
     runner.join();
 
-    EXPECT_TRUE(runReturned.load()) << "Run(true) never returned after Shutdown()";
+    EXPECT_TRUE(runReturned.load()) << "run(true) never returned after shutdown()";
 }
 
 // ---------------------------------------------------------------------------
-// SiLAServerBase::Run — False (negative/rejection) paths
+// SilaServerBase::Run — False (negative/rejection) paths
 // All CAUGHT: BuildAndStart() returns nullptr for malformed TLS material,
-// and Run() surfaces that as std::runtime_error. Builder::Build() already
+// and run() surfaces that as std::runtime_error. Builder::build() already
 // rejects empty PEM strings (see test_sila_server_base.cc), so the only way
 // to reach this branch is non-empty-but-unusable PEM content.
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServerBaseRun, GarbagePemMaterialThrowsRuntimeError) {
-    auto server = SiLAServerBase::Builder()
-                      .WithCertificate("not-a-real-certificate-pem", "not-a-real-private-key-pem")
-                      .WithDiscovery(kPortRunGarbagePem)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, GarbagePemMaterialThrowsRuntimeError) {
+    auto server = SilaServerBase::Builder()
+                      .withCertificate("not-a-real-certificate-pem", "not-a-real-private-key-pem")
+                      .withDiscovery(kPortRunGarbagePem)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    EXPECT_THROW(server.Run(false), std::runtime_error);
+    EXPECT_THROW(server.run(false), std::runtime_error);
 }
 
-TEST(SiLAServerBaseRun, SwappedCertificateAndKeyThrowsRuntimeError) {
-    // Real, individually-valid PEM material — but WithCertificate is given
+TEST(SilaServerBaseRun, SwappedCertificateAndKeyThrowsRuntimeError) {
+    // Real, individually-valid PEM material — but withCertificate is given
     // the key where the certificate belongs and vice versa.
-    auto valid = SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                     .Build();
+    auto valid = SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                     .build();
 
-    auto swapped = SiLAServerBase::Builder()
-                       .WithCertificate(valid.privateKeyPem(), valid.certificatePem())
-                       .WithDiscovery(kPortRunSwappedPem)
-                       .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                       .Build();
+    auto swapped = SilaServerBase::Builder()
+                       .withCertificate(valid.privateKeyPem(), valid.certificatePem())
+                       .withDiscovery(kPortRunSwappedPem)
+                       .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                       .build();
 
-    EXPECT_THROW(swapped.Run(false), std::runtime_error);
+    EXPECT_THROW(swapped.run(false), std::runtime_error);
 }
 
-TEST(SiLAServerBaseRun, TruncatedCertificateThrowsRuntimeError) {
-    auto valid = SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                     .Build();
+TEST(SilaServerBaseRun, TruncatedCertificateThrowsRuntimeError) {
+    auto valid = SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                     .build();
     const std::string truncatedCert = valid.certificatePem().substr(0, valid.certificatePem().size() / 2);
 
-    auto server = SiLAServerBase::Builder()
-                      .WithCertificate(truncatedCert, valid.privateKeyPem())
-                      .WithDiscovery(kPortRunTruncatedPem)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = SilaServerBase::Builder()
+                      .withCertificate(truncatedCert, valid.privateKeyPem())
+                      .withDiscovery(kPortRunTruncatedPem)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    EXPECT_THROW(server.Run(false), std::runtime_error);
+    EXPECT_THROW(server.run(false), std::runtime_error);
 }
 
 // ---------------------------------------------------------------------------
-// mDNS publish-after-bind ordering (audit S31): Build() must construct the
-// publisher (SiLAServiceImpl captures it for SetServerName) without
-// advertising, and Run() must advertise only after BuildAndStart has written
+// mDNS publish-after-bind ordering (audit S31): build() must construct the
+// publisher (SilaServiceImpl captures it for SetServerName) without
+// advertising, and run() must advertise only after BuildAndStart has written
 // the bound port back. No multicast browse test here: test_mdns_browser.cc's
 // mdnsPortAvailable() skips on WSL2 (/proc/version names microsoft), so a
 // browse-based assertion would never run on this host. Every case below
 // reads publisher state directly instead.
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServerBaseRun, MdnsAdvertisesTheOsSelectedPortWhenBuiltWithPortZero) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(0)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, MdnsAdvertisesTheOsSelectedPortWhenBuiltWithPortZero) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(0)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
     ASSERT_NE(server.mdnsPublisher(), nullptr);
 
-    server.Run(false);
+    server.run(false);
 
     // Before the fix the publisher's port stayed 0 forever -- it was set at
-    // construction time in Build(), before BuildAndStart chose a real one.
+    // construction time in build(), before BuildAndStart chose a real one.
     EXPECT_NE(server.port(), 0);
     EXPECT_EQ(server.mdnsPublisher()->port(), server.port());
 
-    server.Shutdown();
+    server.shutdown();
 }
 
-TEST(SiLAServerBaseRun, MdnsAdvertisesTheRequestedPortWhenBuiltWithAFixedPort) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortMdnsFixedPort)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, MdnsAdvertisesTheRequestedPortWhenBuiltWithAFixedPort) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortMdnsFixedPort)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    server.Run(false);
+    server.run(false);
 
     // Pins that the reordering did not change the fixed-port path, which
     // every other e2e test in this file relies on.
     EXPECT_EQ(server.port(), kPortMdnsFixedPort);
     EXPECT_EQ(server.mdnsPublisher()->port(), kPortMdnsFixedPort);
 
-    server.Shutdown();
+    server.shutdown();
 }
 
-TEST(SiLAServerBaseRun, MdnsAdvertisedPortIsDialableAtTheMomentItIsAdvertised) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(0)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, MdnsAdvertisedPortIsDialableAtTheMomentItIsAdvertised) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(0)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    server.Run(false);
+    server.run(false);
 
     // The ordering assertion in its strongest form: the number the SRV
     // record advertises accepts a real TLS connection right now.
@@ -394,68 +394,68 @@ TEST(SiLAServerBaseRun, MdnsAdvertisedPortIsDialableAtTheMomentItIsAdvertised) {
     EXPECT_TRUE(status.ok()) << status.error_message();
     EXPECT_TRUE(server.mdnsPublisher()->isPublishing());
 
-    server.Shutdown();
+    server.shutdown();
 }
 
-TEST(SiLAServerBaseRun, DoesNotPublishBeforeRun) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(0)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, DoesNotPublishBeforeRun) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(0)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
     ASSERT_NE(server.mdnsPublisher(), nullptr);
 
-    // Direct regression guard: on the old code Build() published, so this
-    // would be true. Not a port check -- before Run() the port reads 0
+    // Direct regression guard: on the old code build() published, so this
+    // would be true. Not a port check -- before run() the port reads 0
     // under both old and new code, so port alone cannot tell them apart.
     EXPECT_FALSE(server.mdnsPublisher()->isPublishing());
 }
 
-TEST(SiLAServerBaseRun, FailedRunLeavesDiscoveryUnpublished) {
-    auto server = SiLAServerBase::Builder()
-                      .WithCertificate("not-a-real-certificate-pem", "not-a-real-private-key-pem")
-                      .WithDiscovery(kPortMdnsFailedRun)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, FailedRunLeavesDiscoveryUnpublished) {
+    auto server = SilaServerBase::Builder()
+                      .withCertificate("not-a-real-certificate-pem", "not-a-real-private-key-pem")
+                      .withDiscovery(kPortMdnsFailedRun)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    EXPECT_THROW(server.Run(false), std::runtime_error);
+    EXPECT_THROW(server.run(false), std::runtime_error);
 
     // A server that failed to bind must not be discoverable. setPort() is
-    // never reached, so the port is still the one requested at Build().
+    // never reached, so the port is still the one requested at build().
     EXPECT_FALSE(server.mdnsPublisher()->isPublishing());
     EXPECT_EQ(server.mdnsPublisher()->port(), kPortMdnsFailedRun);
 }
 
 // S53: Part B p75 MUST -- discovery is enabled by default and cannot be
-// disabled, so a server that never calls WithDiscovery() still gets a
+// disabled, so a server that never calls withDiscovery() still gets a
 // publisher and still starts. Formerly WithoutDiscoveryNoPublisherIsCreated
 // AndRunStillStarts, which pinned the opposite (opt-in) behaviour.
-TEST(SiLAServerBaseRun, DiscoveryIsEnabledByDefaultWithoutWithDiscovery) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, DiscoveryIsEnabledByDefaultWithoutWithDiscovery) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
     EXPECT_NE(server.mdnsPublisher(), nullptr);
-    EXPECT_NO_THROW(server.Run(false));
-    EXPECT_NO_THROW(server.Shutdown());
+    EXPECT_NO_THROW(server.run(false));
+    EXPECT_NO_THROW(server.shutdown());
 }
 
 // S53: the always-on default port, unexercised by the test above.
-TEST(SiLAServerBaseRun, WithoutWithDiscoveryAdvertisesTheDefaultPort) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+TEST(SilaServerBaseRun, WithoutWithDiscoveryAdvertisesTheDefaultPort) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
     ASSERT_NE(server.mdnsPublisher(), nullptr);
     EXPECT_EQ(server.mdnsPublisher()->port(), 50051);
 }
 
 // ---------------------------------------------------------------------------
-// Builder::WithPersistentUuid (audit S30b): a caller-supplied file makes the
+// Builder::withPersistentUuid (audit S30b): a caller-supplied file makes the
 // server's ServerUUID survive a restart without a caller-supplied
-// ServerConfig. Build() alone is enough to exercise every case -- Run()
+// ServerConfig. build() alone is enough to exercise every case -- run()
 // would only add an unrelated port to manage.
 // ---------------------------------------------------------------------------
 
@@ -470,14 +470,14 @@ std::filesystem::path uniquePersistentUuidPath(const std::string& label) {
 
 }  // namespace
 
-TEST(SiLAServerBaseBuilder, WithPersistentUuidCreatesFileAndUsesConformantUuid) {
+TEST(SilaServerBaseBuilder, WithPersistentUuidCreatesFileAndUsesConformantUuid) {
     const auto path = uniquePersistentUuidPath("creates-file");
     std::filesystem::remove(path);
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithPersistentUuid(path)
-                      .Build();
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withPersistentUuid(path)
+                      .build();
 
     ASSERT_TRUE(std::filesystem::exists(path));
     std::ifstream in{path};
@@ -490,25 +490,25 @@ TEST(SiLAServerBaseBuilder, WithPersistentUuidCreatesFileAndUsesConformantUuid) 
     std::filesystem::remove(path);
 }
 
-TEST(SiLAServerBaseBuilder, WithPersistentUuidReusesExistingUuidAcrossBuilds) {
+TEST(SilaServerBaseBuilder, WithPersistentUuidReusesExistingUuidAcrossBuilds) {
     const auto path = uniquePersistentUuidPath("reuses-across-builds");
     std::filesystem::remove(path);
 
-    auto first = SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithPersistentUuid(path)
-                     .Build();
-    auto second = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithPersistentUuid(path)
-                      .Build();
+    auto first = SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withPersistentUuid(path)
+                     .build();
+    auto second = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withPersistentUuid(path)
+                      .build();
 
     EXPECT_EQ(first.serverConfig().uuid(), second.serverConfig().uuid());
 
     std::filesystem::remove(path);
 }
 
-TEST(SiLAServerBaseBuilder, WithPersistentUuidToleratesTrailingNewline) {
+TEST(SilaServerBaseBuilder, WithPersistentUuidToleratesTrailingNewline) {
     const auto path = uniquePersistentUuidPath("trailing-newline");
     const std::string kUuid = "12345678-1234-1234-1234-123456789abc";
     {
@@ -516,27 +516,27 @@ TEST(SiLAServerBaseBuilder, WithPersistentUuidToleratesTrailingNewline) {
         out << kUuid << "\n";
     }
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithPersistentUuid(path)
-                      .Build();
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withPersistentUuid(path)
+                      .build();
 
     EXPECT_EQ(server.serverConfig().uuid(), kUuid);
 
     std::filesystem::remove(path);
 }
 
-TEST(SiLAServerBaseBuilder, WithPersistentUuidThrowsOnMalformedFile) {
+TEST(SilaServerBaseBuilder, WithPersistentUuidThrowsOnMalformedFile) {
     const auto path = uniquePersistentUuidPath("malformed");
     {
         std::ofstream out{path};
         out << "not-a-uuid";
     }
 
-    EXPECT_THROW(SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithPersistentUuid(path)
-                     .Build(),
+    EXPECT_THROW(SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withPersistentUuid(path)
+                     .build(),
                  std::runtime_error);
 
     // No silent overwrite: the malformed content must survive the rejection.
@@ -548,7 +548,7 @@ TEST(SiLAServerBaseBuilder, WithPersistentUuidThrowsOnMalformedFile) {
     std::filesystem::remove(path);
 }
 
-TEST(SiLAServerBaseBuilder, WithPersistentUuidThrowsOnNonconformantUuid) {
+TEST(SilaServerBaseBuilder, WithPersistentUuidThrowsOnNonconformantUuid) {
     const auto path = uniquePersistentUuidPath("nonconformant");
     const std::string kUppercaseUuid = "12345678-1234-1234-1234-123456789ABC";
     {
@@ -556,10 +556,10 @@ TEST(SiLAServerBaseBuilder, WithPersistentUuidThrowsOnNonconformantUuid) {
         out << kUppercaseUuid;
     }
 
-    EXPECT_THROW(SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithPersistentUuid(path)
-                     .Build(),
+    EXPECT_THROW(SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withPersistentUuid(path)
+                     .build(),
                  std::runtime_error);
 
     std::ifstream in{path};
@@ -570,50 +570,50 @@ TEST(SiLAServerBaseBuilder, WithPersistentUuidThrowsOnNonconformantUuid) {
     std::filesystem::remove(path);
 }
 
-TEST(SiLAServerBaseBuilder, WithPersistentUuidConflictsWithWithConfig) {
+TEST(SilaServerBaseBuilder, WithPersistentUuidConflictsWithWithConfig) {
     const auto path = uniquePersistentUuidPath("conflicts-with-config");
 
-    EXPECT_THROW(SiLAServerBase::Builder()
-                     .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                     .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("TestServer"))
-                     .WithPersistentUuid(path)
-                     .Build(),
+    EXPECT_THROW(SilaServerBase::Builder()
+                     .withSelfSignedCertificate("localhost", "127.0.0.1")
+                     .withConfig(std::make_unique<sila2::InMemoryServerConfig>("TestServer"))
+                     .withPersistentUuid(path)
+                     .build(),
                  std::logic_error);
 }
 
 // ---------------------------------------------------------------------------
-// SiLAServerBase::Shutdown — True (positive) paths
+// SilaServerBase::Shutdown — True (positive) paths
 // ---------------------------------------------------------------------------
 
-TEST(SiLAServerBaseShutdown, InterruptsAllRegisteredCommandManagers) {
+TEST(SilaServerBaseShutdown, InterruptsAllRegisteredCommandManagers) {
     ObservableCommandManager mgr;
     auto exec = mgr.addCommand();
     exec->start();
     ASSERT_FALSE(exec->isInterruptionRequested());
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortShutdownInterrupts)
-                      .RegisterCommandManager(&mgr)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortShutdownInterrupts)
+                      .registerCommandManager(&mgr)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
 
-    server.Shutdown();
+    server.shutdown();
 
     EXPECT_TRUE(exec->isInterruptionRequested());
 }
 
-TEST(SiLAServerBaseShutdown, StopsMdnsPublisherPromptlyWhenDiscoveryEnabled) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortShutdownMdns)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
+TEST(SilaServerBaseShutdown, StopsMdnsPublisherPromptlyWhenDiscoveryEnabled) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortShutdownMdns)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
 
     const auto t0 = std::chrono::steady_clock::now();
-    server.Shutdown();
+    server.shutdown();
     const auto elapsed = std::chrono::steady_clock::now() - t0;
 
     // Regression guard against MdnsPublisher::shutdown() deadlocking the
@@ -623,15 +623,15 @@ TEST(SiLAServerBaseShutdown, StopsMdnsPublisherPromptlyWhenDiscoveryEnabled) {
     EXPECT_LT(elapsed, std::chrono::seconds{5});
 }
 
-TEST(SiLAServerBaseShutdown, WithoutPriorRunDoesNotThrow) {
-    // server_ is still null (Run() never called); Shutdown()'s `if (server_)`
+TEST(SilaServerBaseShutdown, WithoutPriorRunDoesNotThrow) {
+    // server_ is still null (run() never called); shutdown()'s `if (server_)`
     // guard must make this a no-op rather than a null-deref.
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
 
-    EXPECT_NO_THROW(server.Shutdown());
+    EXPECT_NO_THROW(server.shutdown());
 }
 
 // Pins audit 3.2m: a Subscribe_RecoverableErrors handler parks in
@@ -640,14 +640,14 @@ TEST(SiLAServerBaseShutdown, WithoutPriorRunDoesNotThrow) {
 // error is ever published — because that is the exact state 3.2m describes;
 // no deadline on grpc::Server::Shutdown() would unpark this handler, only
 // cancelling the subscription (ObservablePropertyManager::shutdown()) does.
-TEST(SiLAServerBaseShutdown, ReturnsWithIdleRecoverableErrorsSubscriber) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortShutdownIdleSubscriber)
-                      .WithErrorRecovery()
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
+TEST(SilaServerBaseShutdown, ReturnsWithIdleRecoverableErrorsSubscriber) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortShutdownIdleSubscriber)
+                      .withErrorRecovery()
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
 
     auto stub = errorrecovery_proto::ErrorRecoveryService::NewStub(
         dialChannel(server, kPortShutdownIdleSubscriber));
@@ -667,7 +667,7 @@ TEST(SiLAServerBaseShutdown, ReturnsWithIdleRecoverableErrorsSubscriber) {
     }
     ASSERT_EQ(propMgr->subscriberCount(kRecoverableErrorsPropertyId), 1u);
 
-    auto shutdownFuture = std::async(std::launch::async, [&server] { server.Shutdown(); });
+    auto shutdownFuture = std::async(std::launch::async, [&server] { server.shutdown(); });
     const bool returned = shutdownFuture.wait_for(std::chrono::seconds{5}) == std::future_status::ready;
     EXPECT_TRUE(returned);
     if (!returned) {
@@ -682,31 +682,31 @@ TEST(SiLAServerBaseShutdown, ReturnsWithIdleRecoverableErrorsSubscriber) {
 }
 
 // Same idle-subscriber setup as above, but drives destruction by scope exit
-// on a worker thread instead of an explicit Shutdown() call — SiLAServerBase
+// on a worker thread instead of an explicit shutdown() call — SilaServerBase
 // has a deleted move constructor and a private constructor, so it cannot be
 // held in optional/unique_ptr to trigger destruction from the test thread
 // directly. Pins the destructor path, which before this fix neither cancels
 // nor joins before components_ dies.
-TEST(SiLAServerBaseShutdown, DestructorReturnsWithIdleRecoverableErrorsSubscriber) {
+TEST(SilaServerBaseShutdown, DestructorReturnsWithIdleRecoverableErrorsSubscriber) {
     std::promise<std::string> certPromise;
     std::promise<ObservablePropertyManager*> mgrPromise;
     std::promise<void> goPromise;
 
     auto serverFuture = std::async(std::launch::async, [&] {
         try {
-            auto server = SiLAServerBase::Builder()
-                              .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                              .WithDiscovery(kPortDestructorIdleSubscriber)
-                              .WithErrorRecovery()
-                              .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                              .Build();
-            server.Run(false);
+            auto server = SilaServerBase::Builder()
+                              .withSelfSignedCertificate("localhost", "127.0.0.1")
+                              .withDiscovery(kPortDestructorIdleSubscriber)
+                              .withErrorRecovery()
+                              .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                              .build();
+            server.run(false);
             certPromise.set_value(server.certificatePem());
             mgrPromise.set_value(server.errorRecoveryPropertyManager());
             goPromise.get_future().wait();
-            // server destructs here, with no explicit Shutdown() call.
+            // server destructs here, with no explicit shutdown() call.
         } catch (...) {
-            // Build()/Run() failed: surface it through whichever promise
+            // build()/run() failed: surface it through whichever promise
             // downstream is still waiting on instead of leaving certPromise
             // (and its get_future().get()) parked forever.
             certPromise.set_exception(std::current_exception());
@@ -757,7 +757,7 @@ TEST(SiLAServerBaseShutdown, DestructorReturnsWithIdleRecoverableErrorsSubscribe
     EXPECT_TRUE(returned);
     if (!returned) {
         // The manager pointer stays valid during the rescue: a destructor
-        // stuck inside Shutdown() has not yet reached member destruction.
+        // stuck inside shutdown() has not yet reached member destruction.
         propMgr->shutdown();
         serverFuture.wait();
     }
@@ -766,70 +766,70 @@ TEST(SiLAServerBaseShutdown, DestructorReturnsWithIdleRecoverableErrorsSubscribe
 }
 
 // ---------------------------------------------------------------------------
-// SiLAServerBase::Shutdown — False (negative/invariant-violation) paths
-// Shutdown() has no documented error path (architecture.md gives it none),
-// so these exercise invariants Shutdown() does not itself validate.
+// SilaServerBase::Shutdown — False (negative/invariant-violation) paths
+// shutdown() has no documented error path (architecture.md gives it none),
+// so these exercise invariants shutdown() does not itself validate.
 // ---------------------------------------------------------------------------
 
-// CAUGHT (safely, by downstream idempotency): Shutdown() has no re-entrancy
+// CAUGHT (safely, by downstream idempotency): shutdown() has no re-entrancy
 // guard of its own, but grpc::Server::Shutdown(), MdnsPublisher::shutdown(),
 // and ObservableCommandManager::interruptAll() are each independently safe
 // to call more than once, so a second call does not throw or crash.
-TEST(SiLAServerBaseShutdown, CalledTwiceDoesNotThrow) {
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortShutdownTwice)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
-    server.Shutdown();
+TEST(SilaServerBaseShutdown, CalledTwiceDoesNotThrow) {
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortShutdownTwice)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
+    server.shutdown();
 
-    EXPECT_NO_THROW(server.Shutdown());
+    EXPECT_NO_THROW(server.shutdown());
 }
 
 // UNCAUGHT: interruptAll() -> requestInterruption() is an unconditional
 // atomic flag set (ObservableCommandExecution.h) with no precondition on
-// state, so Shutdown() happily "interrupts" a command that was registered
-// but never start()ed. The execution's state is left at Waiting — Shutdown()
+// state, so shutdown() happily "interrupts" a command that was registered
+// but never start()ed. The execution's state is left at Waiting — shutdown()
 // does not force any transition.
-TEST(SiLAServerBaseShutdown, InterruptsCommandThatWasNeverStarted) {
+TEST(SilaServerBaseShutdown, InterruptsCommandThatWasNeverStarted) {
     ObservableCommandManager mgr;
     auto exec = mgr.addCommand();
     ASSERT_EQ(exec->state(), State::Waiting);
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortShutdownWaiting)
-                      .RegisterCommandManager(&mgr)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortShutdownWaiting)
+                      .registerCommandManager(&mgr)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
 
-    server.Shutdown();
+    server.shutdown();
 
     EXPECT_TRUE(exec->isInterruptionRequested());
     EXPECT_EQ(exec->state(), State::Waiting);
 }
 
 // UNCAUGHT: same unconditional requestInterruption() also fires on a command
-// that already finished before Shutdown() ran — a meaningless but harmless
+// that already finished before shutdown() ran — a meaningless but harmless
 // no-op that nothing in the pipeline guards against.
-TEST(SiLAServerBaseShutdown, InterruptsCommandThatAlreadyFinished) {
+TEST(SilaServerBaseShutdown, InterruptsCommandThatAlreadyFinished) {
     ObservableCommandManager mgr;
     auto exec = mgr.addCommand();
     exec->start();
     exec->finish();
     ASSERT_EQ(exec->state(), State::FinishedSuccessfully);
 
-    auto server = SiLAServerBase::Builder()
-                      .WithSelfSignedCertificate("localhost", "127.0.0.1")
-                      .WithDiscovery(kPortShutdownFinished)
-                      .RegisterCommandManager(&mgr)
-                      .WithConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
-                      .Build();
-    server.Run(false);
+    auto server = SilaServerBase::Builder()
+                      .withSelfSignedCertificate("localhost", "127.0.0.1")
+                      .withDiscovery(kPortShutdownFinished)
+                      .registerCommandManager(&mgr)
+                      .withConfig(std::make_unique<sila2::InMemoryServerConfig>("SiLA Server"))
+                      .build();
+    server.run(false);
 
-    server.Shutdown();
+    server.shutdown();
 
     EXPECT_TRUE(exec->isInterruptionRequested());
 }

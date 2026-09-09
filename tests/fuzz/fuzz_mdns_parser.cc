@@ -5,7 +5,7 @@
 // These are the functions called by MdnsBrowser::browseCallback on untrusted
 // multicast packets.
 //
-// Build:
+// build:
 //   conda run -n sica clang++ -std=c++20 -fsanitize=fuzzer,address \
 //       -I build/vcpkg_installed/x64-linux/include \
 //       -DMDNS_IMPLEMENTATION \

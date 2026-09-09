@@ -19,7 +19,7 @@
 #include <sila/client/dynamic/AnyCodec.h>
 #include <sila/common/types/BasicTypes.h>
 #include <sila/server/binary/BinaryStore.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 
 namespace sila2 {
 namespace binary {
@@ -194,7 +194,7 @@ inline void resolveBinaryParameters(BinaryStore& store, google::protobuf::Messag
         // (SiLAFramework.proto:95-98) and dispatchToHandler is handed only
         // the Feature FQI, never the Command/Parameter segments.
         // SiLABinaryTransfer's INVALID_BINARY_TRANSFER_UUID is not a
-        // SiLAError oneof arm (SiLABinaryTransfer.proto:73-81), so of the
+        // SilaError oneof arm (SiLABinaryTransfer.proto:73-81), so of the
         // five values this is the only one that says "the server will not
         // run this call".
         try {

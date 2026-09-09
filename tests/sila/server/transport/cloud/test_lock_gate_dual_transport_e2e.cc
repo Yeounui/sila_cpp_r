@@ -1,7 +1,7 @@
 // test_lock_gate_dual_transport_e2e.cc — End-to-end tests for the
 // LockIdentifier metadata VALUE gate (§S33) shared by the gRPC and cloud
 // transports (InterceptorChain::lockGate, wired to a real LockControllerImpl
-// exactly as SiLAServerBase::Builder::Build() wires it -- see
+// exactly as SilaServerBase::Builder::build() wires it -- see
 // chainWithLockAffecting below). Adapted from the sibling admission-gate e2e
 // file (test_metadata_gate_dual_transport_e2e.cc): its GrpcMetadataGateHarness
 // is reused (renamed), including the observable-follow-up stand-in whose
@@ -16,8 +16,8 @@
 // design that exempts them from the presence gate (makeFollowupContext).
 #include "CloudRouterTestHarness.h"
 
-#include <sila/common/error/SiLAErrorException.h>
-#include <sila/common/error/SiLAErrorSubtypes.h>
+#include <sila/common/error/SilaErrorException.h>
+#include <sila/common/error/SilaErrorSubtypes.h>
 #include <sila/common/util/MetadataHeaderKey.h>
 #include <sila/server/FeatureRegistry.h>
 #include <sila/server/command/ObservableCommandExecution.h>
@@ -51,7 +51,7 @@ using sila2::metadataHeaderKey;
 using sila2::error::DefinedExecutionError;
 using sila2::error::fromGrpcStatus;
 using sila2::error::FrameworkError;
-using sila2::error::SiLAError;
+using sila2::error::SilaError;
 
 namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller::v1;
 using lockcontroller_proto::LockController;
@@ -87,7 +87,7 @@ cloud::Metadata makeMetadata(const std::string& fqi, const std::string& value) {
 }
 
 // Builds a chain declaring `fqis` as affected by the LockIdentifier metadata
-// -- the same table Build() populates in production (S32).
+// -- the same table build() populates in production (S32).
 InterceptorChain chainWithLockAffecting(std::vector<std::string> fqis) {
     InterceptorChain chain;
     chain.metadataAffectedCalls[kLockIdentifierMetadataFqi] = std::move(fqis);
@@ -95,7 +95,7 @@ InterceptorChain chainWithLockAffecting(std::vector<std::string> fqis) {
 }
 
 // Wires chain.lockGate to a real LockControllerImpl's checkLockMetadata, the
-// same closure Build() installs (SiLAServerBase.cc) -- every test below pins
+// same closure build() installs (SilaServerBase.cc) -- every test below pins
 // the WIRING, not just the method, by going through this indirection rather
 // than calling checkLockMetadata directly.
 void wireLockGate(InterceptorChain& chain, LockControllerImpl& lockController) {
@@ -437,7 +437,7 @@ TEST_F(LockGateDualTransport, LockedServerRejectsAWrongLockIdentifierWithInvalid
     ASSERT_FALSE(grpcStatus.ok());
     const auto reconstructed = fromGrpcStatus(grpcStatus);
     ASSERT_NE(reconstructed, nullptr);
-    ASSERT_EQ(reconstructed->errorType(), SiLAError::ErrorType::DefinedExecutionError);
+    ASSERT_EQ(reconstructed->errorType(), SilaError::ErrorType::DefinedExecutionError);
     const auto* grpcErr = dynamic_cast<const DefinedExecutionError*>(reconstructed.get());
     ASSERT_NE(grpcErr, nullptr);
     // This is the case that would catch a gate that raised ServerNotLocked
@@ -505,7 +505,7 @@ TEST_F(LockGateDualTransport, SiLAServiceStaysAnswerableWhileLocked) {
     ASSERT_TRUE(lockTheServer(lockController, kLockId, 0).ok());
 
     // (1) No metadata at all: the lock row does not cover SiLAService (it is
-    // never declared for it, per Part A and WithMetadata's own refusal), so
+    // never declared for it, per Part A and withMetadata's own refusal), so
     // this must succeed exactly as an unlocked server would.
     GrpcLockGateHarnessServer grpcServer{&chain, kSiLAServiceFqi};
     const grpc::Status okStatus = grpcServer.call();

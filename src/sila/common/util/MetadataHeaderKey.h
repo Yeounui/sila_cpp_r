@@ -34,7 +34,7 @@ inline std::string metadataHeaderKey(const std::string& metadataFqi) {
 /// Spelled once for everything that handles the header: the client injects
 /// under it (SilaClientBase), the server extracts it
 /// (MetadataExtractingInterceptor), the cloud router normalizes envelope
-/// metadata to it, and SiLAServerBase advertises it for FCP discovery.
+/// metadata to it, and SilaServerBase advertises it for FCP discovery.
 /// Tests keep their own literals on purpose — they pin the wire truth.
 inline const std::string kAccessTokenMetadataFqi =
     "org.silastandard/core/AuthorizationService/v1/Metadata/AccessToken";
@@ -42,7 +42,7 @@ inline const std::string kAccessTokenMetadataFqi =
 /// The standard LockIdentifier metadata FQI (LockController Feature).
 /// Spelled once for everything that handles the header, exactly as the access
 /// token above: the client injects under it (SilaClientBase), the gate parses
-/// it (LockControllerImpl::checkLockMetadata), SiLAServerBase advertises it for
+/// it (LockControllerImpl::checkLockMetadata), SilaServerBase advertises it for
 /// FCP discovery, and MetadataPolicy skips it because that gate owns both its
 /// presence and its value. Lives here rather than in LockControllerImpl.h
 /// because MetadataPolicy.h needs it and is included by GrpcTransport.h, i.e.
