@@ -50,6 +50,11 @@ const std::string& lockControllerFdlXml();
 // Namespace alias shortens the generated proto namespace for readability.
 namespace lockcontroller_proto = sila2::org::silastandard::core::lockcontroller::v1;
 
+/// Implements the @ref gl_feature "Feature" `org.silastandard/core/LockController/v1`,
+/// letting a @ref gl_sila_client "SiLA Client" take exclusive @ref gl_lock "lock"
+/// of the server so other clients' calls are refused until it unlocks.
+///
+/// Installed by @ref SiLAServerBase::Builder::WithLock().
 class LockControllerImpl final : public lockcontroller_proto::LockController::Service {
 public:
     // chain outlives this object (owned by SiLAServerBase, which constructs
@@ -61,11 +66,20 @@ public:
 
     // ---- Commands ----
 
+    /// Serves the LockServer command: locks the server under the given lock
+    /// identifier and inactivity timeout. Dispatched by gRPC; a server author
+    /// does not call this directly.
+    /// @throws error::DefinedExecutionError{ServerAlreadyLocked} if a
+    ///         non-expired lock is already held.
     grpc::Status LockServer(
         grpc::ServerContext* context,
         const lockcontroller_proto::LockServer_Parameters* request,
         lockcontroller_proto::LockServer_Responses* response) override;
 
+    /// Serves the UnlockServer command: releases the current lock.
+    /// @throws error::DefinedExecutionError{ServerNotLocked} if the server is
+    ///         not locked; {InvalidLockIdentifier} if the given identifier
+    ///         does not match the current lock.
     grpc::Status UnlockServer(
         grpc::ServerContext* context,
         const lockcontroller_proto::UnlockServer_Parameters* request,
@@ -73,11 +87,17 @@ public:
 
     // ---- Properties ----
 
+    /// Serves the IsLocked property: whether the server currently has an
+    /// active, non-expired lock.
     grpc::Status Get_IsLocked(
         grpc::ServerContext* context,
         const lockcontroller_proto::Get_IsLocked_Parameters* request,
         lockcontroller_proto::Get_IsLocked_Responses* response) override;
 
+    /// Serves the FCPAffectedByMetadata_LockIdentifier query: lists the
+    /// Commands and Properties that require the LockIdentifier
+    /// @ref gl_sila_client_metadata "SiLA Client Metadata" while the server
+    /// is locked.
     grpc::Status Get_FCPAffectedByMetadata_LockIdentifier(
         grpc::ServerContext* context,
         const lockcontroller_proto::Get_FCPAffectedByMetadata_LockIdentifier_Parameters* request,

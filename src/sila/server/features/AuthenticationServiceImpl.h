@@ -41,6 +41,12 @@ const std::string& authenticationServiceFdlXml();
 
 namespace auth_proto = sila2::org::silastandard::core::authenticationservice::v1;
 
+/// Implements the @ref gl_feature "Feature" `org.silastandard/core/AuthenticationService/v1`,
+/// letting a @ref gl_sila_client "SiLA Client" log in for an AccessToken
+/// (@ref gl_sila_client_metadata "SiLA Client Metadata") scoped to the
+/// Features it requested, and log back out to invalidate that token.
+///
+/// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
 class AuthenticationServiceImpl final : public auth_proto::AuthenticationService::Service {
 public:
     // Dependencies by reference, not owned. All must outlive this object.
@@ -52,14 +58,27 @@ public:
 
     // ---- Commands ----
 
+    /// Serves the Login command: verifies the credentials and issues an
+    /// AccessToken scoped to the requested Features (or every Feature the
+    /// user's policy allows, if none were requested).
+    ///
     /// Login never runs the access-token gate, even when the operator lists
     /// this feature's FQI in protectedFqis — it is the command that issues
     /// the token the gate checks for. See the rationale in the .cc.
+    /// @throws error::ValidationError if RequestedServer is not a
+    ///         36-character lowercase-hex UUID, if it names a different
+    ///         server, or if a RequestedFeatures entry is not a fully
+    ///         qualified identifier.
+    /// @throws error::DefinedExecutionError{AuthenticationFailed}
+    ///         if the credentials do not verify.
     grpc::Status Login(
         grpc::ServerContext* context,
         const auth_proto::Login_Parameters* request,
         auth_proto::Login_Responses* response) override;
 
+    /// Serves the Logout command: invalidates the given AccessToken.
+    /// @throws error::DefinedExecutionError{InvalidAccessToken} if the token
+    ///         is not currently valid.
     grpc::Status Logout(
         grpc::ServerContext* context,
         const auth_proto::Logout_Parameters* request,

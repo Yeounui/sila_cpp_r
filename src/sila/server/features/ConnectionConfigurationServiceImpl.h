@@ -68,9 +68,21 @@ const std::string& connectionConfigurationServiceFdlXml();
 // Namespace alias shortens the generated proto namespace for readability.
 namespace connconfig_proto = sila2::org::silastandard::core::connectionconfigurationservice::v1;
 
+/// Implements the @ref gl_feature "Feature"
+/// `org.silastandard/core/ConnectionConfigurationService/v1`, letting a
+/// @ref gl_sila_client "SiLA Client" configure server-initiated connections
+/// (the server dials out to the client instead of the client dialling in —
+/// see @ref gl_connection_method "Connection Method"). Manages one
+/// `CloudTransport` per configured client and persists the connection mode
+/// and any `Persist=true` clients to `storePath` so both survive a restart.
+///
+/// Installed by @ref SiLAServerBase::Builder::WithConnectionConfiguration().
 class ConnectionConfigurationServiceImpl final
     : public connconfig_proto::ConnectionConfigurationService::Service {
 public:
+    /// Constructs the service with one fixed credential for every outbound
+    /// connection it opens.
+    ///
     /// @param defaultCreds Channel credentials for every outbound
     ///        CloudTransport this service creates. Must not be null.
     /// @throws std::invalid_argument if defaultCreds is null — see the
@@ -107,21 +119,35 @@ public:
 
     // ---- Commands ----
 
+    /// Serves the EnableServerInitiatedConnectionMode command: turns on
+    /// server-initiated connections and persists the mode to storePath.
+    /// @throws std::runtime_error if the mode cannot be persisted.
     grpc::Status EnableServerInitiatedConnectionMode(
         grpc::ServerContext* context,
         const connconfig_proto::EnableServerInitiatedConnectionMode_Parameters* request,
         connconfig_proto::EnableServerInitiatedConnectionMode_Responses* response) override;
 
+    /// Serves the DisableServerInitiatedConnectionMode command.
+    /// @throws std::runtime_error if the mode cannot be persisted.
     grpc::Status DisableServerInitiatedConnectionMode(
         grpc::ServerContext* context,
         const connconfig_proto::DisableServerInitiatedConnectionMode_Parameters* request,
         connconfig_proto::DisableServerInitiatedConnectionMode_Responses* response) override;
 
+    /// Serves the ConnectSiLAClient command: configures a client and opens a
+    /// `CloudTransport` to it.
+    /// @throws error::DefinedExecutionError{InvalidSiLAClient} for a
+    ///         duplicate client name, an empty or untrusted host, or a
+    ///         non-addressable port.
     grpc::Status ConnectSiLAClient(
         grpc::ServerContext* context,
         const connconfig_proto::ConnectSiLAClient_Parameters* request,
         connconfig_proto::ConnectSiLAClient_Responses* response) override;
 
+    /// Serves the DisconnectSiLAClient command: disconnects a configured
+    /// client, and drops its configuration entirely if `Remove` is set.
+    /// @throws error::DefinedExecutionError{InvalidSiLAClient} for an unknown
+    ///         client name.
     grpc::Status DisconnectSiLAClient(
         grpc::ServerContext* context,
         const connconfig_proto::DisconnectSiLAClient_Parameters* request,
@@ -129,11 +155,14 @@ public:
 
     // ---- Properties ----
 
+    /// Serves the ServerInitiatedConnectionModeStatus property.
     grpc::Status Get_ServerInitiatedConnectionModeStatus(
         grpc::ServerContext* context,
         const connconfig_proto::Get_ServerInitiatedConnectionModeStatus_Parameters* request,
         connconfig_proto::Get_ServerInitiatedConnectionModeStatus_Responses* response) override;
 
+    /// Serves the ConfiguredSiLAClients property: every client currently
+    /// configured, connected or not.
     grpc::Status Get_ConfiguredSiLAClients(
         grpc::ServerContext* context,
         const connconfig_proto::Get_ConfiguredSiLAClients_Parameters* request,
@@ -164,10 +193,13 @@ public:
 
     // ---- Lifecycle ----
 
-    // Connects every persisted client entry (persist == true) on server startup.
+    /// Reconnects every client persisted with Persist=true. Called once by
+    /// SiLAServerBase after Build(), so a server author does not call this
+    /// directly.
     void connectPersistentClients();
 
-    // Disconnects all managed CloudTransports on server shutdown.
+    /// Disconnects every managed CloudTransport. Called by SiLAServerBase on
+    /// server shutdown; a server author does not call this directly.
     void shutdown();
 
 private:

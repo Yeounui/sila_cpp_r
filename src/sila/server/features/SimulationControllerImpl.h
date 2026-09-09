@@ -45,22 +45,38 @@ const std::string& simulationControllerFdlXml();
 // Namespace alias shortens the generated proto namespace for readability.
 namespace simctrl_proto = sila2::org::silastandard::core::simulationcontroller::v1;
 
+/// Implements the @ref gl_feature "Feature" `org.silastandard/core/SimulationController/v1`,
+/// letting a @ref gl_sila_client "SiLA Client" switch the server between
+/// Simulation Mode and Real Mode.
+///
+/// Not installed by any `SiLAServerBase::Builder::WithX()` call; a server
+/// author registers it like a custom Feature, via
+/// `Builder::AddFeature(std::string{kSimulationControllerFqi}, simulationControllerFdlXml(), impl.service())`.
 class SimulationControllerImpl final : public simctrl_proto::SimulationController::Service {
 public:
     // No registry dependency — mode state is entirely local to this object.
     explicit SimulationControllerImpl(const InterceptorChain* chain = nullptr);
 
-    // Lets an owning server veto a mode switch, e.g. while hardware is mid-operation.
-    // If unset, switches always succeed.
+    /// Lets the owning server veto a mode switch, e.g. while hardware is
+    /// mid-operation: `cb` receives `true` for a switch to Simulation Mode,
+    /// `false` for Real Mode, and returning `false` fails the command with a
+    /// SimulationController Defined Execution Error. Unset, switches always
+    /// succeed.
     void setCanSwitchCallback(std::function<bool(bool)> cb);
 
     // ---- Commands ----
 
+    /// Serves the StartSimulationMode command.
+    /// @throws error::DefinedExecutionError{StartSimulationModeFailed} if the
+    ///         canSwitchCallback vetoes the switch.
     grpc::Status StartSimulationMode(
         grpc::ServerContext* context,
         const simctrl_proto::StartSimulationMode_Parameters* request,
         simctrl_proto::StartSimulationMode_Responses* response) override;
 
+    /// Serves the StartRealMode command.
+    /// @throws error::DefinedExecutionError{StartRealModeFailed} if the
+    ///         canSwitchCallback vetoes the switch.
     grpc::Status StartRealMode(
         grpc::ServerContext* context,
         const simctrl_proto::StartRealMode_Parameters* request,
@@ -68,6 +84,8 @@ public:
 
     // ---- Properties ----
 
+    /// Serves the SimulationMode property: `true` while the server is in
+    /// Simulation Mode.
     grpc::Status Get_SimulationMode(
         grpc::ServerContext* context,
         const simctrl_proto::Get_SimulationMode_Parameters* request,

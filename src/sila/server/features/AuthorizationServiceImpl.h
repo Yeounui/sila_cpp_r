@@ -20,8 +20,16 @@ const std::string& authorizationServiceFdlXml();
 
 namespace authz_proto = sila2::org::silastandard::core::authorizationservice::v1;
 
+/// Implements the @ref gl_feature "Feature" `org.silastandard/core/AuthorizationService/v1`,
+/// letting a @ref gl_sila_client "SiLA Client" discover which Commands and
+/// Properties require the AccessToken @ref gl_sila_client_metadata "SiLA Client Metadata"
+/// (i.e. which ones @ref SiLAServerBase::Builder::WithAuthentication() protected).
+///
+/// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
 class AuthorizationServiceImpl final : public authz_proto::AuthorizationService::Service {
 public:
+    /// Constructs the service reporting the given protected list.
+    ///
     /// protectedFqis: the same explicit list passed to
     /// SiLAServerBase::Builder::WithAuthentication.
     // Taken by value: the caller's list lives in Builder::authConfig_, and the
@@ -32,6 +40,8 @@ public:
 
     // ---- Properties ----
 
+    /// Serves the FCPAffectedByMetadata_AccessToken query: lists the
+    /// Commands and Properties that require the AccessToken metadata.
     grpc::Status Get_FCPAffectedByMetadata_AccessToken(
         grpc::ServerContext* context,
         const authz_proto::Get_FCPAffectedByMetadata_AccessToken_Parameters* request,

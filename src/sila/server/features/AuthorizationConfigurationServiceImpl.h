@@ -35,14 +35,25 @@ const std::string& authorizationConfigurationServiceFdlXml();
 
 namespace authzconfig_proto = sila2::org::silastandard::core::authorizationconfigurationservice::v1;
 
+/// Implements the @ref gl_feature "Feature"
+/// `org.silastandard/core/AuthorizationConfigurationService/v1`, letting a
+/// @ref gl_sila_client "SiLA Client" set or read the server's external
+/// authorization provider UUID.
+///
+/// Installed by @ref SiLAServerBase::Builder::WithAuthentication().
 class AuthorizationConfigurationServiceImpl final
     : public authzconfig_proto::AuthorizationConfigurationService::Service {
 public:
+    /// `store` and `config` must outlive this object.
     AuthorizationConfigurationServiceImpl(auth::AuthTokenStore& store, ServerConfig& config,
                                           const InterceptorChain* chain = nullptr);
 
     // ---- Commands ----
 
+    /// Serves the SetAuthorizationProvider command: sets the provider UUID
+    /// and invalidates every access token issued so far.
+    /// @throws error::ValidationError if the provider is not a 36-character
+    ///         lowercase-hex UUID.
     grpc::Status SetAuthorizationProvider(
         grpc::ServerContext* context,
         const authzconfig_proto::SetAuthorizationProvider_Parameters* request,
@@ -50,6 +61,7 @@ public:
 
     // ---- Properties ----
 
+    /// Serves the AuthorizationProvider property.
     grpc::Status Get_AuthorizationProvider(
         grpc::ServerContext* context,
         const authzconfig_proto::Get_AuthorizationProvider_Parameters* request,
