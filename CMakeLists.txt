@@ -9,6 +9,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # libssl's TLS handshake API. gRPC takes the PEM strings as plain text, so the
 # certificate path never touches an SSL_CTX. Found here rather than in
 # src/sila so the tests, which reach for X509 directly, share the one lookup.
+#
+# The provider is BoringSSL, which vcpkg installs under the OpenSSL name. Pin
+# the root so FindOpenSSL cannot prefer a system OpenSSL 3, where OPENSSL_free,
+# BIO_pending and EVP_MD_CTX_create are macros rather than the real symbols
+# libgrpc.a was compiled against -- that mismatch links but leaves them undefined.
+if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+    set(OPENSSL_ROOT_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
+endif()
 find_package(OpenSSL REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
