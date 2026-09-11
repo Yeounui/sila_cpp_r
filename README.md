@@ -5,7 +5,7 @@
 A C++20 implementation of SiLA 2 (Standardization in Lab Automation), conforming to specification v1.1.  
 A gRPC-based standard protocol for communication between laboratory instruments and software.  
 
-v0.80-Beta.
+v0.81-Beta.
 
 ## Overview
 
