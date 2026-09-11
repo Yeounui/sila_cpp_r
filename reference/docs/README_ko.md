@@ -6,7 +6,7 @@ SiLA 2 (Standardization in Lab Automation)의 C++20 구현체. 1.1버전 준수.
 실험실 자동화를 위한 장비와 소프트웨어 간 gRPC 기반 표준 프로토콜.  
   
 
-v0.80-Beta.
+v0.81-Beta.
 ## 개요
 
 SiLA는 실험실 자동화 분야에서 실험 장비의 통합 및 소프트웨어 서비스에 대한 상호 운용성, 유연성 및 자원 최적화를 목표로 하여, gRPC와 표준 FDL (Feature Definition Language; XML) 양식을 사용하여 SiLA Server와 Client 간 통신을 정의하는 개방형 표준입니다. 
