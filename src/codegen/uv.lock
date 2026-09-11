@@ -502,7 +502,7 @@ wheels = [
 
 [[package]]
 name = "sila2-codegen"
-version = "0.1.0"
+version = "0.81.0"
 source = { virtual = "." }
 dependencies = [
     { name = "jinja2" },
