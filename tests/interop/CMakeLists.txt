@@ -22,7 +22,7 @@ target_include_directories(sila2_interop_server PRIVATE
     ${interop_server_INCLUDE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
-target_link_libraries(sila2_interop_server PRIVATE sila_cpp_r::core)
+target_link_libraries(sila2_interop_server PRIVATE Sila2::core)
 
 # --- integration test client (§7) -------------------------------------------
 
@@ -34,7 +34,7 @@ target_include_directories(test_interop PRIVATE
     ${interop_server_INCLUDE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
-target_link_libraries(test_interop PRIVATE sila_cpp_r::dynamic GTest::gtest_main)
+target_link_libraries(test_interop PRIVATE Sila2::dynamic GTest::gtest_main)
 # Register as a single ctest entry so all TEST() cases share one process —
 # the static server() singleton starts once and every test acts as a separate
 # client, matching the real single-server / multi-client deployment model.

@@ -27,17 +27,17 @@ This is a **re**-implementation of the SiLA protocol in C++, removing the Qt dep
 
 ## Library Structure
 
-- `sila_cpp_r::core` — Server instance creation, static stub client, binary transfer, cloud connectivity, authentication & authorization, error recovery, mDNS discovery, FDL runtime parsing & constraint validation
-- `sila_cpp_r::dynamic` — Operates on top of `sila_cpp_r::core`; connects to core's channel (`grpc::Channel`), injector (`MetadataInjector`), etc. Builds protobuf descriptors from parsed FDL to make dynamic RPC calls without stubs.
+- `Sila2::core` — Server instance creation, static stub client, binary transfer, cloud connectivity, authentication & authorization, error recovery, mDNS discovery, FDL runtime parsing & constraint validation
+- `Sila2::dynamic` — Operates on top of `Sila2::core`; connects to core's channel (`grpc::Channel`), injector (`MetadataInjector`), etc. Builds protobuf descriptors from parsed FDL to make dynamic RPC calls without stubs.
 
 The two sub-libraries are designed for different use cases:
-- **`sila_cpp_r::dynamic`** is designed for software that receives messages from multiple instruments and needs to interpret protobuf messages unknown at build time.
-- **`sila_cpp_r::core`** is designed for resource-constrained instruments whose features are already defined by hardware. When using `sila_cpp_r::core`, codegen converts the instrument's FDL to `.proto` IDL (Interface Description Language), then compiles it with `protoc`/`grpc_cpp_plugin` to produce static stubs.
+- **`Sila2::dynamic`** is designed for software that receives messages from multiple instruments and needs to interpret protobuf messages unknown at build time.
+- **`Sila2::core`** is designed for resource-constrained instruments whose features are already defined by hardware. When using `Sila2::core`, codegen converts the instrument's FDL to `.proto` IDL (Interface Description Language), then compiles it with `protoc`/`grpc_cpp_plugin` to produce static stubs.
 
 | | Instrument (SiLA Server) | Software (SiLA Client) |
 |---|---|---|
 | Stub | codegen FDL conversion → `.proto` + static stub + Metadata | None — dynamically interprets the peer's FDL |
-| Link | `sila_cpp_r::core` | `sila_cpp_r::dynamic` (+`sila_cpp_r::core`) |
+| Link | `Sila2::core` | `Sila2::dynamic` (+`Sila2::core`) |
 | FDL runtime interpretation | Parameter constraint validation (`CommandParameterValidator.cc`) | Parameter constraint validation + dynamic message serialization/deserialization |
 
 ## Architecture

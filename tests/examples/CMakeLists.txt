@@ -19,7 +19,7 @@ target_include_directories(shake_controller_example PRIVATE
     ${shake_example_INCLUDE_DIR}
     ${shake_example_META_INCLUDE_DIR}
 )
-target_link_libraries(shake_controller_example PRIVATE sila_cpp_r::core)
+target_link_libraries(shake_controller_example PRIVATE Sila2::core)
 
 add_executable(test_shake_controller_e2e
     test_shake_controller_e2e.cc
@@ -31,7 +31,7 @@ target_include_directories(test_shake_controller_e2e PRIVATE
     ${shake_example_INCLUDE_DIR}
     ${shake_example_META_INCLUDE_DIR}
 )
-target_link_libraries(test_shake_controller_e2e PRIVATE sila_cpp_r::core GTest::gtest_main)
+target_link_libraries(test_shake_controller_e2e PRIVATE Sila2::core GTest::gtest_main)
 gtest_discover_tests(test_shake_controller_e2e)
 
 set(_cloud_fixture_fdl_dir ${CMAKE_SOURCE_DIR}/tests/examples/fdl/sila_base/valid-fdl)
@@ -67,7 +67,7 @@ target_include_directories(test_codegen_cloud_e2e PRIVATE
     # the cloud router tests use, reused rather than re-declared here.
     ${CMAKE_SOURCE_DIR}/tests/sila/server/transport/cloud
 )
-target_link_libraries(test_codegen_cloud_e2e PRIVATE sila_cpp_r::core GTest::gtest_main)
+target_link_libraries(test_codegen_cloud_e2e PRIVATE Sila2::core GTest::gtest_main)
 gtest_discover_tests(test_codegen_cloud_e2e)
 
 if(SILA_ENABLE_OTEL)

@@ -62,8 +62,8 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-install(TARGETS sila_cpp_r_core sila_cpp_r_dynamic
-    EXPORT sila_cpp_rTargets
+install(TARGETS sila2_core sila2_dynamic
+    EXPORT Sila2Targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
@@ -86,10 +86,10 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/src/sila/generated/
     FILES_MATCHING PATTERN "*.h"
 )
 
-install(EXPORT sila_cpp_rTargets
-    NAMESPACE sila_cpp_r::
-    FILE sila_cpp_rTargets.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sila_cpp_r
+install(EXPORT Sila2Targets
+    NAMESPACE Sila2::
+    FILE Sila2Targets.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Sila2
 )
 
 if(SILA_ENABLE_OTEL)
@@ -99,20 +99,20 @@ else()
 endif()
 
 configure_package_config_file(
-    cmake/sila_cpp_rConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/sila_cpp_rConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sila_cpp_r
+    cmake/Sila2Config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Sila2Config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Sila2
 )
 
 write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/sila_cpp_rConfigVersion.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/Sila2ConfigVersion.cmake
     COMPATIBILITY SameMajorVersion
 )
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/sila_cpp_rConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/sila_cpp_rConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sila_cpp_r
+    ${CMAKE_CURRENT_BINARY_DIR}/Sila2Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/Sila2ConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Sila2
 )
 
 
